@@ -11,7 +11,7 @@ export const cpToLib = async (path: string): Promise<number> => {
 
 export const cpDirToLib = async (
   sourcePath: string,
-  targetSubPath?: string
+  targetSubPath?: string,
 ): Promise<void> => {
   const sourcePathClean = sourcePath.startsWith("./")
     ? sourcePath.slice(2)
@@ -36,7 +36,7 @@ export const cpDirToLib = async (
       const targetFilePath = join(
         "./lib",
         targetSubPath || sourcePathClean,
-        entry
+        entry,
       );
 
       await mkdir(join("./lib", targetSubPath || sourcePathClean), {
@@ -50,7 +50,4 @@ export const cpDirToLib = async (
 
 export const exec: (...args: Parameters<typeof $>) => Promise<any> = async (
   ...args
-) =>
-  $(...args).catch((err: any) =>
-    process.stderr.write(err.stderr as any)
-  );
+) => $(...args).catch((err: any) => process.stderr.write(err.stderr as any));

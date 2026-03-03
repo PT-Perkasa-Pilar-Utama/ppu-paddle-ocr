@@ -32,7 +32,7 @@ export class RecognitionService {
   constructor(
     session: ort.InferenceSession,
     options: Partial<RecognitionOptions> = {},
-    debugging: Partial<DebuggingOptions> = {}
+    debugging: Partial<DebuggingOptions> = {},
   ) {
     this.session = session;
     this.toolkit = CanvasToolkit.getInstance();
@@ -67,7 +67,7 @@ export class RecognitionService {
   async run(
     image: ArrayBuffer | Canvas,
     detection: Box[],
-    charactersDictionary?: string[]
+    charactersDictionary?: string[],
   ): Promise<RecognitionResult[]> {
     this.log("Starting text recognition process");
 
@@ -81,14 +81,14 @@ export class RecognitionService {
       const results = await this.processBoxesInParallel(
         sourceCanvasForCrop,
         validBoxes,
-        charactersDictionary
+        charactersDictionary,
       );
 
       return this.sortResultsByReadingOrder(results);
     } catch (error) {
       console.error(
         "Error during text recognition:",
-        error instanceof Error ? error.message : String(error)
+        error instanceof Error ? error.message : String(error),
       );
       return [];
     }
@@ -109,7 +109,7 @@ export class RecognitionService {
   private async processBoxesInParallel(
     sourceCanvas: Canvas,
     boxData: Array<{ box: Box; index: number }>,
-    charactersDictionary?: string[]
+    charactersDictionary?: string[],
   ): Promise<RecognitionResult[]> {
     const cropsDebugPath = this.debugging.debugFolder + "/crops";
     if (this.debugging.debug) {
@@ -124,7 +124,7 @@ export class RecognitionService {
         index,
         boxData.length,
         cropsDebugPath,
-        charactersDictionary
+        charactersDictionary,
       );
       if (result !== null) {
         results.push(result);
@@ -143,7 +143,7 @@ export class RecognitionService {
     index: number,
     totalBoxes: number,
     debugPath: string,
-    charactersDictionary?: string[]
+    charactersDictionary?: string[],
   ): Promise<RecognitionResult | null> {
     const start = Date.now();
 
@@ -151,7 +151,7 @@ export class RecognitionService {
       const cropCanvas = this.cropRegion(sourceCanvas, box);
       const { text: recognizedText, confidence } = await this.recognizeText(
         cropCanvas,
-        charactersDictionary
+        charactersDictionary,
       );
 
       if (this.debugging.debug) {
@@ -161,7 +161,7 @@ export class RecognitionService {
           index,
           totalBoxes,
           recognizedText,
-          start
+          start,
         );
       }
 
@@ -176,7 +176,7 @@ export class RecognitionService {
    * Sort recognition results by reading order (top to bottom, left to right)
    */
   private sortResultsByReadingOrder(
-    results: RecognitionResult[]
+    results: RecognitionResult[],
   ): RecognitionResult[] {
     return [...results].sort((a, b) => {
       const boxA = a.box;
@@ -196,7 +196,7 @@ export class RecognitionService {
   private isValidBox(box: Box, index: number): boolean {
     if (box.width <= 0 || box.height <= 0) {
       console.warn(
-        `Skipping invalid box ${index + 1}: w=${box.width}, h=${box.height}`
+        `Skipping invalid box ${index + 1}: w=${box.width}, h=${box.height}`,
       );
       return false;
     }
@@ -224,7 +224,7 @@ export class RecognitionService {
   private async saveDebugCrop(
     cropCanvas: Canvas,
     index: number,
-    outputPath: string
+    outputPath: string,
   ): Promise<void> {
     await this.toolkit.saveImage({
       canvas: cropCanvas,
@@ -241,14 +241,14 @@ export class RecognitionService {
     index: number,
     totalBoxes: number,
     text: string,
-    startTime: number
+    startTime: number,
   ): void {
     const processingTime = Date.now() - startTime;
     this.log(
       `Box ${index + 1}/${totalBoxes}: [x:${box.x}, y:${box.y}, w:${
         box.width
       }, h:${box.height}]` +
-        `\n\t → "${text}" (processed in ${processingTime}ms)\n`
+        `\n\t → "${text}" (processed in ${processingTime}ms)\n`,
     );
   }
 
@@ -257,7 +257,7 @@ export class RecognitionService {
    */
   private async recognizeText(
     cropCanvas: Canvas,
-    charactersDictionary?: string[]
+    charactersDictionary?: string[],
   ): Promise<{ text: string; confidence: number }> {
     const { imageTensor, tensorWidth, tensorHeight } =
       await this.preprocessImage(cropCanvas);
@@ -295,14 +295,14 @@ export class RecognitionService {
 
       if (originalHeight === 0 || originalWidth === 0) {
         throw new Error(
-          `Crop dimensions are zero: ${originalWidth}x${originalHeight}`
+          `Crop dimensions are zero: ${originalWidth}x${originalHeight}`,
         );
       }
 
       const aspectRatio = originalWidth / originalHeight;
       const resizedWidth = Math.max(
         RecognitionService.MIN_CROP_WIDTH,
-        Math.round(targetHeight * aspectRatio)
+        Math.round(targetHeight * aspectRatio),
       );
 
       processor.resize({
@@ -313,7 +313,7 @@ export class RecognitionService {
       const imageTensor = this.createImageTensor(
         processor,
         resizedWidth,
-        targetHeight
+        targetHeight,
       );
 
       return {
@@ -332,7 +332,7 @@ export class RecognitionService {
   private createImageTensor(
     processor: ImageProcessor,
     width: number,
-    height: number
+    height: number,
   ): Float32Array {
     const canvas = processor.toCanvas();
     const ctx = canvas.getContext("2d");
@@ -372,8 +372,8 @@ export class RecognitionService {
     if (!outputTensor) {
       throw new Error(
         `Recognition output tensor '${outputNodeName}' not found. Available keys: ${Object.keys(
-          results
-        )}`
+          results,
+        )}`,
       );
     }
 
@@ -385,7 +385,7 @@ export class RecognitionService {
    */
   private decodeResults(
     outputTensor: ort.Tensor,
-    charactersDictionary?: string[]
+    charactersDictionary?: string[],
   ): {
     text: string;
     confidence: number;
@@ -400,7 +400,7 @@ export class RecognitionService {
 
     if (numClasses !== dict.length) {
       console.warn(
-        `Warning: Model output classes (${numClasses}) does not match dictionary length (${dict.length})`
+        `Warning: Model output classes (${numClasses}) does not match dictionary length (${dict.length})`,
       );
     }
 
@@ -414,7 +414,7 @@ export class RecognitionService {
     logits: Float32Array,
     sequenceLength: number,
     numClasses: number,
-    charDict: string[]
+    charDict: string[],
   ): { text: string; confidence: number } {
     let decodedText = "";
     let lastCharIndex = -1;
@@ -439,7 +439,7 @@ export class RecognitionService {
         });
       } else {
         console.warn(
-          `Decoded index ${predictedClassIndex} out of bounds for charDict (length ${charDict.length}) at t=${t}`
+          `Decoded index ${predictedClassIndex} out of bounds for charDict (length ${charDict.length}) at t=${t}`,
         );
       }
 
@@ -460,7 +460,7 @@ export class RecognitionService {
   private appendCharacterToText(
     index: number,
     charDict: string[],
-    appendFn: (char: string) => void
+    appendFn: (char: string) => void,
   ): void {
     const char = charDict[index];
 
@@ -483,7 +483,7 @@ export class RecognitionService {
   private findMaxProbabilityClass(
     logits: Float32Array,
     timestep: number,
-    numClasses: number
+    numClasses: number,
   ): { value: number; index: number } {
     let maxProb = -Infinity;
     let maxIndex = 0;

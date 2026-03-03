@@ -39,7 +39,7 @@ for (const path of new Bun.Glob("**/*.ts").scanSync(SOURCEDIR)) {
 
       Bun.write(
         `${outPathNoExt}.d.ts`,
-        transpileDeclaration(buf, tsconfig as any).outputText
+        transpileDeclaration(buf, tsconfig as any).outputText,
       );
     });
 }
