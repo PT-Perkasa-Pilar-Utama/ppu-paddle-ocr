@@ -347,6 +347,9 @@ This project uses Bun for testing. To run the tests locally, execute:
 
 ```bash
 bun test
+bun build:test
+bun lint
+bun lint:fix
 ```
 
 Ensure that all tests pass before submitting your pull request.
