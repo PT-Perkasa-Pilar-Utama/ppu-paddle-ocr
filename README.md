@@ -311,36 +311,84 @@ Run `bun task bench`. Current result:
 > bun task bench
 $ bun scripts/task.ts bench
 Running benchmark: index.bench.ts
-clk: ~3.07 GHz
+clk: ~3.09 GHz
 cpu: Apple M1
-runtime: bun 1.3.0 (arm64-darwin)
+runtime: bun 1.3.7 (arm64-darwin)
 
 benchmark                   avg (min … max) p75 / p99    (min … top 1%)
 ------------------------------------------- -------------------------------
-infer test 1                 ~2.79 µs/iter   2.63 µs   █
-                      (2.38 µs … 526.92 µs)   6.08 µs  █
-                    (  0.00  b … 928.00 kb) 144.47  b ▄█▅▁▂▁▁▁▁▂▁▁▁▁▁▁▁▁▁▁▁
-
-infer test 2                 ~2.59 µs/iter   2.65 µs   █
-                        (2.47 µs … 2.87 µs)   2.82 µs  █▅▂▂█  █ ▂
-                    (  0.00  b … 1.18 kb)  85.15  b ▆▃█████▆█▆██▆▆▆█▃▁▁▁▃
-
-summary
-  infer test 2
-   1.08x faster than infer test 1
+cached infer                   2.80 µs/iter   2.67 µs   █
+                       (2.29 µs … 95.46 µs)   5.29 µs   █
+                    (  0.00  b … 576.00 kb)   0.99 kb ▂▃██▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
 
 ------------------------------------------- -------------------------------
-infer deskew test 1          ~13.42 ms/iter  14.08 ms  █  ▃▃██ █
-                      (11.53 ms … 16.43 ms)  16.25 ms  █  ████▂█▂▂  ▂▂▂▂
-                    (  0.00  b … 2.58 mb) 805.57 kb ██▅▅▇█▇█▃▅▅▃▁▅▇▃▃▁▃▁▃
+no cache infer               217.79 ms/iter 218.83 ms          █    █
+                    (212.03 ms … 227.12 ms) 221.41 ms ▅    ▅  ▅█▅▅  █▅    ▅
+                    ( 16.00 kb …  17.02 mb)   6.20 mb █▁▁▁▁█▁▁████▁▁██▁▁▁▁█
 
-infer deskew test 2          ~13.46 ms/iter  14.05 ms        █
-                      (11.48 ms … 16.55 ms)  15.65 ms ▇█▇   ▂█ ▂▇
-                    (  0.00  b … 1.06 mb)  79.36 kb ████▃▁██▁██▃▁▁▃▃▆▁▃▁▃
-
-summary
-  infer deskew test 2
-   1.01x faster than infer deskew test 1
+------------------------------------------- -------------------------------
+deskew img                    12.36 ms/iter  12.66 ms  █   ██
+                      (11.27 ms … 15.46 ms)  14.94 ms  ██  ██ █
+                    (  0.00  b …   1.45 mb) 362.95 kb ▆██▄▄██▄█▄▄▁▄▆▁▁▄▁▄▁▄
 ```
 
-> **Performance Note:** The benchmark shows ~2.7µs per iteration with caching enabled. Without caching, performance is approximately 269ms/iter.
+## Contributing
+
+Contributions are welcome! If you would like to contribute, please follow these steps:
+
+1. **Fork the Repository:** Create your own fork of the project.
+2. **Create a Feature Branch:** Use a descriptive branch name for your changes.
+3. **Implement Changes:** Make your modifications, add tests, and ensure everything passes.
+4. **Submit a Pull Request:** Open a pull request to discuss your changes and get feedback.
+
+### Running Tests
+
+This project uses Bun for testing. To run the tests locally, execute:
+
+```bash
+bun test
+```
+
+Ensure that all tests pass before submitting your pull request.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Support
+
+If you encounter any issues or have suggestions, please open an issue in the repository.
+
+Happy coding!
+
+## Scripts
+
+Recommended development environment is in linux-based environment. Library template: https://github.com/aquapi/lib-template
+
+All script sources and usage.
+
+### [Build](./scripts/build.ts)
+
+Emit `.js` and `.d.ts` files to [`lib`](./lib).
+
+### [Publish](./scripts/publish.ts)
+
+Move [`package.json`](./package.json), [`README.md`](./README.md) to [`lib`](./lib) and publish the package.
+
+### [Bench](./scripts/bench.ts)
+
+Run files that ends with `.bench.ts` extension.
+
+To run a specific file.
+
+```bash
+bun task bench index # Run bench/index.bench.ts
+```
+
+To run the benchmark in `node`, add a `--node` parameter
+
+```bash
+bun task bench --node
+
+bun task bench --node index # Run bench/index.bench.ts with node
+```
