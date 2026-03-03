@@ -78,7 +78,7 @@ export class PaddleOcrService {
 
     console.log(
       `[PaddleOcrService] Downloading resource: ${fileName}\n` +
-        `                 Cached at: ${CACHE_DIR}`
+        `                 Cached at: ${CACHE_DIR}`,
     );
     this.log(`Fetching resource from URL: ${url}`);
 
@@ -133,7 +133,7 @@ export class PaddleOcrService {
    */
   private async _loadResource(
     source: string | ArrayBuffer | undefined,
-    defaultUrl: string
+    defaultUrl: string,
   ): Promise<ArrayBuffer> {
     if (source instanceof ArrayBuffer) {
       this.log("Loading resource from ArrayBuffer");
@@ -149,7 +149,7 @@ export class PaddleOcrService {
         const buf = readFileSync(resolvedPath);
         return buf.buffer.slice(
           buf.byteOffset,
-          buf.byteOffset + buf.byteLength
+          buf.byteOffset + buf.byteLength,
         );
       }
     }
@@ -168,62 +168,62 @@ export class PaddleOcrService {
       // Load detection model
       const detModelBuffer = await this._loadResource(
         this.options.model?.detection,
-        `${GITHUB_BASE_URL}paddleocr-detection.onnx`
+        `${GITHUB_BASE_URL}paddleocr-detection.onnx`,
       );
 
       // Use configured session options
       this.detectionSession = await ort.InferenceSession.create(
         new Uint8Array(detModelBuffer),
-        this.options.session!
+        this.options.session!,
       );
       this.options.model!.detection = detModelBuffer;
       this.log(
-        `Detection ONNX model loaded successfully\n\tinput: ${this.detectionSession.inputNames}\n\toutput: ${this.detectionSession.outputNames}`
+        `Detection ONNX model loaded successfully\n\tinput: ${this.detectionSession.inputNames}\n\toutput: ${this.detectionSession.outputNames}`,
       );
 
       // Load recognition model
       const recModelBuffer = await this._loadResource(
         this.options.model?.recognition,
-        `${GITHUB_BASE_URL}paddleocr-recognition.onnx`
+        `${GITHUB_BASE_URL}paddleocr-recognition.onnx`,
       );
       this.recognitionSession = await ort.InferenceSession.create(
         new Uint8Array(recModelBuffer),
-        this.options.session!
+        this.options.session!,
       );
       this.options.model!.recognition = recModelBuffer;
       this.log(
-        `Recognition ONNX model loaded successfully\n\tinput: ${this.recognitionSession.inputNames}\n\toutput: ${this.recognitionSession.outputNames}`
+        `Recognition ONNX model loaded successfully\n\tinput: ${this.recognitionSession.inputNames}\n\toutput: ${this.recognitionSession.outputNames}`,
       );
 
       // Load character dictionary
       const dictBuffer = await this._loadResource(
         this.options.model?.charactersDictionary,
-        `${GITHUB_BASE_URL}ppocrv5_en_dict.txt`
+        `${GITHUB_BASE_URL}ppocrv5_en_dict.txt`,
       );
       const dictionaryContent = Buffer.from(dictBuffer).toString("utf-8");
       const charactersDictionary = dictionaryContent.split("\n");
 
       if (charactersDictionary.length === 0) {
         throw new Error(
-          "Character dictionary is empty or could not be loaded."
+          "Character dictionary is empty or could not be loaded.",
         );
       }
 
       this.options.model!.charactersDictionary = dictBuffer;
       this.options.recognition!.charactersDictionary = charactersDictionary;
       this.log(
-        `Character dictionary loaded with ${charactersDictionary.length} entries.`
+        `Character dictionary loaded with ${charactersDictionary.length} entries.`,
       );
 
       this.detector = new DetectionService(
         this.detectionSession!,
         this.options.detection,
-        this.options.debugging
+        this.options.debugging,
       );
       this.recognitor = new RecognitionService(
         this.recognitionSession!,
         this.options.recognition,
-        this.options.debugging
+        this.options.debugging,
       );
 
       this.options.model!.detection = undefined;
@@ -246,18 +246,18 @@ export class PaddleOcrService {
    * @param model - The new detection model as a path, URL, or ArrayBuffer.
    */
   public async changeDetectionModel(
-    model: ArrayBuffer | string
+    model: ArrayBuffer | string,
   ): Promise<void> {
     this.log("Changing detection model...");
     const modelBuffer = await this._loadResource(
       model,
-      `${GITHUB_BASE_URL}paddleocr-detection.onnx`
+      `${GITHUB_BASE_URL}paddleocr-detection.onnx`,
     );
 
     await this.detectionSession?.release();
     this.detectionSession = await ort.InferenceSession.create(
       new Uint8Array(modelBuffer),
-      this.options.session!
+      this.options.session!,
     );
     this.options.model!.detection = modelBuffer;
     this.log("Detection model changed successfully.");
@@ -268,18 +268,18 @@ export class PaddleOcrService {
    * @param model - The new recognition model as a path, URL, or ArrayBuffer.
    */
   public async changeRecognitionModel(
-    model: ArrayBuffer | string
+    model: ArrayBuffer | string,
   ): Promise<void> {
     this.log("Changing recognition model...");
     const modelBuffer = await this._loadResource(
       model,
-      `${GITHUB_BASE_URL}paddleocr-recognition.onnx`
+      `${GITHUB_BASE_URL}paddleocr-recognition.onnx`,
     );
 
     await this.recognitionSession?.release();
     this.recognitionSession = await ort.InferenceSession.create(
       new Uint8Array(modelBuffer),
-      this.options.session!
+      this.options.session!,
     );
     this.options.model!.recognition = modelBuffer;
     this.log("Recognition model changed successfully.");
@@ -290,12 +290,12 @@ export class PaddleOcrService {
    * @param dictionary - The new dictionary as a path, URL, ArrayBuffer, or string content.
    */
   public async changeTextDictionary(
-    dictionary: ArrayBuffer | string
+    dictionary: ArrayBuffer | string,
   ): Promise<void> {
     this.log("Changing text dictionary...");
     const dictBuffer = await this._loadResource(
       dictionary,
-      `${GITHUB_BASE_URL}ppocrv5_en_dict.txt`
+      `${GITHUB_BASE_URL}ppocrv5_en_dict.txt`,
     );
 
     const dictionaryContent = Buffer.from(dictBuffer).toString("utf-8");
@@ -308,7 +308,7 @@ export class PaddleOcrService {
     this.options.model!.charactersDictionary = dictBuffer;
     this.options.recognition!.charactersDictionary = charactersDictionary;
     this.log(
-      `Character dictionary changed successfully with ${charactersDictionary.length} entries.`
+      `Character dictionary changed successfully with ${charactersDictionary.length} entries.`,
     );
   }
 
@@ -321,7 +321,7 @@ export class PaddleOcrService {
    */
   public recognize(
     image: ArrayBuffer | Canvas,
-    options: RecognizeOptions & { flatten: true }
+    options: RecognizeOptions & { flatten: true },
   ): Promise<FlattenedPaddleOcrResult>;
 
   /**
@@ -333,7 +333,7 @@ export class PaddleOcrService {
    */
   public recognize(
     image: ArrayBuffer | Canvas,
-    options?: RecognizeOptions & { flatten?: false }
+    options?: RecognizeOptions & { flatten?: false },
   ): Promise<PaddleOcrResult>;
 
   /**
@@ -346,11 +346,11 @@ export class PaddleOcrService {
    */
   public async recognize(
     image: ArrayBuffer | Canvas,
-    options?: RecognizeOptions
+    options?: RecognizeOptions,
   ): Promise<PaddleOcrResult | FlattenedPaddleOcrResult> {
     if (!this.isInitialized()) {
       throw new Error(
-        "PaddleOcrService is not initialized. Call initialize() first."
+        "PaddleOcrService is not initialized. Call initialize() first.",
       );
     }
     await ImageProcessor.initRuntime();
@@ -363,16 +363,16 @@ export class PaddleOcrService {
         const buffer = image.toBuffer("image/png");
         imageBuffer = buffer.buffer.slice(
           buffer.byteOffset,
-          buffer.byteOffset + buffer.byteLength
-        );
+          buffer.byteOffset + buffer.byteLength,
+        ) as ArrayBuffer;
       } else {
         const ctx = image.getContext("2d");
         const imageData = ctx.getImageData(0, 0, image.width, image.height);
         const data = imageData.data;
         imageBuffer = data.buffer.slice(
           data.byteOffset,
-          data.byteOffset + data.byteLength
-        );
+          data.byteOffset + data.byteLength,
+        ) as ArrayBuffer;
       }
     }
 
@@ -405,7 +405,7 @@ export class PaddleOcrService {
 
       if (charactersDictionary.length === 0) {
         throw new Error(
-          "Custom character dictionary is empty or could not be loaded."
+          "Custom character dictionary is empty or could not be loaded.",
         );
       }
     }
@@ -414,7 +414,7 @@ export class PaddleOcrService {
     const recognition = await this.recognitor!.run(
       image,
       detection,
-      charactersDictionary
+      charactersDictionary,
     );
 
     const processed = this.processRecognition(recognition);
@@ -439,7 +439,7 @@ export class PaddleOcrService {
    * Flattens recognition results from lines to a single array
    */
   private getFlattenedResults(
-    lines: RecognitionResult[][]
+    lines: RecognitionResult[][],
   ): RecognitionResult[] {
     return lines.flat();
   }
@@ -449,7 +449,7 @@ export class PaddleOcrService {
    * grouped lines, and overall confidence.
    */
   private processRecognition(
-    recognition: RecognitionResult[]
+    recognition: RecognitionResult[],
   ): PaddleOcrResult {
     const result: PaddleOcrResult = {
       text: "",
@@ -464,7 +464,7 @@ export class PaddleOcrService {
     // Calculate overall confidence as the average of all individual confidences
     const totalConfidence = recognition.reduce(
       (sum, r) => sum + r.confidence,
-      0
+      0,
     );
     result.confidence = totalConfidence / recognition.length;
 
@@ -513,7 +513,7 @@ export class PaddleOcrService {
   public async deskewImage(image: ArrayBuffer | Canvas): Promise<Canvas> {
     if (!this.isInitialized()) {
       throw new Error(
-        "PaddleOcrService is not initialized. Call initialize() first."
+        "PaddleOcrService is not initialized. Call initialize() first.",
       );
     }
     await ImageProcessor.initRuntime();

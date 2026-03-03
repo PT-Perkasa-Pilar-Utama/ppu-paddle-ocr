@@ -1,8 +1,15 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from "bun:test";
 import { ImageProcessor } from "ppu-ocv";
 
-import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 import { globalImageCache } from "../src/processor/image-cache.js";
+import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 
 type Detection = {
   x: number;
@@ -233,7 +240,7 @@ describe("PaddleOcrService canvas compatibility", () => {
     const service = new PaddleOcrService();
 
     await expect(
-      service.recognize(new ArrayBuffer(4), { noCache: true })
+      service.recognize(new ArrayBuffer(4), { noCache: true }),
     ).rejects.toThrow("PaddleOcrService is not initialized");
   });
 });

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 import { ImageProcessor } from "ppu-ocv";
+import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 
 import dict from "../models/en_dict.txt" with { type: "file" };
 import recModel from "../models/en_PP-OCRv4_mobile_rec_infer.onnx" with { type: "file" };
