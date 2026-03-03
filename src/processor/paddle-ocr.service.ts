@@ -40,6 +40,8 @@ export class PaddleOcrService {
 
   private detectionSession: ort.InferenceSession | null = null;
   private recognitionSession: ort.InferenceSession | null = null;
+  private detector: DetectionService | null = null;
+  private recognitor: RecognitionService | null = null;
 
   /**
    * Creates an instance of PaddleOcrService.
@@ -212,6 +214,20 @@ export class PaddleOcrService {
       this.log(
         `Character dictionary loaded with ${charactersDictionary.length} entries.`
       );
+
+      this.detector = new DetectionService(
+        this.detectionSession!,
+        this.options.detection,
+        this.options.debugging
+      );
+      this.recognitor = new RecognitionService(
+        this.recognitionSession!,
+        this.options.recognition,
+        this.options.debugging
+      );
+
+      this.options.model!.detection = undefined;
+      this.options.model!.recognition = undefined;
     } catch (error) {
       console.error("Failed to initialize PaddleOcrService:", error);
       throw error;
@@ -345,28 +361,17 @@ export class PaddleOcrService {
     } else {
       if (typeof image.toBuffer === "function") {
         const buffer = image.toBuffer("image/png");
-        const arrayBuffer = new ArrayBuffer(buffer.byteLength);
-        new Uint8Array(arrayBuffer).set(new Uint8Array(buffer));
-        imageBuffer = arrayBuffer;
-      } else if (typeof image.toDataURL === "function") {
-        const dataURL = image.toDataURL("image/png");
-        const base64Data = dataURL.replace(/^data:image\/png;base64,/, "");
-
-        const buffer = Buffer.from(base64Data, "base64");
-
-        const arrayBuffer = new ArrayBuffer(buffer.byteLength);
-        new Uint8Array(arrayBuffer).set(new Uint8Array(buffer));
-        imageBuffer = arrayBuffer;
+        imageBuffer = buffer.buffer.slice(
+          buffer.byteOffset,
+          buffer.byteOffset + buffer.byteLength
+        );
       } else {
         const ctx = image.getContext("2d");
         const imageData = ctx.getImageData(0, 0, image.width, image.height);
-        imageBuffer = new ArrayBuffer(imageData.data.byteLength);
-        new Uint8Array(imageBuffer).set(
-          new Uint8Array(
-            imageData.data.buffer,
-            imageData.data.byteOffset,
-            imageData.data.byteLength
-          )
+        const data = imageData.data;
+        imageBuffer = data.buffer.slice(
+          data.byteOffset,
+          data.byteOffset + data.byteLength
         );
       }
     }
@@ -392,17 +397,6 @@ export class PaddleOcrService {
       return cacheResult;
     }
 
-    const detector = new DetectionService(
-      this.detectionSession!,
-      this.options.detection,
-      this.options.debugging
-    );
-    const recognitor = new RecognitionService(
-      this.recognitionSession!,
-      this.options.recognition,
-      this.options.debugging
-    );
-
     let charactersDictionary: string[] | undefined;
     if (options?.dictionary) {
       const dictBuffer = await this._loadResource(options.dictionary, "");
@@ -416,8 +410,8 @@ export class PaddleOcrService {
       }
     }
 
-    const detection = await detector.run(image);
-    const recognition = await recognitor.run(
+    const detection = await this.detector!.run(image);
+    const recognition = await this.recognitor!.run(
       image,
       detection,
       charactersDictionary
@@ -524,13 +518,7 @@ export class PaddleOcrService {
     }
     await ImageProcessor.initRuntime();
 
-    const detector = new DetectionService(
-      this.detectionSession!,
-      this.options.detection,
-      this.options.debugging
-    );
-
-    const detection = await detector.deskew(image);
+    const detection = await this.detector!.deskew(image);
     return detection;
   }
 
@@ -557,6 +545,8 @@ export class PaddleOcrService {
     await this.recognitionSession?.release();
     this.detectionSession = null;
     this.recognitionSession = null;
+    this.detector = null;
+    this.recognitor = null;
   }
 }
 

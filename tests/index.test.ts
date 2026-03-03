@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
+import { ImageProcessor } from "ppu-ocv";
 
 import dict from "../models/en_dict.txt" with { type: "file" };
 import recModel from "../models/en_PP-OCRv4_mobile_rec_infer.onnx" with { type: "file" };
@@ -157,5 +158,68 @@ describe("PaddleOcrService.recognize()", () => {
 
     const groupedItemCount = groupedResult.lines.flat().length;
     expect(flattenedResult.results.length).toBe(groupedItemCount);
+  });
+
+  test("should recognize from Canvas input (no base64 roundtrip)", async () => {
+    await ImageProcessor.initRuntime();
+    const canvas = await ImageProcessor.prepareCanvas(imageBuffer);
+    const result = await service.recognize(canvas, { noCache: true });
+
+    expect(result.text).not.toBeEmpty();
+    expect(result.confidence).toBeGreaterThan(0.8);
+    expect(result.lines.length).toBeGreaterThan(0);
+  });
+
+  test("should reuse internal services across multiple calls", async () => {
+    const result1 = await service.recognize(imageBuffer, { noCache: true });
+    const result2 = await service.recognize(imageBuffer, { noCache: true });
+
+    expect(result1.text).toBe(result2.text);
+    expect(result1.confidence).toBe(result2.confidence);
+    expect(result1.lines.length).toBe(result2.lines.length);
+  });
+
+  test("should release model buffers after initialization", async () => {
+    const freshService = new PaddleOcrService({
+      model: {
+        detection: detModel,
+        recognition: recModel,
+        charactersDictionary: dict,
+      },
+    });
+    await freshService.initialize();
+
+    const result = await freshService.recognize(imageBuffer);
+    expect(result.text).not.toBeEmpty();
+    expect(result.confidence).toBeGreaterThan(0.8);
+
+    await freshService.destroy();
+  });
+});
+
+describe("ImageProcessor try/finally safety", () => {
+  let service: PaddleOcrService;
+
+  beforeEach(async () => {
+    service = new PaddleOcrService({
+      model: {
+        detection: detModel,
+        recognition: recModel,
+        charactersDictionary: dict,
+      },
+    });
+    await service.initialize();
+  });
+
+  afterEach(async () => {
+    await service.destroy();
+  });
+
+  test("should handle multiple sequential recognitions without leaks", async () => {
+    for (let i = 0; i < 3; i++) {
+      const result = await service.recognize(imageBuffer, { noCache: true });
+      expect(result.text).not.toBeEmpty();
+      expect(result.confidence).toBeGreaterThan(0.5);
+    }
   });
 });

@@ -116,21 +116,22 @@ export class RecognitionService {
       this.toolkit.clearOutput(cropsDebugPath);
     }
 
-    const processingTasks = boxData.map(({ box, index }) =>
-      this.processBox(
+    const results: RecognitionResult[] = [];
+    for (const { box, index } of boxData) {
+      const result = await this.processBox(
         sourceCanvas,
         box,
         index,
         boxData.length,
         cropsDebugPath,
         charactersDictionary
-      )
-    );
+      );
+      if (result !== null) {
+        results.push(result);
+      }
+    }
 
-    const results = await Promise.all(processingTasks);
-    return results.filter(
-      (result): result is RecognitionResult => result !== null
-    );
+    return results;
   }
 
   /**
@@ -286,40 +287,43 @@ export class RecognitionService {
     tensorHeight: number;
   }> {
     const processor = new ImageProcessor(cropCanvas);
-    const targetHeight = this.options.imageHeight!;
+    try {
+      const targetHeight = this.options.imageHeight!;
 
-    const originalWidth = processor.width;
-    const originalHeight = processor.height;
+      const originalWidth = processor.width;
+      const originalHeight = processor.height;
 
-    if (originalHeight === 0 || originalWidth === 0) {
-      throw new Error(
-        `Crop dimensions are zero: ${originalWidth}x${originalHeight}`
+      if (originalHeight === 0 || originalWidth === 0) {
+        throw new Error(
+          `Crop dimensions are zero: ${originalWidth}x${originalHeight}`
+        );
+      }
+
+      const aspectRatio = originalWidth / originalHeight;
+      const resizedWidth = Math.max(
+        RecognitionService.MIN_CROP_WIDTH,
+        Math.round(targetHeight * aspectRatio)
       );
+
+      processor.resize({
+        width: resizedWidth,
+        height: targetHeight,
+      });
+
+      const imageTensor = this.createImageTensor(
+        processor,
+        resizedWidth,
+        targetHeight
+      );
+
+      return {
+        imageTensor,
+        tensorWidth: resizedWidth,
+        tensorHeight: targetHeight,
+      };
+    } finally {
+      processor.destroy();
     }
-
-    const aspectRatio = originalWidth / originalHeight;
-    const resizedWidth = Math.max(
-      RecognitionService.MIN_CROP_WIDTH,
-      Math.round(targetHeight * aspectRatio)
-    );
-
-    processor.resize({
-      width: resizedWidth,
-      height: targetHeight,
-    });
-
-    const imageTensor = this.createImageTensor(
-      processor,
-      resizedWidth,
-      targetHeight
-    );
-    processor.destroy();
-
-    return {
-      imageTensor,
-      tensorWidth: resizedWidth,
-      tensorHeight: targetHeight,
-    };
   }
 
   /**

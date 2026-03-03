@@ -35,6 +35,7 @@ export class DetectionService {
   private readonly session: ort.InferenceSession;
 
   private static readonly NUM_CHANNELS = 3;
+  private lastDetectionCanvas: Canvas | null = null;
 
   constructor(
     session: ort.InferenceSession,
@@ -91,10 +92,12 @@ export class DetectionService {
         );
 
         const processor = new ImageProcessor(canvasToProcess);
-        const rotatedCanvas = processor.rotate({ angle }).toCanvas();
-        processor.destroy();
-
-        canvasToProcess = rotatedCanvas;
+        try {
+          const rotatedCanvas = processor.rotate({ angle }).toCanvas();
+          canvasToProcess = rotatedCanvas;
+        } finally {
+          processor.destroy();
+        }
 
         if (this.debugging.debug) {
           await CanvasToolkit.getInstance().saveImage({
@@ -120,7 +123,11 @@ export class DetectionService {
       const detectedBoxes = this.postprocessDetection(detection, input);
 
       if (this.debugging.debug) {
-        await this.debugDetectionCanvas(detection, input.width, input.height);
+        await this.debugDetectionCanvas(
+          this.lastDetectionCanvas!,
+          input.width,
+          input.height
+        );
         await this.debugDetectedBoxes(canvasToProcess, detectedBoxes);
       }
 
@@ -160,18 +167,22 @@ export class DetectionService {
     );
 
     const processor = new ImageProcessor(canvasToProcess);
-    const rotatedCanvas = processor.rotate({ angle }).toCanvas();
-    processor.destroy();
+    try {
+      const rotatedCanvas = processor.rotate({ angle }).toCanvas();
+      canvasToProcess = rotatedCanvas;
+    } finally {
+      processor.destroy();
+    }
 
     if (this.debugging.debug) {
       await CanvasToolkit.getInstance().saveImage({
-        canvas: rotatedCanvas,
+        canvas: canvasToProcess,
         filename: "deskewed-image-debug",
         path: this.debugging.debugFolder!,
       });
     }
 
-    return rotatedCanvas;
+    return canvasToProcess;
   }
 
   /**
@@ -225,10 +236,14 @@ export class DetectionService {
     } = this.calculateResizeDimensions(originalWidth, originalHeight);
 
     const processor = new ImageProcessor(canvas);
-    const resizedCanvas = processor
-      .resize({ width: resizeW, height: resizeH })
-      .toCanvas();
-    processor.destroy();
+    let resizedCanvas: Canvas;
+    try {
+      resizedCanvas = processor
+        .resize({ width: resizeW, height: resizeH })
+        .toCanvas();
+    } finally {
+      processor.destroy();
+    }
 
     const width = Math.ceil(resizeW / 32) * 32;
     const height = Math.ceil(resizeH / 32) * 32;
@@ -417,32 +432,36 @@ export class DetectionService {
 
     const { width, height, resizeRatio, originalWidth, originalHeight } = input;
     const canvas = this.tensorToCanvas(detection, width, height);
+    this.lastDetectionCanvas = canvas;
 
     const processor = new ImageProcessor(canvas);
-    processor.grayscale().convert({ rtype: cv.CV_8UC1 });
+    try {
+      processor.grayscale().convert({ rtype: cv.CV_8UC1 });
 
-    const contours = new Contours(processor.toMat(), {
-      mode: cv.RETR_LIST,
-      method: cv.CHAIN_APPROX_SIMPLE,
-    });
+      const contours = new Contours(processor.toMat(), {
+        mode: cv.RETR_LIST,
+        method: cv.CHAIN_APPROX_SIMPLE,
+      });
 
-    const boxes = this.extractBoxesFromContours(
-      contours,
-      width,
-      height,
-      resizeRatio,
-      originalWidth,
-      originalHeight,
-      minBoxAreaOnPadded,
-      paddingVertical,
-      paddingHorizontal
-    );
+      const boxes = this.extractBoxesFromContours(
+        contours,
+        width,
+        height,
+        resizeRatio,
+        originalWidth,
+        originalHeight,
+        minBoxAreaOnPadded,
+        paddingVertical,
+        paddingHorizontal
+      );
 
-    processor.destroy();
-    contours.destroy();
+      contours.destroy();
 
-    this.log(`Found ${boxes.length} potential text boxes`);
-    return boxes;
+      this.log(`Found ${boxes.length} potential text boxes`);
+      return boxes;
+    } finally {
+      processor.destroy();
+    }
   }
 
   /**
@@ -552,12 +571,10 @@ export class DetectionService {
    * Debug the detection canvas in binary image format (thresholded)
    */
   private async debugDetectionCanvas(
-    detection: Float32Array,
+    canvas: Canvas,
     width: number,
     height: number
   ): Promise<void> {
-    const canvas = this.tensorToCanvas(detection, width, height);
-
     const dir = this.debugging.debugFolder!;
     await CanvasToolkit.getInstance().saveImage({
       canvas,
