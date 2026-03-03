@@ -12,19 +12,18 @@ const fileBuffer = await imgFile.arrayBuffer();
 const deskewBuffer = await deskewFile.arrayBuffer();
 
 summary(() => {
-  bench("infer test 1", async () => await service.recognize(fileBuffer));
-  bench("infer test 2", async () => await service.recognize(fileBuffer));
+  bench("cached infer", async () => await service.recognize(fileBuffer));
 });
 
 summary(() => {
   bench(
-    "infer deskew test 1",
-    async () => await service.deskewImage(deskewBuffer)
+    "no cache infer",
+    async () => await service.recognize(fileBuffer, { noCache: true }),
   );
-  bench(
-    "infer deskew test 2",
-    async () => await service.deskewImage(deskewBuffer)
-  );
+});
+
+summary(() => {
+  bench("deskew img", async () => await service.deskewImage(deskewBuffer));
 });
 
 run().then((_) => {
