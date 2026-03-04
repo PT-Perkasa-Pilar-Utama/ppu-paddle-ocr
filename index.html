@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive demo of ppu-paddle-ocr — a lightweight PaddleOCR implementation for the browser." />
+  <title>ppu-paddle-ocr — Interactive Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-card: #1a1a26;
+      --bg-card-hover: #22222e;
+      --border: #2a2a3a;
+      --border-active: #6366f1;
+      --text-primary: #e8e8f0;
+      --text-secondary: #9898b0;
+      --text-muted: #68688a;
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --accent-secondary: #818cf8;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --error: #f87171;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --radius-xs: 6px;
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+      --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      --sidebar-w: 280px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* --- Top Bar --- */
+    .topbar {
+      background: linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, transparent 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+      background-color: rgba(10, 10, 15, 0.85);
+    }
+
+    .topbar-brand {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 1rem; font-weight: 700; letter-spacing: -0.02em;
+      color: var(--text-primary); margin-right: auto;
+    }
+
+    .topbar-brand svg { width: 18px; height: 18px; color: var(--accent-secondary); }
+
+    .topbar-badge {
+      font-size: 0.65rem; font-weight: 500;
+      padding: 0.2rem 0.55rem;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 100px;
+      color: var(--accent-secondary);
+    }
+
+    .topbar-links {
+      display: flex; align-items: center; gap: 0.75rem; margin-left: 0.5rem;
+    }
+    .topbar-links a {
+      color: var(--text-secondary); transition: color var(--transition);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .topbar-links a:hover { color: var(--text-primary); }
+    .topbar-links svg { width: 18px; height: 18px; }
+
+    .status-indicator {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.75rem; color: var(--text-secondary);
+    }
+
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+    .status-dot.ready { background: var(--success); box-shadow: 0 0 8px rgba(52, 211, 153, 0.4); }
+    .status-dot.loading { background: var(--warning); animation: pulse 1.2s ease-in-out infinite; }
+    .status-dot.error { background: var(--error); }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* Upload row */
+    .upload-row {
+      display: flex; align-items: center; gap: 0.75rem;
+    }
+
+    .btn-upload {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.5rem 1rem; border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card); color: var(--text-primary);
+      font-family: inherit; font-size: 0.8rem; font-weight: 500;
+      cursor: pointer; transition: all var(--transition);
+    }
+    .btn-upload:hover { border-color: var(--accent); background: var(--bg-card-hover); }
+    .btn-upload svg { width: 15px; height: 15px; }
+
+    .btn-process {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.5rem 1.2rem; border: none; border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, var(--accent) 0%, #4f46e5 100%);
+      color: white; font-family: inherit; font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; transition: all var(--transition);
+    }
+    .btn-process:hover { transform: translateY(-1px); box-shadow: 0 4px 20px var(--accent-glow); }
+    .btn-process:active { transform: translateY(0); }
+    .btn-process:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .file-name {
+      font-size: 0.75rem; color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      max-width: 200px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    #file-input { display: none; }
+
+    /* --- Main Layout --- */
+    .app {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      height: calc(100vh - 57px); /* minus topbar */
+    }
+
+    @media (max-width: 800px) {
+      .app { grid-template-columns: 1fr; height: auto; }
+      .sidebar { max-height: 40vh; }
+    }
+
+    /* --- Sidebar --- */
+    .sidebar {
+      border-right: 1px solid var(--border);
+      background: var(--bg-secondary);
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .section-title {
+      font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-muted);
+      margin-bottom: 0.6rem; padding: 0 0.25rem;
+    }
+
+    /* Input Fields */
+    .input-group { margin-bottom: 0.8rem; }
+    .input-label { display: block; font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.3rem; margin-left: 0.2rem; }
+    .input-field {
+      width: 100%; padding: 0.5rem 0.6rem;
+      background: var(--bg-primary); border: 1px solid var(--border);
+      border-radius: var(--radius-xs); color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+      transition: border-color var(--transition);
+    }
+    .input-field:focus { outline: none; border-color: var(--accent); }
+    
+    .checkbox-label {
+      display: flex; align-items: center; font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.8rem; margin-left: 0.2rem; cursor: pointer;
+    }
+    .input-checkbox { margin-right: 0.4rem; }
+
+    .btn-apply {
+      width: 100%; padding: 0.55rem; border: none; border-radius: var(--radius-xs);
+      background: rgba(99, 102, 241, 0.15); color: var(--accent-secondary);
+      font-weight: 600; font-size: 0.75rem; cursor: pointer; transition: all var(--transition);
+      margin-top: 0.5rem;
+    }
+    .btn-apply:hover { background: rgba(99, 102, 241, 0.25); }
+
+    .section-title {
+      font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-muted);
+      margin-bottom: 0.6rem; padding: 0 0.25rem;
+    }
+
+    .info-box {
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+
+    .info-box code {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent-secondary);
+      background: rgba(0,0,0,0.2);
+      padding: 0.1rem 0.3rem;
+      border-radius: 4px;
+    }
+
+    /* Results List */
+    .results-list {
+      display: flex; flex-direction: column; gap: 0.35rem; list-style: none;
+    }
+    .result-item {
+      display: flex; flex-direction: column; gap: 0.25rem;
+      padding: 0.5rem; background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: var(--radius-xs);
+    }
+    .result-text { font-size: 0.8rem; font-weight: 500; color: var(--text-primary); word-break: break-all; }
+    .result-conf { font-size: 0.68rem; color: var(--success); font-family: 'JetBrains Mono', monospace; }
+
+    /* --- Content Area --- */
+    .content {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      overflow: hidden;
+    }
+    
+    @media (max-width: 1024px) {
+      .content { grid-template-columns: 1fr; grid-template-rows: 50vh 50vh; overflow-y: auto; }
+    }
+
+    /* Canvas area */
+    .canvas-area {
+      flex: 1; display: flex;
+      background: var(--border);
+      min-height: 0;
+    }
+
+    .canvas-panel {
+      position: relative; background: var(--bg-primary);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; min-height: 250px;
+      flex: 1;
+    }
+
+    .canvas-container {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .canvas-panel canvas {
+      position: absolute;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .overlay-canvas {
+      pointer-events: none;
+    }
+
+    .canvas-label {
+      position: absolute; top: 0.6rem; left: 0.6rem;
+      padding: 0.2rem 0.6rem; background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(8px); border-radius: 100px;
+      font-size: 0.65rem; font-weight: 500; color: var(--text-secondary); z-index: 2;
+    }
+
+    .placeholder {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 0.5rem; text-align: center; color: var(--text-muted);
+      position: absolute; z-index: 10;
+    }
+    .placeholder svg { width: 36px; height: 36px; opacity: 0.25; }
+    .placeholder p { font-size: 0.78rem; }
+
+    .timing-badge {
+      position: absolute; bottom: 0.6rem; right: 0.6rem;
+      padding: 0.2rem 0.6rem; background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(8px); border-radius: 100px;
+      font-size: 0.65rem; font-family: 'JetBrains Mono', monospace;
+      color: var(--success); z-index: 2; display: none;
+    }
+
+    /* Results Details Panel (Right side) */
+    .results-details {
+      border-left: 1px solid var(--border);
+      background: var(--bg-secondary);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .results-tabs {
+      display: flex; border-bottom: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+    .tab-btn {
+      flex: 1; padding: 0.75rem; border: none; background: transparent;
+      color: var(--text-muted); font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; border-bottom: 2px solid transparent; transition: all var(--transition);
+    }
+    .tab-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.02); }
+    .tab-btn.active { color: var(--accent-secondary); border-bottom-color: var(--accent); }
+    
+    .tab-content {
+      display: none; flex: 1; overflow-y: auto; padding: 1rem;
+    }
+    .tab-content.active { display: block; }
+    
+    .json-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;
+    }
+    .btn-copy {
+      display: flex; align-items: center; gap: 0.35rem;
+      padding: 0.3rem 0.7rem; border: 1px solid var(--border);
+      border-radius: var(--radius-xs); background: var(--bg-card);
+      color: var(--text-secondary); font-family: inherit;
+      font-size: 0.7rem; font-weight: 500; cursor: pointer;
+      transition: all var(--transition);
+    }
+    .btn-copy:hover { border-color: var(--accent); color: var(--text-primary); }
+    .btn-copy.copied { border-color: var(--success); color: var(--success); }
+    .btn-copy svg { width: 13px; height: 13px; }
+
+    #json-result {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #a6accd;
+      background: transparent; margin: 0; white-space: pre-wrap; word-wrap: break-word;
+    }
+
+    /* Dropzone overlay */
+    .dropzone-overlay {
+      position: fixed; inset: 0; z-index: 999;
+      background: rgba(99, 102, 241, 0.08);
+      border: 3px dashed var(--accent);
+      display: none; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .dropzone-overlay.visible { display: flex; }
+    .dropzone-overlay-text {
+      padding: 1rem 2rem; background: var(--bg-card);
+      border-radius: var(--radius); font-size: 1rem;
+      font-weight: 600; color: var(--accent-secondary);
+      box-shadow: var(--shadow);
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+  </style>
+</head>
+<body>
+
+  <!-- Full-page drop overlay -->
+  <div class="dropzone-overlay" id="drop-overlay">
+    <div class="dropzone-overlay-text">📷 Drop image to recognize</div>
+  </div>
+
+  <!-- Top Bar -->
+  <nav class="topbar">
+    <div class="topbar-brand">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+      ppu-paddle-ocr
+      <span class="topbar-badge">Web</span>
+      <div class="topbar-links">
+        <a href="https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr" target="_blank" rel="noopener noreferrer" title="GitHub">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+        </a>
+        <a href="https://www.npmjs.com/package/ppu-paddle-ocr" target="_blank" rel="noopener noreferrer" title="npm">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M0 7.334v8h6.666v1.332H12v-1.332h12v-8H0zm6.666 6.664H3.334v-4h3.332v4zm4 1.336H8V8.668h2.666v6.666zm10.666-1.336H14.666v-4h2.666v4h1.334v-4h2.666v4z"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="upload-row">
+      <button class="btn-upload" id="btn-upload">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload Image
+      </button>
+      <span class="file-name" id="file-name"></span>
+      <input type="file" id="file-input" accept="image/*" />
+      <button class="btn-process" id="btn-process" disabled>▶ Recognize</button>
+    </div>
+
+    <div class="status-indicator">
+      <div class="status-dot loading" id="status-dot"></div>
+      <span id="status-text">Loading Models…</span>
+    </div>
+  </nav>
+
+  <!-- App Layout -->
+  <div class="app">
+    <!-- Sidebar: Configuration -->
+    <aside class="sidebar">
+      <div>
+          <div class="section-title">Model Paths</div>
+          <div class="input-group">
+            <label class="input-label">Detection Model URL</label>
+            <input type="text" id="cfg-model-det" class="input-field" placeholder="Default GitHub Release" />
+          </div>
+          <div class="input-group">
+            <label class="input-label">Recognition Model URL</label>
+            <input type="text" id="cfg-model-rec" class="input-field" placeholder="Default GitHub Release" />
+          </div>
+          <div class="input-group">
+            <label class="input-label">Dictionary URL</label>
+            <input type="text" id="cfg-model-dict" class="input-field" placeholder="Default GitHub Release" />
+          </div>
+
+          <div class="section-title" style="margin-top:1.5rem;">Detection Options</div>
+          <label class="checkbox-label"><input type="checkbox" id="cfg-det-deskew" class="input-checkbox" checked /> Auto Deskew</label>
+          <div class="input-group">
+            <label class="input-label">Max Side Length</label>
+            <input type="number" id="cfg-det-maxside" class="input-field" placeholder="960" />
+          </div>
+          <div class="input-group">
+            <label class="input-label">Minimum Area Threshold</label>
+            <input type="number" id="cfg-det-minarea" class="input-field" placeholder="20" />
+          </div>
+          <div class="input-group" style="display:flex;gap:0.5rem;">
+            <div style="flex:1;">
+               <label class="input-label">Pad Vert.</label>
+               <input type="number" step="0.1" id="cfg-det-padvert" class="input-field" placeholder="0.4" />
+            </div>
+            <div style="flex:1;">
+               <label class="input-label">Pad Horiz.</label>
+               <input type="number" step="0.1" id="cfg-det-padhoriz" class="input-field" placeholder="0.6" />
+            </div>
+          </div>
+
+          <div class="section-title" style="margin-top:1.5rem;">Recognition Options</div>
+          <div class="input-group">
+             <label class="input-label">Image Height</label>
+             <input type="number" id="cfg-rec-imgheight" class="input-field" placeholder="48" />
+          </div>
+
+          <div class="section-title" style="margin-top:1.5rem;">Debugging Options</div>
+          <label class="checkbox-label"><input type="checkbox" id="cfg-dbg-verbose" class="input-checkbox" /> Verbose Logging (Console)</label>
+          
+          <button class="btn-apply" id="btn-apply-config">Apply Configuration</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="content">
+      <!-- Canvas Results (Left) -->
+      <div class="canvas-area">
+        <div class="canvas-panel" id="result-panel">
+          <div class="canvas-label">Image Input</div>
+          <div class="placeholder" id="result-placeholder">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <p>Upload an image to begin</p>
+          </div>
+          <div class="canvas-container" id="canvas-container" style="display:none;">
+            <canvas id="result-canvas"></canvas>
+            <canvas id="overlay-canvas" class="overlay-canvas"></canvas>
+          </div>
+          <div class="timing-badge" id="timing-badge"></div>
+        </div>
+      </div>
+
+      <!-- Results Panel (Right) -->
+      <div class="results-details">
+        <div class="results-tabs">
+          <button class="tab-btn active" data-tab="list">List</button>
+          <button class="tab-btn" data-tab="json">JSON</button>
+        </div>
+        
+        <div class="tab-content active" id="tab-list">
+          <div class="section-title" id="results-title" style="display: none; padding-left: 0;">Recognition Results</div>
+          <ul class="results-list" id="results-list"></ul>
+        </div>
+        
+        <div class="tab-content" id="tab-json">
+          <div class="json-header">
+            <div class="section-title" style="margin:0;">JSON Output</div>
+            <button class="btn-copy" id="btn-copy-json" style="padding: 0.2rem 0.5rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span id="copy-json-label" style="font-size:0.65rem;">Copy</span>
+            </button>
+          </div>
+          <pre id="json-result">// Inference output will appear here</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "onnxruntime-web": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.24.2/dist/ort.all.bundle.min.mjs",
+        "ppu-ocv/web": "https://cdn.jsdelivr.net/npm/ppu-ocv@2/index.web.js"
+      }
+    }
+  </script>
+  <script type="module">
+    let PaddleOcrService;
+    try {
+      // Try local build first (for development)
+      const local = await import('./lib/web/index.js');
+      PaddleOcrService = local.PaddleOcrService;
+    } catch (e) {
+      // Fallback to npm CDN
+      console.warn("Local build failed to load:", e);
+      console.log("Falling back to CDN...");
+      const cdn = await import('https://cdn.jsdelivr.net/npm/ppu-paddle-ocr@4/web/index.js/+esm');
+      PaddleOcrService = cdn.PaddleOcrService;
+    }
+
+    // -- DOM refs --
+    const btnUpload         = document.getElementById('btn-upload');
+    const fileInput         = document.getElementById('file-input');
+    const fileNameEl        = document.getElementById('file-name');
+    const btnProcess        = document.getElementById('btn-process');
+    const statusDot         = document.getElementById('status-dot');
+    const statusText        = document.getElementById('status-text');
+    const resultCanvas      = document.getElementById('result-canvas');
+    const overlayCanvas     = document.getElementById('overlay-canvas');
+    const canvasContainer   = document.getElementById('canvas-container');
+    const resultPlaceholder = document.getElementById('result-placeholder');
+    const timingBadge       = document.getElementById('timing-badge');
+    const dropOverlay       = document.getElementById('drop-overlay');
+    const resultsList       = document.getElementById('results-list');
+    const resultsTitle      = document.getElementById('results-title');
+    const jsonResult        = document.getElementById('json-result');
+    
+    // Config elements
+    const cfgDetModel       = document.getElementById('cfg-model-det');
+    const cfgRecModel       = document.getElementById('cfg-model-rec');
+    const cfgDict           = document.getElementById('cfg-model-dict');
+    const cfgDetDeskew      = document.getElementById('cfg-det-deskew');
+    const cfgDetMaxSide     = document.getElementById('cfg-det-maxside');
+    const cfgDetMinArea     = document.getElementById('cfg-det-minarea');
+    const cfgDetPadVert     = document.getElementById('cfg-det-padvert');
+    const cfgDetPadHoriz    = document.getElementById('cfg-det-padhoriz');
+    const cfgRecImgHeight   = document.getElementById('cfg-rec-imgheight');
+    const cfgDbgVerbose     = document.getElementById('cfg-dbg-verbose');
+    const btnApplyConfig    = document.getElementById('btn-apply-config');
+
+    const btnCopyJson       = document.getElementById('btn-copy-json');
+    const copyJsonLabel     = document.getElementById('copy-json-label');
+
+    let loadedImage = null;
+    let ocrService = null;
+    let fallbackCdn = false;
+    let lastResults = null;
+    let lastElapsed = 0;
+
+    // -- Tabs Logic --
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        // Remove active class from all
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        // Add to clicked
+        const target = e.target.getAttribute('data-tab');
+        e.target.classList.add('active');
+        document.getElementById(`tab-${target}`).classList.add('active');
+      });
+    });
+
+    // -- Update Code Preview (Removed) --
+    function setStatus(state, text) {
+      statusDot.className = 'status-dot ' + state;
+      statusText.textContent = text;
+    }
+
+    // -- Init PaddleOcrService --
+    async function initService(options = {}) {
+        setStatus('loading', 'Loading initially...');
+        if (ocrService) {
+           await ocrService.destroy();
+        }
+        
+        try {
+          ocrService = new PaddleOcrService(options);
+          await ocrService.initialize();
+          setStatus('ready', 'Ready');
+          console.log('✅ Service initialized successfully');
+        } catch (err) {
+          setStatus('error', 'Initialization failed');
+          console.error('❌ Service failed to initialize:', err.message);
+        }
+    }
+    // Initial boot without options
+    initService().then(() => {
+        // Perform a hidden warmup inference to initialize WASM backend efficiently
+        setStatus('loading', 'Warming up engines...');
+        const dummyCanvas = document.createElement('canvas');
+        dummyCanvas.width = 64; dummyCanvas.height = 64;
+        const ctx = dummyCanvas.getContext('2d');
+        ctx.fillStyle = 'white'; ctx.fillRect(0,0,64,64);
+        ctx.fillStyle = 'black'; ctx.font = '20px serif';
+        ctx.fillText('A', 25, 40);
+        
+        ocrService.recognize(dummyCanvas, { flatten: true }).then(() => {
+           console.log('🔥 Warmup complete');
+           setStatus('ready', 'Ready');
+        }).catch(e => {
+           console.warn('Warmup failed (ignored):', e);
+           setStatus('ready', 'Ready');
+        });
+    });
+    btnCopyJson.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(jsonResult.textContent);
+        copyJsonLabel.textContent = 'Copied!';
+        btnCopyJson.classList.add('copied');
+        setTimeout(() => { copyJsonLabel.textContent = 'Copy'; btnCopyJson.classList.remove('copied'); }, 1500);
+      } catch {
+        console.error('Copy failed');
+      }
+    });
+
+    // -- Configuration Apply --
+    btnApplyConfig.addEventListener('click', () => {
+       const options = {
+         model: {},
+         detection: {},
+         recognition: {},
+         debugging: {}
+       };
+
+       if (cfgDetModel.value.trim()) options.model.detection = cfgDetModel.value.trim();
+       if (cfgRecModel.value.trim()) options.model.recognition = cfgRecModel.value.trim();
+       if (cfgDict.value.trim()) options.model.charactersDictionary = cfgDict.value.trim();
+
+       if (cfgDetDeskew.checked === false) options.detection.autoDeskew = false;
+       if (cfgDetMaxSide.value) options.detection.maxSideLength = parseInt(cfgDetMaxSide.value, 10);
+       if (cfgDetMinArea.value) options.detection.minimumAreaThreshold = parseInt(cfgDetMinArea.value, 10);
+       if (cfgDetPadVert.value) options.detection.paddingVertical = parseFloat(cfgDetPadVert.value);
+       if (cfgDetPadHoriz.value) options.detection.paddingHorizontal = parseFloat(cfgDetPadHoriz.value);
+
+       if (cfgRecImgHeight.value) options.recognition.imageHeight = parseInt(cfgRecImgHeight.value, 10);
+
+       if (cfgDbgVerbose.checked) options.debugging.verbose = true;
+       
+       console.log('⚙️ Applying new configuration...', options);
+       initService(options);
+    });
+
+    // -- Upload --
+    btnUpload.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) handleFile(e.target.files[0]);
+    });
+
+    // -- Full-page drag & drop --
+    let dragCounter = 0;
+    document.addEventListener('dragenter', (e) => { e.preventDefault(); dragCounter++; dropOverlay.classList.add('visible'); });
+    document.addEventListener('dragleave', (e) => { e.preventDefault(); dragCounter--; if (dragCounter <= 0) { dragCounter = 0; dropOverlay.classList.remove('visible'); } });
+    document.addEventListener('dragover', (e) => e.preventDefault());
+    document.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragCounter = 0;
+      dropOverlay.classList.remove('visible');
+      if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+    });
+
+    async function handleFile(file) {
+      if (!file.type.startsWith('image/')) { setStatus('error', 'Invalid file'); return; }
+      setStatus('loading', 'Loading Image…');
+      fileNameEl.textContent = file.name;
+      resultsList.innerHTML = '';
+      resultsTitle.style.display = 'none';
+
+      const arrayBuffer = await file.arrayBuffer();
+      const blob = new Blob([arrayBuffer], { type: file.type });
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = () => {
+        loadedImage = img;
+        lastResults = null;
+
+        // Set internal resolution strictly to image size
+        resultCanvas.width = img.width;
+        resultCanvas.height = img.height;
+        overlayCanvas.width = img.width;
+        overlayCanvas.height = img.height;
+        
+        const ctx = resultCanvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        
+        const overlayCtx = overlayCanvas.getContext('2d');
+        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+        canvasContainer.style.display = 'flex';
+        resultPlaceholder.style.display = 'none';
+        URL.revokeObjectURL(url);
+        btnProcess.disabled = false;
+        setStatus('ready', `${img.width}×${img.height}`);
+      };
+      img.src = url;
+    }
+
+    // -- Draw Boxes Routine --
+    function drawBoxes(results, elapsed) {
+        if (!results || !resultCanvas.width) return;
+
+        const overlayCtx = overlayCanvas.getContext('2d');
+        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+        // Draw bounding boxes
+        overlayCtx.strokeStyle = 'rgba(239, 68, 68, 1)'; // Red outline
+        overlayCtx.lineWidth = Math.max(2, Math.floor(overlayCanvas.width / 500));
+
+        resultsTitle.style.display = 'block';
+        resultsTitle.innerHTML = `Recognition Results <span style="font-size:0.6rem; color:var(--success); font-family:'JetBrains Mono', monospace; font-weight:normal; margin-left: 0.25rem;">(${elapsed}ms)</span>`;
+        
+        if (results.length > 0) {
+            results.forEach((item, i) => {
+                const box = item.box;
+                if (!box) return;
+                
+                // Draw box using native unscaled coordinates
+                overlayCtx.beginPath();
+                overlayCtx.rect(box.x, box.y, box.width, box.height);
+                overlayCtx.stroke();
+
+                // Draw index
+                overlayCtx.fillStyle = 'rgba(239, 68, 68, 0.9)'; // Red background for index label
+                const labelSize = Math.max(14, overlayCtx.lineWidth * 12);
+                const textWidth = overlayCtx.measureText((i + 1).toString()).width;
+                overlayCtx.fillRect(box.x, box.y - labelSize, Math.max(labelSize, textWidth + 8), labelSize);
+                
+                overlayCtx.fillStyle = '#ffffff'; // White text
+                overlayCtx.font = `bold ${labelSize * 0.75}px monospace`;
+                overlayCtx.textBaseline = 'top';
+                overlayCtx.fillText((i + 1).toString(), box.x + 4, box.y - labelSize + 2);
+            });
+        }
+    }
+
+    // -- Resize Listener --
+    // Resize listener is no longer strictly necessary because object-fit: contain applies automatically 
+    // to BOTH canvases via pure CSS, maintaining native perfect scaling sync automatically.
+    // However, we retain an empty block or could trigger UI re-renders if ever required.
+    window.addEventListener('resize', () => {
+       // Automatic CSS object-fit overlap handles this natively.
+    });
+
+    // -- Process --
+    btnProcess.addEventListener('click', async () => {
+      if (!loadedImage || !ocrService) return;
+
+      btnProcess.disabled = true;
+      setStatus('loading', 'Recognizing Text…');
+      resultsList.innerHTML = '';
+      resultsTitle.style.display = 'none';
+
+      // Clear previous overlay
+      const overlayCtx = overlayCanvas.getContext('2d');
+      overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+      await new Promise(r => requestAnimationFrame(r)); // yield to render UI
+
+      try {
+        const t0 = performance.now();
+        
+        // Use recognize with flatten: true to get all bounding boxes easily
+        const result = await ocrService.recognize(resultCanvas, { flatten: true });
+        
+        const elapsed = (performance.now() - t0).toFixed(1);
+
+        // Populate JSON tab
+        jsonResult.textContent = JSON.stringify(result, null, 2);
+        
+        // Store for resize events
+        lastResults = result.results;
+        lastElapsed = elapsed;
+
+        // Render UI list
+        if (result.results && result.results.length > 0) {
+            result.results.forEach((item, i) => {
+                const li = document.createElement('li');
+                li.className = 'result-item';
+                li.innerHTML = `
+                    <span class="result-text"><span style="color:var(--text-muted);font-size:0.6rem;margin-right:4px;">${i+1}</span>${item.text}</span>
+                    <span class="result-conf">Score: ${item.confidence.toFixed(4)}</span>
+                `;
+                resultsList.appendChild(li);
+            });
+        } else {
+             const li = document.createElement('li');
+             li.className = 'result-item';
+             li.innerHTML = `<span class="result-text" style="color:var(--warning);">No text detected.</span>`;
+             resultsList.appendChild(li);
+        }
+
+        // Draw boxes onto canvas overlay
+        drawBoxes(result.results, elapsed);
+
+        timingBadge.textContent = `${elapsed} ms`;
+        timingBadge.style.display = 'block';
+
+        setStatus('ready', `Done in ${elapsed}ms`);
+      } catch (err) {
+        console.error(err);
+        setStatus('error', err.message);
+      } finally {
+        btnProcess.disabled = false;
+      }
+    });
+
+  </script>
+
+</body>
+</html>

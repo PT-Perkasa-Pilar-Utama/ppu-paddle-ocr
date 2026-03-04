@@ -44,6 +44,7 @@ Built on top of `onnxruntime-node`, ppu-paddle-ocr handles all the complexity of
 5.  **Pre-packed Models**: Includes optimized PaddleOCR models ready for immediate use, with automatic fetching and caching on the first run.
 6.  **TypeScript Support**: Full TypeScript definitions for enhanced developer experience
 7.  **Auto Deskew**: Using multiple text analysis to straighten the image
+8.  **Web Support**: Supports running directly in the browser
 
 ## Installation
 
@@ -141,6 +142,45 @@ const service = new PaddleOcrService({
 // Don't forget to initialize the service
 await service.initialize();
 ```
+
+## Web / Browser Support
+
+Starting from `4.0.0`, ppu-paddle-ocr supports running directly in the browser! Import from `ppu-paddle-ocr/web` instead of the root package to use browser-native capabilities (`HTMLCanvasElement`, `OffscreenCanvas`, and `fetch` buffering) instead of the Node APIs. 
+
+Note that the browser build depends on `onnxruntime-web` rather than `onnxruntime-node`.
+
+### Using a Bundler (Vite, Webpack, etc)
+
+```ts
+import { PaddleOcrService } from "ppu-paddle-ocr/web";
+import { ImageProcessor, cv } from "ppu-ocv/web"; // Optional for advanced vision prep
+
+const service = new PaddleOcrService();
+await service.initialize();
+
+// If you have a file input: 
+// <input type="file" id="upload" />
+const file = document.getElementById('upload').files[0];
+
+// Convert to an HTMLImageElement or an offscreen Canvas
+const img = new Image();
+img.src = URL.createObjectURL(file);
+await new Promise(r => img.onload = r);
+
+const canvas = document.createElement("canvas");
+canvas.width = img.width;
+canvas.height = img.height;
+canvas.getContext("2d").drawImage(img, 0, 0);
+
+const result = await service.recognize(canvas);
+console.log(result.text);
+```
+
+### Direct CDN Usage (No Bundler)
+
+You can check out our live `index.html` demo to see how to include the dependencies directly via CDN using ESM modules, and how to configure fallback model loading. 
+
+See the interactive demo implementation here: [Web Demo](/index.html)
 
 #### Changing Models and Dictionaries at Runtime
 

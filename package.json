@@ -1,9 +1,10 @@
 {
   "name": "ppu-paddle-ocr",
-  "version": "3.7.2",
+  "version": "4.0.0",
   "description": "Blazing-fast and lightweight PaddleOCR library for Node.js and Bun. Perform accurate text detection, recognition, and image deskew with a simple, modern, and type-safe API. Ideal for document processing, data extraction, and computer vision tasks.",
   "keywords": [
     "accurate-ocr",
+    "browser-ocr",
     "bun-compatible",
     "bun-ocr",
     "computer-vision",
@@ -35,29 +36,41 @@
     "text-extraction",
     "text-from-image",
     "text-recognition",
-    "typescript-ocr"
+    "typescript-ocr",
+    "web-ocr"
   ],
   "author": "snowfluke",
   "license": "MIT",
   "type": "module",
   "main": "./index.js",
   "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./web": {
+      "types": "./web/index.d.ts",
+      "default": "./web/index.js"
+    }
+  },
   "scripts": {
     "task": "bun scripts/task.ts",
     "build:test": "bun task build && bun test",
     "build:publish": "bun task build && bun task report-size && bun task publish",
     "clear-cache": "bun scripts/clear-cache.ts",
     "lint": "prettier --check ./src",
-    "lint:fix": "prettier --write ./src"
+    "lint:fix": "prettier --write ./src",
+    "demo": "bunx -y serve -l 3456 ."
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "latest",
     "@types/bun": "latest",
-    "@types/lodash.merge": "^4.6.9",
     "@types/uglify-js": "latest",
     "canvas": "^3.2.1",
     "mitata": "latest",
     "onnxruntime-node": "^1.23.2",
+    "onnxruntime-web": "^1.24.2",
     "prettier": "^3.8.1",
     "tsx": "latest",
     "typescript": "latest",
@@ -69,10 +82,18 @@
     "url": "https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr.git"
   },
   "dependencies": {
-    "lodash.merge": "^4.6.2",
-    "ppu-ocv": "^1.7.0"
+    "ppu-ocv": "^2.0.0"
   },
   "peerDependencies": {
-    "onnxruntime-node": "^1.23.2"
+    "onnxruntime-node": "^1.23.2",
+    "onnxruntime-web": "^1.23.2"
+  },
+  "peerDependenciesMeta": {
+    "onnxruntime-node": {
+      "optional": true
+    },
+    "onnxruntime-web": {
+      "optional": true
+    }
   }
 }

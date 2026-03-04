@@ -1,19 +1,16 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
-import * as ort from "onnxruntime-node";
-import * as os from "os";
-import * as path from "path";
-import { Canvas, ImageProcessor } from "ppu-ocv";
+import * as ort from "onnxruntime-web";
+import { ImageProcessor, type CanvasLike } from "ppu-ocv/web";
 
 import { DEFAULT_PADDLE_OPTIONS } from "../constants.js";
 import { deepMerge } from "../utils.js";
 
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
-import { DetectionService } from "./detection.service.js";
-import { globalImageCache, ImageCache } from "./image-cache.js";
+import { globalImageCache, ImageCache } from "../processor/image-cache.js";
+import { DetectionServiceWeb } from "./detection.service.web.js";
 import {
-  RecognitionService,
+  RecognitionServiceWeb,
   type RecognitionResult,
-} from "./recognition.service.js";
+} from "./recognition.service.web.js";
 
 export interface PaddleOcrResult {
   text: string;
@@ -29,24 +26,24 @@ export interface FlattenedPaddleOcrResult {
 
 const GITHUB_BASE_URL =
   "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/main/models/";
-const CACHE_DIR = path.join(os.homedir(), ".cache", "ppu-paddle-ocr");
+
+const DEFAULT_WEB_SESSION_OPTIONS: ort.InferenceSession.SessionOptions = {
+  executionProviders: ["wasm"],
+  graphOptimizationLevel: "all",
+};
 
 /**
- * PaddleOcrService - Provides OCR functionality using PaddleOCR models.
- * To use this service, create an instance and call the `initialize()` method.
+ * PaddleOcrService for Web/Browser environments.
+ * Uses onnxruntime-web and ppu-ocv/web instead of their Node counterparts.
  */
 export class PaddleOcrService {
   private options: PaddleOptions = DEFAULT_PADDLE_OPTIONS;
 
   private detectionSession: ort.InferenceSession | null = null;
   private recognitionSession: ort.InferenceSession | null = null;
-  private detector: DetectionService | null = null;
-  private recognitor: RecognitionService | null = null;
+  private detector: DetectionServiceWeb | null = null;
+  private recognitor: RecognitionServiceWeb | null = null;
 
-  /**
-   * Creates an instance of PaddleOcrService.
-   * @param options - Configuration options for the service.
-   */
   public constructor(options?: PaddleOptions) {
     this.options = deepMerge(
       {},
@@ -57,83 +54,30 @@ export class PaddleOcrService {
       this.options.session || DEFAULT_PADDLE_OPTIONS.session;
   }
 
-  /**
-   * Logs a message if verbose debugging is enabled.
-   */
   private log(message: string): void {
     if (this.options.debugging?.verbose) {
-      console.log(`[PaddleOcrService] ${message}`);
+      console.log(`[PaddleOcrService:Web] ${message}`);
     }
   }
 
   /**
-   * Fetches a resource from a URL and caches it locally.
-   * If the resource is already in the cache, it loads it from there.
+   * Fetches a resource from a URL.
+   * In the browser, HTTP caching handles repeat requests.
    */
-  private async _fetchAndCache(url: string): Promise<ArrayBuffer> {
-    const fileName = path.basename(new URL(url).pathname);
-    const cachePath = path.join(CACHE_DIR, fileName);
-
-    if (existsSync(cachePath)) {
-      this.log(`Loading cached resource from: ${cachePath}`);
-      const buf = readFileSync(cachePath);
-      return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
-    }
-
-    console.log(
-      `[PaddleOcrService] Downloading resource: ${fileName}\n` +
-        `                 Cached at: ${CACHE_DIR}`,
-    );
+  private async _fetchUrl(url: string): Promise<ArrayBuffer> {
     this.log(`Fetching resource from URL: ${url}`);
 
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch resource from ${url}`);
     }
-    if (!response.body) {
-      throw new Error("Response body is null or undefined");
-    }
 
-    const contentLength = response.headers.get("Content-Length");
-    const totalLength = contentLength ? parseInt(contentLength, 10) : 0;
-    let receivedLength = 0;
-    const chunks: Uint8Array[] = [];
-
-    const reader = response.body.getReader();
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-      chunks.push(value);
-      receivedLength += value.length;
-
-      if (totalLength > 0) {
-        const percentage = ((receivedLength / totalLength) * 100).toFixed(2);
-        process.stdout.write(`\rDownloading... ${percentage}%`);
-      }
-    }
-    process.stdout.write("\n"); // Move to the next line
-
-    const buffer = new Uint8Array(receivedLength);
-    let position = 0;
-    for (const chunk of chunks) {
-      buffer.set(chunk, position);
-      position += chunk.length;
-    }
-
-    this.log(`Caching resource to: ${cachePath}`);
-    if (!existsSync(CACHE_DIR)) {
-      mkdirSync(CACHE_DIR, { recursive: true });
-    }
-    writeFileSync(cachePath, Buffer.from(buffer));
-
-    return buffer.buffer;
+    return response.arrayBuffer();
   }
 
   /**
-   * Loads a resource from a buffer, a file path, a URL, or a default URL.
+   * Loads a resource from an ArrayBuffer, a URL string, or the default URL.
+   * File paths are NOT supported in the browser.
    */
   private async _loadResource(
     source: string | ArrayBuffer | undefined,
@@ -146,19 +90,13 @@ export class PaddleOcrService {
 
     if (typeof source === "string") {
       if (source.startsWith("http")) {
-        return this._fetchAndCache(source);
-      } else {
-        const resolvedPath = path.resolve(process.cwd(), source);
-        this.log(`Loading resource from path: ${resolvedPath}`);
-        const buf = readFileSync(resolvedPath);
-        return buf.buffer.slice(
-          buf.byteOffset,
-          buf.byteOffset + buf.byteLength,
-        );
+        return this._fetchUrl(source);
       }
+      // In the browser, treat non-http strings as relative URLs
+      return this._fetchUrl(source);
     }
 
-    return this._fetchAndCache(defaultUrl);
+    return this._fetchUrl(defaultUrl);
   }
 
   /**
@@ -167,7 +105,16 @@ export class PaddleOcrService {
    */
   public async initialize(): Promise<void> {
     try {
-      this.log("Initializing PaddleOcrService...");
+      this.log("Initializing PaddleOcrService (Web)...");
+
+      const sessionOptions: ort.InferenceSession.SessionOptions = {
+        ...DEFAULT_WEB_SESSION_OPTIONS,
+        ...this.options.session,
+        executionProviders:
+          (this.options.session
+            ?.executionProviders as ort.InferenceSession.ExecutionProviderConfig[]) ||
+          DEFAULT_WEB_SESSION_OPTIONS.executionProviders,
+      };
 
       // Load detection model
       const detModelBuffer = await this._loadResource(
@@ -175,10 +122,9 @@ export class PaddleOcrService {
         `${GITHUB_BASE_URL}paddleocr-detection.onnx`,
       );
 
-      // Use configured session options
       this.detectionSession = await ort.InferenceSession.create(
         new Uint8Array(detModelBuffer),
-        this.options.session!,
+        sessionOptions,
       );
       this.options.model!.detection = detModelBuffer;
       this.log(
@@ -192,7 +138,7 @@ export class PaddleOcrService {
       );
       this.recognitionSession = await ort.InferenceSession.create(
         new Uint8Array(recModelBuffer),
-        this.options.session!,
+        sessionOptions,
       );
       this.options.model!.recognition = recModelBuffer;
       this.log(
@@ -204,7 +150,7 @@ export class PaddleOcrService {
         this.options.model?.charactersDictionary,
         `${GITHUB_BASE_URL}ppocrv5_en_dict.txt`,
       );
-      const dictionaryContent = Buffer.from(dictBuffer).toString("utf-8");
+      const dictionaryContent = new TextDecoder("utf-8").decode(dictBuffer);
       const charactersDictionary = dictionaryContent.split("\n");
 
       if (charactersDictionary.length === 0) {
@@ -219,12 +165,12 @@ export class PaddleOcrService {
         `Character dictionary loaded with ${charactersDictionary.length} entries.`,
       );
 
-      this.detector = new DetectionService(
+      this.detector = new DetectionServiceWeb(
         this.detectionSession!,
         this.options.detection,
         this.options.debugging,
       );
-      this.recognitor = new RecognitionService(
+      this.recognitor = new RecognitionServiceWeb(
         this.recognitionSession!,
         this.options.recognition,
         this.options.debugging,
@@ -238,16 +184,12 @@ export class PaddleOcrService {
     }
   }
 
-  /**
-   * Checks if the service has been initialized with models loaded.
-   */
   public isInitialized(): boolean {
     return this.detectionSession !== null && this.recognitionSession !== null;
   }
 
   /**
    * Changes the detection model for the current instance.
-   * @param model - The new detection model as a path, URL, or ArrayBuffer.
    */
   public async changeDetectionModel(
     model: ArrayBuffer | string,
@@ -259,9 +201,19 @@ export class PaddleOcrService {
     );
 
     await this.detectionSession?.release();
+
+    const sessionOptions: ort.InferenceSession.SessionOptions = {
+      ...DEFAULT_WEB_SESSION_OPTIONS,
+      ...this.options.session,
+      executionProviders:
+        (this.options.session
+          ?.executionProviders as ort.InferenceSession.ExecutionProviderConfig[]) ||
+        DEFAULT_WEB_SESSION_OPTIONS.executionProviders,
+    };
+
     this.detectionSession = await ort.InferenceSession.create(
       new Uint8Array(modelBuffer),
-      this.options.session!,
+      sessionOptions,
     );
     this.options.model!.detection = modelBuffer;
     this.log("Detection model changed successfully.");
@@ -269,7 +221,6 @@ export class PaddleOcrService {
 
   /**
    * Changes the recognition model for the current instance.
-   * @param model - The new recognition model as a path, URL, or ArrayBuffer.
    */
   public async changeRecognitionModel(
     model: ArrayBuffer | string,
@@ -281,9 +232,19 @@ export class PaddleOcrService {
     );
 
     await this.recognitionSession?.release();
+
+    const sessionOptions: ort.InferenceSession.SessionOptions = {
+      ...DEFAULT_WEB_SESSION_OPTIONS,
+      ...this.options.session,
+      executionProviders:
+        (this.options.session
+          ?.executionProviders as ort.InferenceSession.ExecutionProviderConfig[]) ||
+        DEFAULT_WEB_SESSION_OPTIONS.executionProviders,
+    };
+
     this.recognitionSession = await ort.InferenceSession.create(
       new Uint8Array(modelBuffer),
-      this.options.session!,
+      sessionOptions,
     );
     this.options.model!.recognition = modelBuffer;
     this.log("Recognition model changed successfully.");
@@ -291,7 +252,6 @@ export class PaddleOcrService {
 
   /**
    * Changes the text dictionary for the current instance.
-   * @param dictionary - The new dictionary as a path, URL, ArrayBuffer, or string content.
    */
   public async changeTextDictionary(
     dictionary: ArrayBuffer | string,
@@ -302,7 +262,7 @@ export class PaddleOcrService {
       `${GITHUB_BASE_URL}ppocrv5_en_dict.txt`,
     );
 
-    const dictionaryContent = Buffer.from(dictBuffer).toString("utf-8");
+    const dictionaryContent = new TextDecoder("utf-8").decode(dictBuffer);
     const charactersDictionary = dictionaryContent.split("\n");
 
     if (charactersDictionary.length === 0) {
@@ -318,38 +278,26 @@ export class PaddleOcrService {
 
   /**
    * Runs OCR and returns a flattened list of recognized text boxes.
-   *
-   * @param image - The raw image data as an ArrayBuffer or Canvas.
-   * @param options - Options object with `flatten` set to `true`.
-   * @return A promise that resolves to a flattened result object.
    */
   public recognize(
-    image: ArrayBuffer | Canvas,
+    image: ArrayBuffer | CanvasLike,
     options: RecognizeOptions & { flatten: true },
   ): Promise<FlattenedPaddleOcrResult>;
 
   /**
    * Runs OCR and returns recognized text grouped into lines.
-   *
-   * @param image - The raw image data as an ArrayBuffer or Canvas.
-   * @param options - Optional options object. If `flatten` is `false` or omitted, this structure is returned.
-   * @return A promise that resolves to a result object with text lines.
    */
   public recognize(
-    image: ArrayBuffer | Canvas,
+    image: ArrayBuffer | CanvasLike,
     options?: RecognizeOptions & { flatten?: false },
   ): Promise<PaddleOcrResult>;
 
   /**
-   * Runs object detection on the provided image buffer, then performs
+   * Runs object detection on the provided image, then performs
    * recognition on the detected regions.
-   *
-   * @param image - The raw image data as an ArrayBuffer or Canvas.
-   * @param options - Optional configuration for the recognition output, e.g., `{ flatten: true }`.
-   * @return A promise that resolves to the OCR result, either grouped by lines or as a flat list.
    */
   public async recognize(
-    image: ArrayBuffer | Canvas,
+    image: ArrayBuffer | CanvasLike,
     options?: RecognizeOptions,
   ): Promise<PaddleOcrResult | FlattenedPaddleOcrResult> {
     if (!this.isInitialized()) {
@@ -363,26 +311,11 @@ export class PaddleOcrService {
     if (image instanceof ArrayBuffer) {
       imageBuffer = image;
     } else {
-      if (typeof image.toBuffer === "function") {
-        const buffer = image.toBuffer("image/png");
-        imageBuffer = buffer.buffer.slice(
-          buffer.byteOffset,
-          buffer.byteOffset + buffer.byteLength,
-        ) as ArrayBuffer;
-      } else {
-        const ctx = image.getContext("2d");
-        const imageData = ctx.getImageData(0, 0, image.width, image.height);
-        const data = imageData.data;
-        imageBuffer = data.buffer.slice(
-          data.byteOffset,
-          data.byteOffset + data.byteLength,
-        ) as ArrayBuffer;
-      }
+      imageBuffer = await ImageProcessor.prepareBuffer(image);
     }
 
     const cacheKey = ImageCache.generateKey(imageBuffer);
 
-    // Check cache first (only if noCache is false and no custom dictionary)
     const cacheResult =
       !options?.noCache && !options?.dictionary
         ? globalImageCache.get(cacheKey)
@@ -404,7 +337,7 @@ export class PaddleOcrService {
     let charactersDictionary: string[] | undefined;
     if (options?.dictionary) {
       const dictBuffer = await this._loadResource(options.dictionary, "");
-      const dictionaryContent = Buffer.from(dictBuffer).toString("utf-8");
+      const dictionaryContent = new TextDecoder("utf-8").decode(dictBuffer);
       charactersDictionary = dictionaryContent.split("\n");
 
       if (charactersDictionary.length === 0) {
@@ -431,7 +364,6 @@ export class PaddleOcrService {
         }
       : processed;
 
-    // Cache result (only if noCache is false and no custom dictionary)
     if (!options?.noCache && !options?.dictionary) {
       globalImageCache.set(cacheKey, result);
     }
@@ -439,19 +371,12 @@ export class PaddleOcrService {
     return result;
   }
 
-  /**
-   * Flattens recognition results from lines to a single array
-   */
   private getFlattenedResults(
     lines: RecognitionResult[][],
   ): RecognitionResult[] {
     return lines.flat();
   }
 
-  /**
-   * Processes raw recognition results to generate the final text,
-   * grouped lines, and overall confidence.
-   */
   private processRecognition(
     recognition: RecognitionResult[],
   ): PaddleOcrResult {
@@ -465,7 +390,6 @@ export class PaddleOcrService {
       return result;
     }
 
-    // Calculate overall confidence as the average of all individual confidences
     const totalConfidence = recognition.reduce(
       (sum, r) => sum + r.confidence,
       0,
@@ -509,12 +433,11 @@ export class PaddleOcrService {
   }
 
   /**
-   * Runs deskew algorithm on the provided image buffer | canvas
-   *
-   * @param image - The raw image data as an ArrayBuffer or Canvas.
-   * @return A promise that resolves deskewed image as Canvas
+   * Runs deskew algorithm on the provided image
    */
-  public async deskewImage(image: ArrayBuffer | Canvas): Promise<Canvas> {
+  public async deskewImage(
+    image: ArrayBuffer | CanvasLike,
+  ): Promise<CanvasLike> {
     if (!this.isInitialized()) {
       throw new Error(
         "PaddleOcrService is not initialized. Call initialize() first.",
@@ -524,20 +447,6 @@ export class PaddleOcrService {
 
     const detection = await this.detector!.deskew(image);
     return detection;
-  }
-
-  /**
-   * Clears the model cache directory, removing all cached model files.
-   * This will force models to be re-downloaded on the next initialization.
-   */
-  public clearModelCache(): void {
-    if (existsSync(CACHE_DIR)) {
-      this.log(`Clearing model cache at: ${CACHE_DIR}`);
-      rmSync(CACHE_DIR, { recursive: true, force: true });
-      console.log(`[PaddleOcrService] Model cache cleared: ${CACHE_DIR}`);
-    } else {
-      this.log("Cache directory does not exist, nothing to clear.");
-    }
   }
 
   /**

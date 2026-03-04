@@ -10,6 +10,9 @@
     // Bundler mode
     "moduleResolution": "Bundler",
     "verbatimModuleSyntax": true,
+    "paths": {
+      "ppu-ocv/web": ["../ppu-ocv/src/index.web.ts"]
+    },
     // Best practices
     "strict": true,
     "skipLibCheck": true,
