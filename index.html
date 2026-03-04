@@ -768,9 +768,30 @@
 
       try {
         const t0 = performance.now();
+
+        // If auto-deskew is enabled, deskew the image first and display it
+        let imageToRecognize = resultCanvas;
+        const autoDeskew = cfgDetDeskew && cfgDetDeskew.checked;
+
+        if (autoDeskew) {
+          setStatus('loading', 'Deskewing image…');
+          const deskewedCanvas = await ocrService.deskewImage(resultCanvas);
+
+          // Render the deskewed image onto the result canvas
+          resultCanvas.width = deskewedCanvas.width;
+          resultCanvas.height = deskewedCanvas.height;
+          overlayCanvas.width = deskewedCanvas.width;
+          overlayCanvas.height = deskewedCanvas.height;
+
+          const ctx = resultCanvas.getContext('2d');
+          ctx.drawImage(deskewedCanvas, 0, 0);
+
+          imageToRecognize = resultCanvas;
+          setStatus('loading', 'Recognizing Text…');
+        }
         
         // Use recognize with flatten: true to get all bounding boxes easily
-        const result = await ocrService.recognize(resultCanvas, { flatten: true });
+        const result = await ocrService.recognize(imageToRecognize, { flatten: true, noCache: true });
         
         const elapsed = (performance.now() - t0).toFixed(1);
 

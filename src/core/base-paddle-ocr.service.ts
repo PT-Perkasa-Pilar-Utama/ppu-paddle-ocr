@@ -4,8 +4,8 @@ import type { Box, PaddleOptions, RecognizeOptions } from "../interface.js";
 import { deepMerge } from "../utils.js";
 import { BaseDetectionService } from "./base-detection.service.js";
 import {
-    BaseRecognitionService,
-    type RecognitionResult,
+  BaseRecognitionService,
+  type RecognitionResult,
 } from "./base-recognition.service.js";
 import { globalImageCache, ImageCache } from "./image-cache.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
@@ -89,7 +89,9 @@ export abstract class BasePaddleOcrService {
             buffer.byteOffset + buffer.byteLength,
           ) as ArrayBuffer;
         } else {
-          const ctx = (image as any).getContext("2d", { willReadFrequently: true });
+          const ctx = (image as any).getContext("2d", {
+            willReadFrequently: true,
+          });
           const imageData = ctx.getImageData(
             0,
             0,

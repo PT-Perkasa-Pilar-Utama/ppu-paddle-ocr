@@ -5,7 +5,8 @@ import type { CoreCanvas, PlatformProvider } from "../core/platform.js";
 // Provide an intelligent default for ONNX WASM paths to avoid 404s on CDN or unbundled usage.
 // Users can override this by explicitly setting ort.env.wasm.wasmPaths before initialization.
 if (typeof window !== "undefined" && !ort.env.wasm.wasmPaths) {
-  ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.24.2/dist/";
+  ort.env.wasm.wasmPaths =
+    "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.24.2/dist/";
 }
 
 export class WebPlatformProvider implements PlatformProvider<CoreCanvas> {
