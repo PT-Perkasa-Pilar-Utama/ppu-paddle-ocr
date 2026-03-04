@@ -514,7 +514,7 @@
       // Fallback to npm CDN
       console.warn("Local build failed to load:", e);
       console.log("Falling back to CDN...");
-      const cdn = await import('https://cdn.jsdelivr.net/npm/ppu-paddle-ocr@4/web/index.js/+esm');
+      const cdn = await import('https://cdn.jsdelivr.net/npm/ppu-paddle-ocr@4/web/index.js');
       PaddleOcrService = cdn.PaddleOcrService;
     }
 
