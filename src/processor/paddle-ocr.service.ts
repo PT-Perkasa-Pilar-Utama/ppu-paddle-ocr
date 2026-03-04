@@ -292,11 +292,25 @@ export class PaddleOcrService extends BasePaddleOcrService {
     );
   }
 
+  /**
+   * Recognize text in an image, returning flattened results.
+   *
+   * @param image - Source image as `ArrayBuffer` or `Canvas`.
+   * @param options - Must include `flatten: true`.
+   * @returns Flat list of recognized text items.
+   */
   public override recognize(
     image: ArrayBuffer | Canvas,
     options: RecognizeOptions & { flatten: true },
   ): Promise<FlattenedPaddleOcrResult>;
 
+  /**
+   * Recognize text in an image, returning line-grouped results.
+   *
+   * @param image - Source image as `ArrayBuffer` or `Canvas`.
+   * @param options - Optional recognition options.
+   * @returns OCR results grouped by detected text lines.
+   */
   public override recognize(
     image: ArrayBuffer | Canvas,
     options?: RecognizeOptions & { flatten?: false },
@@ -450,6 +464,12 @@ export class PaddleOcrService extends BasePaddleOcrService {
     return result;
   }
 
+  /**
+   * Straighten a tilted or skewed image.
+   *
+   * @param image - Source image as `ArrayBuffer` or `Canvas`.
+   * @returns A new canvas containing the deskewed image.
+   */
   public override async deskewImage(
     image: ArrayBuffer | Canvas,
   ): Promise<Canvas> {
@@ -464,6 +484,9 @@ export class PaddleOcrService extends BasePaddleOcrService {
     return detection as Canvas;
   }
 
+  /**
+   * Delete all locally cached ONNX model files.
+   */
   public clearModelCache(): void {
     if (existsSync(CACHE_DIR)) {
       this.log(`Clearing model cache at: ${CACHE_DIR}`);
@@ -474,6 +497,9 @@ export class PaddleOcrService extends BasePaddleOcrService {
     }
   }
 
+  /**
+   * Release all ONNX sessions and free resources.
+   */
   public async destroy(): Promise<void> {
     await this.detectionSession?.release();
     await this.recognitionSession?.release();

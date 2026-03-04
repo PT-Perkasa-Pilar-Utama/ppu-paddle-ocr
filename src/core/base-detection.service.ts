@@ -9,14 +9,23 @@ import { BaseDeskewService } from "./base-deskew.service.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
 
 /**
- * Result of preprocessing an image for text detection
+ * Result of preprocessing an image for text detection.
+ *
+ * Contains the normalized float tensor, dimensions, and scale factors
+ * needed to map detection output back to original image coordinates.
  */
 export interface PreprocessDetectionResult {
+  /** Normalized float tensor (CHW layout, 3 channels). */
   tensor: Float32Array;
+  /** Width of the padded/resized tensor in pixels. */
   width: number;
+  /** Height of the padded/resized tensor in pixels. */
   height: number;
+  /** Scale factor applied during resize (`resized / original`). */
   resizeRatio: number;
+  /** Original image width before preprocessing. */
   originalWidth: number;
+  /** Original image height before preprocessing. */
   originalHeight: number;
 }
 

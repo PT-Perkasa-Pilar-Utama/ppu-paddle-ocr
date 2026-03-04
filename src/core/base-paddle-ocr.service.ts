@@ -10,21 +10,46 @@ import {
 import { globalImageCache, ImageCache } from "./image-cache.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
 
+/**
+ * OCR result grouped by detected text lines.
+ *
+ * Each entry in `lines` is an array of recognized words on the same line,
+ * sorted left-to-right.
+ */
 export interface PaddleOcrResult {
+  /** Full extracted text with lines separated by newlines. */
   text: string;
+  /** Recognition results grouped by line, in reading order. */
   lines: RecognitionResult[][];
+  /** Average confidence across all recognized items (0–1). */
   confidence: number;
 }
 
+/**
+ * OCR result as a flat list of recognized text items.
+ *
+ * Convenience alternative to {@link PaddleOcrResult} when line grouping
+ * is not needed (e.g. for search indexing or simple display).
+ */
 export interface FlattenedPaddleOcrResult {
+  /** Full extracted text as a single space-separated string. */
   text: string;
+  /** All recognized items in reading order. */
   results: RecognitionResult[];
+  /** Average confidence across all recognized items (0–1). */
   confidence: number;
 }
 
+/** Base URL for downloading default PaddleOCR model files from GitHub. */
 export const GITHUB_BASE_URL =
   "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/main/models/";
 
+/**
+ * Abstract base class for platform-agnostic PaddleOCR service.
+ *
+ * Concrete implementations (`PaddleOcrService` for Node, Web, etc.)
+ * extend this class and provide a {@link PlatformProvider}.
+ */
 export abstract class BasePaddleOcrService {
   protected options: PaddleOptions = DEFAULT_PADDLE_OPTIONS;
 
@@ -55,7 +80,11 @@ export abstract class BasePaddleOcrService {
   protected abstract initSessions(): Promise<void>;
 
   /**
-   * Run the full OCR pipeline (Detection + Recognition) on an image
+   * Run the full OCR pipeline (detection → recognition) on an image.
+   *
+   * @param image - The source image as an `ArrayBuffer`, platform canvas, or URL/path string.
+   * @param options - Per-call options such as `flatten`, `noCache`, and custom `dictionary`.
+   * @returns Grouped or flattened OCR results depending on `options.flatten`.
    */
   public async recognize(
     image: ArrayBuffer | CoreCanvas | string,
@@ -176,6 +205,15 @@ export abstract class BasePaddleOcrService {
     }
   }
 
+  /**
+   * Straighten a tilted or skewed image.
+   *
+   * Runs a lightweight detection pass to estimate the text skew angle,
+   * then rotates the image to correct it.
+   *
+   * @param image - The source image as an `ArrayBuffer`, platform canvas, or URL/path string.
+   * @returns A new canvas containing the deskewed image.
+   */
   public async deskewImage(
     image: ArrayBuffer | CoreCanvas | string,
   ): Promise<CoreCanvas> {

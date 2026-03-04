@@ -1,3 +1,24 @@
+/**
+ * @module
+ *
+ * Blazing-fast PaddleOCR for Node.js and Bun.
+ *
+ * Provides accurate text detection, recognition, and image deskew with a
+ * simple, modern, type-safe API.  Ideal for document processing, data
+ * extraction, and computer vision tasks.
+ *
+ * @example
+ * ```ts
+ * import { PaddleOcrService } from "ppu-paddle-ocr";
+ *
+ * const service = new PaddleOcrService();
+ * await service.initialize();
+ *
+ * const result = await service.recognize(imageBuffer);
+ * console.log(result.text);
+ * ```
+ */
+
 export type {
   FlattenedPaddleOcrResult,
   PaddleOcrResult,

@@ -11,9 +11,15 @@ import type {
 } from "../interface.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
 
+/**
+ * A single recognized text item with its bounding box and confidence.
+ */
 export interface RecognitionResult {
+  /** The recognized text string. */
   text: string;
+  /** Bounding box of the text region in the original image coordinates. */
   box: Box;
+  /** Recognition confidence score (0–1). */
   confidence: number;
 }
 

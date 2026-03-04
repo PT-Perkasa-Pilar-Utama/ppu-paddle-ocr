@@ -1,3 +1,24 @@
+/**
+ * @module
+ *
+ * PaddleOCR for browsers and web environments.
+ *
+ * Uses `onnxruntime-web` (WebAssembly) and `ppu-ocv/web` instead of their
+ * Node counterparts, enabling accurate text detection and recognition
+ * directly inside the browser.
+ *
+ * @example
+ * ```ts
+ * import { PaddleOcrService } from "ppu-paddle-ocr/web";
+ *
+ * const service = new PaddleOcrService();
+ * await service.initialize();
+ *
+ * const result = await service.recognize(imageBuffer, { flatten: true });
+ * console.log(result.text);
+ * ```
+ */
+
 export type {
   FlattenedPaddleOcrResult,
   PaddleOcrResult,
