@@ -1,14 +1,14 @@
 import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  test,
+    afterAll,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    test,
 } from "bun:test";
 import { ImageProcessor } from "ppu-ocv";
 
-import { globalImageCache } from "../src/processor/image-cache.js";
+import { globalImageCache } from "../src/core/image-cache.js";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 
 type Detection = {

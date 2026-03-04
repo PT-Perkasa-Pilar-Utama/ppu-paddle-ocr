@@ -163,7 +163,7 @@ describe("PaddleOcrService.recognize()", () => {
   test("should recognize from Canvas input (no base64 roundtrip)", async () => {
     await ImageProcessor.initRuntime();
     const canvas = await ImageProcessor.prepareCanvas(imageBuffer);
-    const result = await service.recognize(canvas, { noCache: true });
+    const result = await service.recognize(canvas as any, { noCache: true });
 
     expect(result.text).not.toBeEmpty();
     expect(result.confidence).toBeGreaterThan(0.8);

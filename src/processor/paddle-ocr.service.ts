@@ -4,66 +4,36 @@ import * as os from "os";
 import * as path from "path";
 import { Canvas, ImageProcessor } from "ppu-ocv";
 
-import { DEFAULT_PADDLE_OPTIONS } from "../constants.js";
-import { deepMerge } from "../utils.js";
-
+import {
+  BasePaddleOcrService,
+  GITHUB_BASE_URL,
+} from "../core/base-paddle-ocr.service.js";
+import { globalImageCache, ImageCache } from "../core/image-cache.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
+import type {
+  FlattenedPaddleOcrResult,
+  PaddleOcrResult,
+} from "../web/paddle-ocr.service.web.js";
 import { DetectionService } from "./detection.service.js";
-import { globalImageCache, ImageCache } from "./image-cache.js";
+import { NodePlatformProvider } from "./platform.node.js";
 import {
   RecognitionService,
   type RecognitionResult,
 } from "./recognition.service.js";
 
-export interface PaddleOcrResult {
-  text: string;
-  lines: RecognitionResult[][];
-  confidence: number;
-}
-
-export interface FlattenedPaddleOcrResult {
-  text: string;
-  results: RecognitionResult[];
-  confidence: number;
-}
-
-const GITHUB_BASE_URL =
-  "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/main/models/";
 const CACHE_DIR = path.join(os.homedir(), ".cache", "ppu-paddle-ocr");
 
 /**
  * PaddleOcrService - Provides OCR functionality using PaddleOCR models.
  * To use this service, create an instance and call the `initialize()` method.
  */
-export class PaddleOcrService {
-  private options: PaddleOptions = DEFAULT_PADDLE_OPTIONS;
-
-  private detectionSession: ort.InferenceSession | null = null;
-  private recognitionSession: ort.InferenceSession | null = null;
-  private detector: DetectionService | null = null;
-  private recognitor: RecognitionService | null = null;
-
+export class PaddleOcrService extends BasePaddleOcrService {
   /**
    * Creates an instance of PaddleOcrService.
    * @param options - Configuration options for the service.
    */
   public constructor(options?: PaddleOptions) {
-    this.options = deepMerge(
-      {},
-      DEFAULT_PADDLE_OPTIONS as unknown as Record<string, unknown>,
-      options as unknown as Record<string, unknown>,
-    ) as unknown as PaddleOptions;
-    this.options.session =
-      this.options.session || DEFAULT_PADDLE_OPTIONS.session;
-  }
-
-  /**
-   * Logs a message if verbose debugging is enabled.
-   */
-  private log(message: string): void {
-    if (this.options.debugging?.verbose) {
-      console.log(`[PaddleOcrService] ${message}`);
-    }
+    super(new NodePlatformProvider(), options);
   }
 
   /**
@@ -159,6 +129,12 @@ export class PaddleOcrService {
     }
 
     return this._fetchAndCache(defaultUrl);
+  }
+
+  protected async initSessions(): Promise<void> {
+    throw new Error(
+      "Initialization is handled proactively in PaddleOcrService. Call initialize() instead.",
+    );
   }
 
   /**
@@ -316,39 +292,17 @@ export class PaddleOcrService {
     );
   }
 
-  /**
-   * Runs OCR and returns a flattened list of recognized text boxes.
-   *
-   * @param image - The raw image data as an ArrayBuffer or Canvas.
-   * @param options - Options object with `flatten` set to `true`.
-   * @return A promise that resolves to a flattened result object.
-   */
-  public recognize(
+  public override recognize(
     image: ArrayBuffer | Canvas,
     options: RecognizeOptions & { flatten: true },
   ): Promise<FlattenedPaddleOcrResult>;
 
-  /**
-   * Runs OCR and returns recognized text grouped into lines.
-   *
-   * @param image - The raw image data as an ArrayBuffer or Canvas.
-   * @param options - Optional options object. If `flatten` is `false` or omitted, this structure is returned.
-   * @return A promise that resolves to a result object with text lines.
-   */
-  public recognize(
+  public override recognize(
     image: ArrayBuffer | Canvas,
     options?: RecognizeOptions & { flatten?: false },
   ): Promise<PaddleOcrResult>;
 
-  /**
-   * Runs object detection on the provided image buffer, then performs
-   * recognition on the detected regions.
-   *
-   * @param image - The raw image data as an ArrayBuffer or Canvas.
-   * @param options - Optional configuration for the recognition output, e.g., `{ flatten: true }`.
-   * @return A promise that resolves to the OCR result, either grouped by lines or as a flat list.
-   */
-  public async recognize(
+  public override async recognize(
     image: ArrayBuffer | Canvas,
     options?: RecognizeOptions,
   ): Promise<PaddleOcrResult | FlattenedPaddleOcrResult> {
@@ -393,12 +347,14 @@ export class PaddleOcrService {
       if (options?.flatten) {
         return {
           text: cacheResult.text,
-          results: this.getFlattenedResults(cacheResult.lines),
+          results: (cacheResult as any).lines
+            ? (cacheResult as any).lines.flat()
+            : (cacheResult as FlattenedPaddleOcrResult).results,
           confidence: cacheResult.confidence,
         };
       }
 
-      return cacheResult;
+      return cacheResult as PaddleOcrResult;
     }
 
     let charactersDictionary: string[] | undefined;
@@ -421,6 +377,7 @@ export class PaddleOcrService {
       charactersDictionary,
     );
 
+    // Grouping the recognition result logic to build lines
     const processed = this.processRecognition(recognition);
 
     const result = options?.flatten
@@ -431,27 +388,13 @@ export class PaddleOcrService {
         }
       : processed;
 
-    // Cache result (only if noCache is false and no custom dictionary)
     if (!options?.noCache && !options?.dictionary) {
       globalImageCache.set(cacheKey, result);
     }
 
-    return result;
+    return result as any;
   }
 
-  /**
-   * Flattens recognition results from lines to a single array
-   */
-  private getFlattenedResults(
-    lines: RecognitionResult[][],
-  ): RecognitionResult[] {
-    return lines.flat();
-  }
-
-  /**
-   * Processes raw recognition results to generate the final text,
-   * grouped lines, and overall confidence.
-   */
   private processRecognition(
     recognition: RecognitionResult[],
   ): PaddleOcrResult {
@@ -465,20 +408,19 @@ export class PaddleOcrService {
       return result;
     }
 
-    // Calculate overall confidence as the average of all individual confidences
     const totalConfidence = recognition.reduce(
       (sum, r) => sum + r.confidence,
       0,
     );
     result.confidence = totalConfidence / recognition.length;
 
-    let currentLine: RecognitionResult[] = [recognition[0]];
-    let fullText = recognition[0].text;
-    let avgHeight = recognition[0].box.height;
+    let currentLine: RecognitionResult[] = [recognition[0]!];
+    let fullText = recognition[0]!.text;
+    let avgHeight = recognition[0]!.box.height;
 
     for (let i = 1; i < recognition.length; i++) {
-      const current = recognition[i];
-      const previous = recognition[i - 1];
+      const current = recognition[i]!;
+      const previous = recognition[i - 1]!;
 
       const verticalGap = Math.abs(current.box.y - previous.box.y);
       const threshold = avgHeight * 0.5;
@@ -508,13 +450,9 @@ export class PaddleOcrService {
     return result;
   }
 
-  /**
-   * Runs deskew algorithm on the provided image buffer | canvas
-   *
-   * @param image - The raw image data as an ArrayBuffer or Canvas.
-   * @return A promise that resolves deskewed image as Canvas
-   */
-  public async deskewImage(image: ArrayBuffer | Canvas): Promise<Canvas> {
+  public override async deskewImage(
+    image: ArrayBuffer | Canvas,
+  ): Promise<Canvas> {
     if (!this.isInitialized()) {
       throw new Error(
         "PaddleOcrService is not initialized. Call initialize() first.",
@@ -523,13 +461,9 @@ export class PaddleOcrService {
     await ImageProcessor.initRuntime();
 
     const detection = await this.detector!.deskew(image);
-    return detection;
+    return detection as Canvas;
   }
 
-  /**
-   * Clears the model cache directory, removing all cached model files.
-   * This will force models to be re-downloaded on the next initialization.
-   */
   public clearModelCache(): void {
     if (existsSync(CACHE_DIR)) {
       this.log(`Clearing model cache at: ${CACHE_DIR}`);
@@ -540,10 +474,6 @@ export class PaddleOcrService {
     }
   }
 
-  /**
-   * Releases the onnx runtime session for both
-   * detection and recognition model.
-   */
   public async destroy(): Promise<void> {
     await this.detectionSession?.release();
     await this.recognitionSession?.release();

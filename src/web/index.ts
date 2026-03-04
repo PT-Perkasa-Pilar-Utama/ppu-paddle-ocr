@@ -1,8 +1,8 @@
-export {
-  PaddleOcrService,
-  type FlattenedPaddleOcrResult,
-  type PaddleOcrResult,
-} from "./paddle-ocr.service.web.js";
+export type {
+  FlattenedPaddleOcrResult,
+  PaddleOcrResult,
+} from "../core/base-paddle-ocr.service.js";
+export { PaddleOcrService } from "./paddle-ocr.service.web.js";
 
 export type {
   Box,
@@ -13,15 +13,11 @@ export type {
   RecognitionOptions,
 } from "../interface.js";
 
-export {
-  DetectionServiceWeb as DetectionService,
-  type PreprocessDetectionResult,
-} from "./detection.service.web.js";
+export type { PreprocessDetectionResult } from "../core/base-detection.service.js";
+export { DetectionService } from "./detection.service.web.js";
 
-export {
-  RecognitionServiceWeb as RecognitionService,
-  type RecognitionResult,
-} from "./recognition.service.web.js";
+export type { RecognitionResult } from "../core/base-recognition.service.js";
+export { RecognitionService } from "./recognition.service.web.js";
 
 export {
   DEFAULT_DEBUGGING_OPTIONS,

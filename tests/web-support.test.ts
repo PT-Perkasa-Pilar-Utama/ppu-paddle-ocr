@@ -76,8 +76,8 @@ describe("Web PaddleOcrService instantiation", () => {
     const service = new PaddleOcrService();
 
     expect(
-      service.recognize(new ArrayBuffer(10)),
-    ).rejects.toThrow("not initialized");
+      service.recognize(new ArrayBuffer(10) as any, { flatten: true }),
+    ).rejects.toThrow("Initialization is handled proactively");
   });
 
   test("deskewImage throws when not initialized", async () => {
@@ -86,8 +86,8 @@ describe("Web PaddleOcrService instantiation", () => {
     const service = new PaddleOcrService();
 
     expect(
-      service.deskewImage(new ArrayBuffer(10)),
-    ).rejects.toThrow("not initialized");
+      service.deskewImage(new ArrayBuffer(10) as any),
+    ).rejects.toThrow("Initialization is handled proactively");
   });
 
   test("destroy is safe to call without initialization", async () => {
@@ -146,20 +146,12 @@ describe("Web services do not import Node-specific modules", () => {
     expect(ocr).toContain("onnxruntime-web");
   });
 
-  test("web services use ppu-ocv/web", async () => {
-    const det = await Bun.file(
-      "./src/web/detection.service.web.ts",
-    ).text();
-    const rec = await Bun.file(
-      "./src/web/recognition.service.web.ts",
-    ).text();
-    const ocr = await Bun.file(
-      "./src/web/paddle-ocr.service.web.ts",
+  test("web platform provider uses ppu-ocv/web", async () => {
+    const platform = await Bun.file(
+      "./src/web/platform.web.ts",
     ).text();
 
-    expect(det).toContain("ppu-ocv/web");
-    expect(rec).toContain("ppu-ocv/web");
-    expect(ocr).toContain("ppu-ocv/web");
+    expect(platform).toContain("ppu-ocv/web");
   });
 });
 
@@ -170,9 +162,9 @@ describe("Shared modules are reused in web path", () => {
     expect(content).toContain("../constants.js");
   });
 
-  test("web paddle-ocr service uses shared image-cache", async () => {
+  test("core base service uses shared image-cache", async () => {
     const content = await Bun.file(
-      "./src/web/paddle-ocr.service.web.ts",
+      "./src/core/base-paddle-ocr.service.ts",
     ).text();
     expect(content).toContain("image-cache");
   });
