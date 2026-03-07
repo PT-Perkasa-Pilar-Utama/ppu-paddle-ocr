@@ -182,7 +182,7 @@ console.log(result.text);
 
 You can check out our live `index.html` demo to see how to include the dependencies directly via CDN using ESM modules, and how to configure fallback model loading.
 
-See the interactive demo implementation here: [Web Demo](/index.html)
+See the interactive demo implementation here: [Web Demo](https://pt-perkasa-pilar-utama.github.io/ppu-paddle-ocr/)
 
 #### Changing Models and Dictionaries at Runtime
 
