@@ -5,20 +5,20 @@ import * as path from "path";
 import { Canvas, ImageProcessor } from "ppu-ocv";
 
 import {
-  BasePaddleOcrService,
-  GITHUB_BASE_URL,
+    BasePaddleOcrService,
+    GITHUB_BASE_URL,
 } from "../core/base-paddle-ocr.service.js";
 import { globalImageCache, ImageCache } from "../core/image-cache.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
 import type {
-  FlattenedPaddleOcrResult,
-  PaddleOcrResult,
+    FlattenedPaddleOcrResult,
+    PaddleOcrResult,
 } from "../web/paddle-ocr.service.web.js";
 import { DetectionService } from "./detection.service.js";
 import { NodePlatformProvider } from "./platform.node.js";
 import {
-  RecognitionService,
-  type RecognitionResult,
+    RecognitionService,
+    type RecognitionResult,
 } from "./recognition.service.js";
 
 const CACHE_DIR = path.join(os.homedir(), ".cache", "ppu-paddle-ocr");
@@ -142,6 +142,11 @@ export class PaddleOcrService extends BasePaddleOcrService {
    * This method must be called before any OCR operations.
    */
   public async initialize(): Promise<void> {
+    if (this.isInitialized()) {
+      this.log("PaddleOcrService is already initialized.");
+      return;
+    }
+
     try {
       this.log("Initializing PaddleOcrService...");
 
