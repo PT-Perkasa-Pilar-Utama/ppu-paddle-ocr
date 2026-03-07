@@ -29,6 +29,8 @@ const canvas = processor.toCanvas();
 processor.destroy();
 ```
 
+For more language, I already pre-convert several onnx model from paddle. Checkout here [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models)
+
 ## Description
 
 ppu-paddle-ocr brings the powerful PaddleOCR optical character recognition capabilities to JavaScript environments. This library simplifies the integration of ONNX models with Node.js applications, offering a lightweight solution for text detection and recognition without complex dependencies.
@@ -145,7 +147,7 @@ await service.initialize();
 
 ## Web / Browser Support
 
-Starting from `4.0.0`, ppu-paddle-ocr supports running directly in the browser! Import from `ppu-paddle-ocr/web` instead of the root package to use browser-native capabilities (`HTMLCanvasElement`, `OffscreenCanvas`, and `fetch` buffering) instead of the Node APIs. 
+Starting from `4.0.0`, ppu-paddle-ocr supports running directly in the browser! Import from `ppu-paddle-ocr/web` instead of the root package to use browser-native capabilities (`HTMLCanvasElement`, `OffscreenCanvas`, and `fetch` buffering) instead of the Node APIs.
 
 Note that the browser build depends on `onnxruntime-web` rather than `onnxruntime-node`.
 
@@ -158,14 +160,14 @@ import { ImageProcessor, cv } from "ppu-ocv/web"; // Optional for advanced visio
 const service = new PaddleOcrService();
 await service.initialize();
 
-// If you have a file input: 
+// If you have a file input:
 // <input type="file" id="upload" />
-const file = document.getElementById('upload').files[0];
+const file = document.getElementById("upload").files[0];
 
 // Convert to an HTMLImageElement or an offscreen Canvas
 const img = new Image();
 img.src = URL.createObjectURL(file);
-await new Promise(r => img.onload = r);
+await new Promise((r) => (img.onload = r));
 
 const canvas = document.createElement("canvas");
 canvas.width = img.width;
@@ -178,7 +180,7 @@ console.log(result.text);
 
 ### Direct CDN Usage (No Bundler)
 
-You can check out our live `index.html` demo to see how to include the dependencies directly via CDN using ESM modules, and how to configure fallback model loading. 
+You can check out our live `index.html` demo to see how to include the dependencies directly via CDN using ESM modules, and how to configure fallback model loading.
 
 See the interactive demo implementation here: [Web Demo](/index.html)
 
