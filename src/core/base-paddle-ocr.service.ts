@@ -41,8 +41,12 @@ export interface FlattenedPaddleOcrResult {
 }
 
 /** Base URL for downloading default PaddleOCR model files from GitHub. */
-export const GITHUB_BASE_URL =
-  "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/main/models/";
+export const MODEL_BASE_URL =
+  "https://media.githubusercontent.com/media/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main";
+
+/** Base URL for downloading default PaddleOCR dictionary files from GitHub. */
+export const DICT_BASE_URL =
+  "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main";
 
 /**
  * Abstract base class for platform-agnostic PaddleOCR service.

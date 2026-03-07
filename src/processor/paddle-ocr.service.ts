@@ -5,20 +5,21 @@ import * as path from "path";
 import { Canvas, ImageProcessor } from "ppu-ocv";
 
 import {
-    BasePaddleOcrService,
-    GITHUB_BASE_URL,
+  BasePaddleOcrService,
+  DICT_BASE_URL,
+  MODEL_BASE_URL,
 } from "../core/base-paddle-ocr.service.js";
 import { globalImageCache, ImageCache } from "../core/image-cache.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
 import type {
-    FlattenedPaddleOcrResult,
-    PaddleOcrResult,
+  FlattenedPaddleOcrResult,
+  PaddleOcrResult,
 } from "../web/paddle-ocr.service.web.js";
 import { DetectionService } from "./detection.service.js";
 import { NodePlatformProvider } from "./platform.node.js";
 import {
-    RecognitionService,
-    type RecognitionResult,
+  RecognitionService,
+  type RecognitionResult,
 } from "./recognition.service.js";
 
 const CACHE_DIR = path.join(os.homedir(), ".cache", "ppu-paddle-ocr");
@@ -153,7 +154,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
       // Load detection model
       const detModelBuffer = await this._loadResource(
         this.options.model?.detection,
-        `${GITHUB_BASE_URL}paddleocr-detection.onnx`,
+        `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.onnx`,
       );
 
       // Use configured session options
@@ -169,7 +170,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
       // Load recognition model
       const recModelBuffer = await this._loadResource(
         this.options.model?.recognition,
-        `${GITHUB_BASE_URL}paddleocr-recognition.onnx`,
+        `${MODEL_BASE_URL}/recognition/multi/en/v5/en_PP-OCRv5_mobile_rec_infer.onnx`,
       );
       this.recognitionSession = await ort.InferenceSession.create(
         new Uint8Array(recModelBuffer),
@@ -183,7 +184,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
       // Load character dictionary
       const dictBuffer = await this._loadResource(
         this.options.model?.charactersDictionary,
-        `${GITHUB_BASE_URL}ppocrv5_en_dict.txt`,
+        `${DICT_BASE_URL}/recognition/multi/en/v5/ppocrv5_en_dict.txt`,
       );
       const dictionaryContent = Buffer.from(dictBuffer).toString("utf-8");
       const charactersDictionary = dictionaryContent.split("\n");
@@ -236,7 +237,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
     this.log("Changing detection model...");
     const modelBuffer = await this._loadResource(
       model,
-      `${GITHUB_BASE_URL}paddleocr-detection.onnx`,
+      `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.onnx`,
     );
 
     await this.detectionSession?.release();
@@ -258,7 +259,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
     this.log("Changing recognition model...");
     const modelBuffer = await this._loadResource(
       model,
-      `${GITHUB_BASE_URL}paddleocr-recognition.onnx`,
+      `${MODEL_BASE_URL}/recognition/multi/en/v5/en_PP-OCRv5_mobile_rec_infer.onnx`,
     );
 
     await this.recognitionSession?.release();
@@ -280,7 +281,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
     this.log("Changing text dictionary...");
     const dictBuffer = await this._loadResource(
       dictionary,
-      `${GITHUB_BASE_URL}ppocrv5_en_dict.txt`,
+      `${DICT_BASE_URL}/recognition/multi/en/v5/ppocrv5_en_dict.txt`,
     );
 
     const dictionaryContent = Buffer.from(dictBuffer).toString("utf-8");
