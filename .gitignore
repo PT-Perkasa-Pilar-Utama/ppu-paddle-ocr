@@ -10,3 +10,4 @@ dist/*
 *.traineddata
 .DS_Store
 assets/kaggle/*
+!assets/kaggle/README.md
