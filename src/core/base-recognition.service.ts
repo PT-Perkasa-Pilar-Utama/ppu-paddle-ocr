@@ -158,8 +158,8 @@ export class BaseRecognitionService {
   ): Promise<RecognitionResult | null> {
     const start = Date.now();
 
+    const cropCanvas = this.cropRegion(sourceCanvas, box);
     try {
-      const cropCanvas = this.cropRegion(sourceCanvas, box);
       const { text: recognizedText, confidence } = await this.recognizeText(
         cropCanvas,
         charactersDictionary,
@@ -180,6 +180,8 @@ export class BaseRecognitionService {
     } catch (e: any) {
       console.error(`Error processing box ${index + 1}: ${e.message}`, e.stack);
       return null;
+    } finally {
+      (cropCanvas as any).destroy?.();
     }
   }
 

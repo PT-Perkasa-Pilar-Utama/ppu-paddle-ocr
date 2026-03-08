@@ -48,4 +48,6 @@ export const DEFAULT_PADDLE_OPTIONS: PaddleOptions = {
   recognition: DEFAULT_RECOGNITION_OPTIONS,
   debugging: DEFAULT_DEBUGGING_OPTIONS,
   session: DEFAULT_SESSION_OPTIONS,
+  maxConcurrency: 1,
+  maxQueueSize: 0,
 };

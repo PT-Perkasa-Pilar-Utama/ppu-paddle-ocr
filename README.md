@@ -223,6 +223,26 @@ const result = await service.recognize("./assets/receipt.jpg", {
 const anotherResult = await service.recognize("./assets/another-image.jpg");
 ```
 
+#### Concurrency Control
+
+By default the service processes one image at a time (`maxConcurrency: 1`). Raise the limit for parallel workloads, or set `maxQueueSize` to reject excess requests instead of queuing them indefinitely.
+
+```ts
+const service = new PaddleOcrService({
+  maxConcurrency: 2,  // allow 2 simultaneous inferences
+  maxQueueSize: 10,   // reject new requests once 10 are already queued
+});
+await service.initialize();
+
+// Concurrent calls are admitted up to maxConcurrency and queued beyond that.
+// Once the queue exceeds maxQueueSize the call throws immediately.
+try {
+  const result = await service.recognize(imageBuffer);
+} catch (e) {
+  // "PaddleOcrService: request queue is full (maxQueueSize=10)"
+}
+```
+
 #### Disabling Cache for Specific Calls
 
 You can disable caching for individual OCR calls if you need fresh processing each time:
@@ -272,6 +292,12 @@ export interface PaddleOptions {
 
   /** ONNX Runtime session configuration options. */
   session?: SessionOptions;
+
+  /** Max simultaneous recognize() / deskewImage() calls. Default: 1 (serial). */
+  maxConcurrency?: number;
+
+  /** Max calls that may queue while all slots are busy. 0 = unlimited. Default: 0. */
+  maxQueueSize?: number;
 }
 ```
 
@@ -330,6 +356,15 @@ Enable verbose logs and save intermediate images to help debug OCR pipelines.
 | `verbose`     | `boolean` | `false` | Turn on detailed console logs of each processing step. |
 | `debug`       | `boolean` | `false` | Write intermediate image frames to disk.               |
 | `debugFolder` | `string`  |  `out`  | Output directory for debug images.                     |
+
+#### Concurrency options
+
+Controls how many calls run simultaneously and how many may wait in the queue.
+
+| Property         |   Type   | Default | Description                                                                              |
+| :--------------- | :------: | :-----: | :--------------------------------------------------------------------------------------- |
+| `maxConcurrency` | `number` |   `1`   | Maximum simultaneous `recognize()` / `deskewImage()` calls. `1` = fully serial.         |
+| `maxQueueSize`   | `number` |   `0`   | Maximum calls that may queue while all slots are busy. `0` = unlimited (never rejects).  |
 
 #### `SessionOptions`
 

@@ -1,7 +1,7 @@
 import type { InferenceSession } from "onnxruntime-common";
 import { DEFAULT_PADDLE_OPTIONS } from "../constants.js";
 import type { Box, PaddleOptions, RecognizeOptions } from "../interface.js";
-import { deepMerge } from "../utils.js";
+import { deepMerge, Semaphore } from "../utils.js";
 import { BaseDetectionService } from "./base-detection.service.js";
 import {
   BaseRecognitionService,
@@ -63,6 +63,7 @@ export abstract class BasePaddleOcrService {
   protected recognitor: BaseRecognitionService | null = null;
 
   protected readonly platform: PlatformProvider;
+  private readonly semaphore: Semaphore;
 
   public constructor(platform: PlatformProvider, options?: PaddleOptions) {
     this.platform = platform;
@@ -73,6 +74,7 @@ export abstract class BasePaddleOcrService {
     ) as unknown as PaddleOptions;
     this.options.session =
       this.options.session || DEFAULT_PADDLE_OPTIONS.session;
+    this.semaphore = new Semaphore(this.options.maxConcurrency ?? 1);
   }
 
   protected log(message: string): void {
@@ -91,6 +93,25 @@ export abstract class BasePaddleOcrService {
    * @returns Grouped or flattened OCR results depending on `options.flatten`.
    */
   public async recognize(
+    image: ArrayBuffer | CoreCanvas | string,
+    options?: RecognizeOptions,
+  ): Promise<PaddleOcrResult | FlattenedPaddleOcrResult> {
+    const maxQueueSize = this.options.maxQueueSize ?? 0;
+    if (maxQueueSize > 0 && this.semaphore.pendingCount >= maxQueueSize) {
+      throw new Error(
+        `PaddleOcrService: request queue is full (maxQueueSize=${maxQueueSize}). ` +
+          "Try again later or increase maxQueueSize / maxConcurrency.",
+      );
+    }
+    await this.semaphore.acquire();
+    try {
+      return await this._recognize(image, options);
+    } finally {
+      this.semaphore.release();
+    }
+  }
+
+  private async _recognize(
     image: ArrayBuffer | CoreCanvas | string,
     options?: RecognizeOptions,
   ): Promise<PaddleOcrResult | FlattenedPaddleOcrResult> {
@@ -219,6 +240,24 @@ export abstract class BasePaddleOcrService {
    * @returns A new canvas containing the deskewed image.
    */
   public async deskewImage(
+    image: ArrayBuffer | CoreCanvas | string,
+  ): Promise<CoreCanvas> {
+    const maxQueueSize = this.options.maxQueueSize ?? 0;
+    if (maxQueueSize > 0 && this.semaphore.pendingCount >= maxQueueSize) {
+      throw new Error(
+        `PaddleOcrService: request queue is full (maxQueueSize=${maxQueueSize}). ` +
+          "Try again later or increase maxQueueSize / maxConcurrency.",
+      );
+    }
+    await this.semaphore.acquire();
+    try {
+      return await this._deskewImage(image);
+    } finally {
+      this.semaphore.release();
+    }
+  }
+
+  private async _deskewImage(
     image: ArrayBuffer | CoreCanvas | string,
   ): Promise<CoreCanvas> {
     if (!this.detector || !this.recognitor) {

@@ -164,6 +164,22 @@ export interface PaddleOptions {
    * ONNX Runtime session configuration options.
    */
   session?: SessionOptions;
+
+  /**
+   * Maximum number of concurrent `recognize()` / `deskewImage()` calls
+   * allowed at the same time for this service instance.
+   *
+   * @default 1 // no concurrency, calls are processed serially
+   */
+  maxConcurrency?: number;
+
+  /**
+   * Maximum number of `recognize()` / `deskewImage()` calls that may
+   * queue while all concurrency slots are busy.
+   *
+   * @default 0 // unlimited
+   */
+  maxQueueSize?: number;
 }
 
 /**

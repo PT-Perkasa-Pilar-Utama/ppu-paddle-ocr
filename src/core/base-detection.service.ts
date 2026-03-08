@@ -385,7 +385,12 @@ export class BaseDetectionService {
         return null;
       }
 
-      return outputTensor.data as Float32Array;
+      // Copy data into a new JS-heap Float32Array before disposing the ONNX
+      // tensor — tensor.data is a view into WASM-managed memory that becomes
+      // invalid after dispose().
+      const data = new Float32Array(outputTensor.data as Float32Array);
+      outputTensor.dispose?.();
+      return data;
     } catch (error) {
       console.error(
         "Error during model inference:",
@@ -442,6 +447,7 @@ export class BaseDetectionService {
 
     const { width, height, resizeRatio, originalWidth, originalHeight } = input;
     const canvas = this.tensorToCanvas(detection, width, height);
+    (this.lastDetectionCanvas as any)?.destroy?.();
     this.lastDetectionCanvas = canvas;
 
     const processor = new this.platform.imageProcessor.ImageProcessor(canvas);
