@@ -5,8 +5,8 @@ const service = new PaddleOcrService();
 
 await service.initialize();
 
-const imgFile = Bun.file("./assets/receipt.jpg");
-const deskewFile = Bun.file("./assets/tilted.png");
+const imgFile = Bun.file(import.meta.dir + "/../assets/receipt.jpg");
+const deskewFile = Bun.file(import.meta.dir + "/../assets/tilted.png");
 
 const fileBuffer = await imgFile.arrayBuffer();
 const deskewBuffer = await deskewFile.arrayBuffer();

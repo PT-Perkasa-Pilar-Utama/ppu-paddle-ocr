@@ -9,7 +9,7 @@ const service = new PaddleOcrService({
 });
 await service.initialize();
 
-const imagePath = "./assets/receipt.jpg";
+const imagePath = import.meta.dir + "/../assets/receipt.jpg";
 const imgFile = Bun.file(imagePath);
 const fileBuffer = await imgFile.arrayBuffer();
 

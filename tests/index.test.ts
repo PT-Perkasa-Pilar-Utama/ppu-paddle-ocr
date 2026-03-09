@@ -6,7 +6,7 @@ import dict from "../models/en_dict.txt" with { type: "file" };
 import recModel from "../models/en_PP-OCRv4_mobile_rec_infer.onnx" with { type: "file" };
 import detModel from "../models/PP-OCRv5_mobile_det_infer.onnx" with { type: "file" };
 
-const imgFile = Bun.file("./assets/receipt.jpg");
+const imgFile = Bun.file(import.meta.dir + "/../assets/receipt.jpg");
 const imageBuffer = await imgFile.arrayBuffer();
 
 describe("PaddleOcrService Initialization", () => {

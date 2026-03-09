@@ -10,7 +10,7 @@ const service = new PaddleOcrService({
 });
 await service.initialize();
 
-const imagePath = "./assets/tilted.png";
+const imagePath = import.meta.dir + "/../assets/tilted.png";
 const imgFile = Bun.file(imagePath);
 const fileBuffer = await imgFile.arrayBuffer();
 
