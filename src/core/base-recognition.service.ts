@@ -23,6 +23,11 @@ export interface RecognitionResult {
   confidence: number;
 }
 
+type IndexedBox = {
+  box: Box;
+  index: number;
+};
+
 /**
  * Service for detecting and recognizing text in images
  */
@@ -104,18 +109,18 @@ export class BaseRecognitionService {
   /**
    * Filter out invalid boxes
    */
-  private filterValidBoxes(boxes: Box[]): Array<{ box: Box; index: number }> {
+  private filterValidBoxes(boxes: Box[]): IndexedBox[] {
     return boxes
       .map((box, index) => ({ box, index }))
       .filter(({ box, index }) => this.isValidBox(box, index));
   }
 
   /**
-   * Process all valid boxes in parallel using Promise.all
+   * Process all valid boxes with a configurable concurrency limit.
    */
   private async processBoxesInParallel(
     sourceCanvas: CoreCanvas,
-    boxData: Array<{ box: Box; index: number }>,
+    boxData: IndexedBox[],
     charactersDictionary?: string[],
   ): Promise<RecognitionResult[]> {
     const cropsDebugPath = this.debugging.debugFolder
@@ -127,22 +132,23 @@ export class BaseRecognitionService {
       );
     }
 
-    const results: RecognitionResult[] = [];
-    for (const { box, index } of boxData) {
-      const result = await this.processBox(
-        sourceCanvas,
-        box,
-        index,
-        boxData.length,
-        cropsDebugPath,
-        charactersDictionary,
-      );
-      if (result !== null) {
-        results.push(result);
-      }
-    }
+    const results = await this.mapWithConcurrency(
+      boxData,
+      this.getParallelWorkers(),
+      async ({ box, index }) =>
+        this.processBox(
+          sourceCanvas,
+          box,
+          index,
+          boxData.length,
+          cropsDebugPath,
+          charactersDictionary,
+        ),
+    );
 
-    return results;
+    return results.filter(
+      (result): result is RecognitionResult => result !== null,
+    );
   }
 
   /**
@@ -181,6 +187,63 @@ export class BaseRecognitionService {
       console.error(`Error processing box ${index + 1}: ${e.message}`, e.stack);
       return null;
     }
+  }
+
+  /**
+   * Sanitizes the configured recognition worker count.
+   */
+  private getParallelWorkers(): number {
+    const configuredParallelWorkers = Math.floor(
+      this.options.parallelWorkers ??
+        DEFAULT_RECOGNITION_OPTIONS.parallelWorkers ??
+        1,
+    );
+
+    if (
+      !Number.isFinite(configuredParallelWorkers) ||
+      configuredParallelWorkers < 1
+    ) {
+      return 1;
+    }
+
+    return configuredParallelWorkers;
+  }
+
+  /**
+   * Runs async work with a configurable concurrency limit while preserving order.
+   */
+  private async mapWithConcurrency<TItem, TResult>(
+    items: TItem[],
+    concurrency: number,
+    worker: (item: TItem, index: number) => Promise<TResult>,
+  ): Promise<TResult[]> {
+    if (items.length === 0) {
+      return [];
+    }
+
+    const results = new Array<TResult>(items.length);
+    let nextIndex = 0;
+    const workerCount = Math.min(concurrency, items.length);
+
+    await Promise.all(
+      Array.from({ length: workerCount }, async () => {
+        while (true) {
+          const currentIndex = nextIndex;
+          nextIndex += 1;
+
+          if (currentIndex >= items.length) {
+            return;
+          }
+
+          results[currentIndex] = await worker(
+            items[currentIndex]!,
+            currentIndex,
+          );
+        }
+      }),
+    );
+
+    return results;
   }
 
   /**

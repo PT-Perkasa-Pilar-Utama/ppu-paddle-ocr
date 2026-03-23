@@ -128,6 +128,24 @@ console.log(result.text);
 await service.destroy();
 ```
 
+#### Parallelizing Recognition
+
+Detected text boxes can be recognized concurrently, which improves throughput on receipts, invoices, and other multi-line documents.
+
+```ts
+const service = new PaddleOcrService({
+  recognition: {
+    parallelWorkers: 4, // Process up to 4 detected text crops concurrently
+  },
+});
+
+await service.initialize();
+const result = await service.recognize("./assets/receipt.jpg");
+await service.destroy();
+```
+
+`parallelWorkers` defaults to `1`, which preserves the previous strictly sequential behavior. Increase it when you want to opt into parallel OCR.
+
 #### Using Custom Models
 
 You can provide custom models via file paths, URLs, or `ArrayBuffer`s during initialization. If no models are provided, the default models will be fetched from GitHub.
@@ -317,9 +335,10 @@ Controls preprocessing and filtering parameters during text detection.
 
 Controls parameters for the text recognition stage.
 
-| Property      |   Type   | Default | Description                                           |
-| :------------ | :------: | :-----: | :---------------------------------------------------- |
-| `imageHeight` | `number` |  `48`   | Fixed height for resized input text line images (px). |
+| Property          |   Type   | Default | Description                                                               |
+| :---------------- | :------: | :-----: | :------------------------------------------------------------------------ |
+| `imageHeight`     | `number` |  `48`   | Fixed height for resized input text line images (px).                     |
+| `parallelWorkers` | `number` |   `1`   | Number of detected text crops to process concurrently during recognition. |
 
 #### `DebuggingOptions`
 

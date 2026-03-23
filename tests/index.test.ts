@@ -179,6 +179,99 @@ describe("PaddleOcrService.recognize()", () => {
     expect(result1.lines.length).toBe(result2.lines.length);
   });
 
+  test("should preserve OCR text when parallel recognition is enabled", async () => {
+    const sequentialService = new PaddleOcrService({
+      model: {
+        detection: detModel,
+        recognition: recModel,
+        charactersDictionary: dict,
+      },
+      recognition: {
+        parallelWorkers: 1,
+      },
+    });
+    const parallelService = new PaddleOcrService({
+      model: {
+        detection: detModel,
+        recognition: recModel,
+        charactersDictionary: dict,
+      },
+      recognition: {
+        parallelWorkers: 4,
+      },
+    });
+
+    try {
+      await sequentialService.initialize();
+      await parallelService.initialize();
+
+      const sequentialResult = await sequentialService.recognize(imageBuffer, {
+        flatten: true,
+        noCache: true,
+      });
+      const parallelResult = await parallelService.recognize(imageBuffer, {
+        flatten: true,
+        noCache: true,
+      });
+
+      expect(parallelResult.text).toBe(sequentialResult.text);
+      expect(parallelResult.results.length).toBe(
+        sequentialResult.results.length,
+      );
+      expect(
+        Math.abs(parallelResult.confidence - sequentialResult.confidence),
+      ).toBeLessThan(0.000001);
+    } finally {
+      await sequentialService.destroy();
+      await parallelService.destroy();
+    }
+  });
+
+  test("should run recognition calls concurrently up to recognition.parallelWorkers", async () => {
+    const parallelWorkers = 3;
+    const parallelService = new PaddleOcrService({
+      model: {
+        detection: detModel,
+        recognition: recModel,
+        charactersDictionary: dict,
+      },
+      recognition: {
+        parallelWorkers,
+      },
+    });
+
+    await parallelService.initialize();
+
+    const recognitionSession = (parallelService as any).recognitionSession;
+    const originalRun = recognitionSession.run.bind(recognitionSession);
+    let activeRuns = 0;
+    let maxActiveRuns = 0;
+
+    recognitionSession.run = async (...args: any[]) => {
+      activeRuns += 1;
+      maxActiveRuns = Math.max(maxActiveRuns, activeRuns);
+      try {
+        await Bun.sleep(5);
+        return await originalRun(...args);
+      } finally {
+        activeRuns -= 1;
+      }
+    };
+
+    try {
+      const result = await parallelService.recognize(imageBuffer, {
+        flatten: true,
+        noCache: true,
+      });
+      expect(result.results.length).toBeGreaterThan(0);
+      expect(maxActiveRuns).toBeGreaterThan(1);
+      expect(maxActiveRuns).toBeLessThanOrEqual(parallelWorkers);
+    } finally {
+      recognitionSession.run = originalRun;
+      await parallelService.destroy();
+    }
+  });
+
   test("should release model buffers after initialization", async () => {
     const freshService = new PaddleOcrService({
       model: {

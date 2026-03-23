@@ -27,6 +27,7 @@ export const DEFAULT_DETECTION_OPTIONS: DetectionOptions = {
 /** Default text recognition options. */
 export const DEFAULT_RECOGNITION_OPTIONS: RecognitionOptions = {
   imageHeight: 48,
+  parallelWorkers: 1,
   charactersDictionary: [],
 };
 

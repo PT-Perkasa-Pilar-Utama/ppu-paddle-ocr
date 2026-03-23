@@ -106,6 +106,13 @@ export interface RecognitionOptions {
   imageHeight?: number;
 
   /**
+   * Number of detected text regions to process concurrently during recognition.
+   * Higher values can improve throughput on images with many text boxes.
+   * @default 1
+   */
+  parallelWorkers?: number;
+
+  /**
    * A list of loaded character dictionary (string) for
    * recognition result decoding.
    */
