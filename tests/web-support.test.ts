@@ -59,7 +59,6 @@ describe("Web PaddleOcrService instantiation", () => {
 
     const service = new PaddleOcrService({
       detection: {
-        autoDeskew: false,
         maxSideLength: 480,
       },
       debugging: {
@@ -80,15 +79,6 @@ describe("Web PaddleOcrService instantiation", () => {
     ).rejects.toThrow("Initialization is handled proactively");
   });
 
-  test("deskewImage throws when not initialized", async () => {
-    const { PaddleOcrService } = await import("../src/web/index.js");
-
-    const service = new PaddleOcrService();
-
-    expect(
-      service.deskewImage(new ArrayBuffer(10) as any),
-    ).rejects.toThrow("Initialization is handled proactively");
-  });
 
   test("destroy is safe to call without initialization", async () => {
     const { PaddleOcrService } = await import("../src/web/index.js");

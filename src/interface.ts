@@ -50,13 +50,6 @@ export interface DebuggingOptions {
  */
 export interface DetectionOptions {
   /**
-   * Whether to enable automatic deskewing of the image.
-   * This may run detection twice, increasing processing time but improving accuracy on skewed images.
-   * @default true
-   */
-  autoDeskew?: boolean;
-
-  /**
    * Per-channel mean values used to normalize input pixels [R, G, B].
    * @default [0.485, 0.456, 0.406]
    */

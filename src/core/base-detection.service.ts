@@ -5,7 +5,6 @@ import {
   DEFAULT_DETECTION_OPTIONS,
 } from "../constants.js";
 import type { Box, DebuggingOptions, DetectionOptions } from "../interface.js";
-import { BaseDeskewService } from "./base-deskew.service.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
 
 /**
@@ -71,42 +70,9 @@ export class BaseDetectionService {
     this.log("Starting text detection process");
 
     try {
-      let canvasToProcess = this.platform.isCanvas(image)
+      const canvasToProcess = this.platform.isCanvas(image)
         ? image
         : await this.platform.imageProcessor.prepareCanvas(image);
-
-      if (this.options.autoDeskew) {
-        this.log(
-          "Auto-deskew enabled. Performing initial pass for angle detection.",
-        );
-        const angle = await this.calculateSkewAngle(canvasToProcess);
-
-        this.log(
-          `Detected skew angle: ${angle.toFixed(
-            2,
-          )}°. Rotating image at ${-angle.toFixed(2)}° (to ${
-            -angle > 1 ? "right" : "left"
-          })...`,
-        );
-
-        const processor = new this.platform.imageProcessor.ImageProcessor(
-          canvasToProcess,
-        );
-        try {
-          const rotatedCanvas = processor.rotate({ angle }).toCanvas();
-          canvasToProcess = rotatedCanvas;
-        } finally {
-          processor.destroy();
-        }
-
-        if (this.debugging.debug && this.debugging.debugFolder) {
-          await this.platform.saveDebugImage(
-            canvasToProcess,
-            "deskewed-image-debug",
-            this.debugging.debugFolder,
-          );
-        }
-      }
 
       const input = await this.preprocessDetection(canvasToProcess);
       const detection = await this.runInference(
@@ -141,89 +107,6 @@ export class BaseDetectionService {
       );
       return [];
     }
-  }
-
-  /**
-   * Atomic method to run image deskewing
-   * @param image ArrayBuffer of the image or platform-specific Canvas
-   */
-  async deskew(image: ArrayBuffer | CoreCanvas): Promise<CoreCanvas> {
-    this.log("Starting image deskewing process");
-
-    let canvasToProcess = this.platform.isCanvas(image)
-      ? image
-      : await this.platform.imageProcessor.prepareCanvas(image);
-
-    this.log("Performing initial pass for angle detection.");
-    const angle = await this.calculateSkewAngle(canvasToProcess);
-
-    this.log(
-      `Detected skew angle: ${angle.toFixed(
-        2,
-      )}°. Rotating image at ${-angle.toFixed(2)}° (to ${
-        -angle > 1 ? "right" : "left"
-      })...`,
-    );
-
-    const processor = new this.platform.imageProcessor.ImageProcessor(
-      canvasToProcess,
-    );
-    try {
-      const rotatedCanvas = processor.rotate({ angle }).toCanvas();
-      canvasToProcess = rotatedCanvas;
-    } finally {
-      processor.destroy();
-    }
-
-    if (this.debugging.debug && this.debugging.debugFolder) {
-      await this.platform.saveDebugImage(
-        canvasToProcess,
-        "deskewed-image-debug",
-        this.debugging.debugFolder,
-      );
-    }
-
-    return canvasToProcess;
-  }
-
-  /**
-   * Runs a lightweight detection pass to determine the average text skew angle.
-   * Uses multiple methods to robustly calculate skew from all detected text regions.
-   * @param canvas The input canvas.
-   * @returns The calculated skew angle in degrees.
-   */
-  private async calculateSkewAngle(canvas: CoreCanvas): Promise<number> {
-    const input = await this.preprocessDetection(canvas);
-    const detection = await this.runInference(
-      input.tensor,
-      input.width,
-      input.height,
-    );
-
-    if (!detection) {
-      this.log("Skew calculation failed: no detection output from model.");
-      return 0;
-    }
-
-    const { width, height } = input;
-    const probabilityMapCanvas = this.tensorToCanvas(detection, width, height);
-
-    if (this.debugging.debug && this.debugging.debugFolder) {
-      await this.platform.saveDebugImage(
-        probabilityMapCanvas,
-        "deskew-probability-map-debug.png",
-        this.debugging.debugFolder,
-      );
-    }
-
-    const deskewService = new BaseDeskewService(
-      this.platform,
-      this.options,
-      this.debugging,
-    );
-
-    const result = await deskewService.calculateSkewAngle(probabilityMapCanvas);
-    return result;
   }
 
   /**

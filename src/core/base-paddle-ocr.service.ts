@@ -209,43 +209,6 @@ export abstract class BasePaddleOcrService {
     }
   }
 
-  /**
-   * Straighten a tilted or skewed image.
-   *
-   * Runs a lightweight detection pass to estimate the text skew angle,
-   * then rotates the image to correct it.
-   *
-   * @param image - The source image as an `ArrayBuffer`, platform canvas, or URL/path string.
-   * @returns A new canvas containing the deskewed image.
-   */
-  public async deskewImage(
-    image: ArrayBuffer | CoreCanvas | string,
-  ): Promise<CoreCanvas> {
-    if (!this.detector || !this.recognitor) {
-      await this.initSessions();
-    }
-
-    let imageBuffer: ArrayBuffer | CoreCanvas;
-
-    if (typeof image === "string") {
-      if (!image.startsWith("http") && !image.startsWith("/")) {
-        throw new Error(
-          "Invalid image string format. Must be an HTTP URL, an absolute path, ArrayBuffer, or Canvas",
-        );
-      }
-      imageBuffer = await this.platform.loadResource(image, image);
-    } else {
-      imageBuffer = image;
-    }
-
-    const canvas = this.platform.isCanvas(imageBuffer)
-      ? imageBuffer
-      : await this.platform.imageProcessor.prepareCanvas(imageBuffer);
-
-    const deskewed = await this.detector!.deskew(canvas);
-    return deskewed;
-  }
-
   private flattenResults(
     results: RecognitionResult[],
   ): FlattenedPaddleOcrResult {

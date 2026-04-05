@@ -3,8 +3,8 @@
  *
  * Blazing-fast PaddleOCR for Node.js and Bun.
  *
- * Provides accurate text detection, recognition, and image deskew with a
- * simple, modern, type-safe API.  Ideal for document processing, data
+ * Provides accurate text detection and recognition with a
+ * simple, modern, type-safe API. Ideal for document processing, data
  * extraction, and computer vision tasks.
  *
  * @example

@@ -471,26 +471,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
   }
 
   /**
-   * Straighten a tilted or skewed image.
-   *
-   * @param image - Source image as `ArrayBuffer` or `Canvas`.
-   * @returns A new canvas containing the deskewed image.
-   */
-  public override async deskewImage(
-    image: ArrayBuffer | Canvas,
-  ): Promise<Canvas> {
-    if (!this.isInitialized()) {
-      throw new Error(
-        "PaddleOcrService is not initialized. Call initialize() first.",
-      );
-    }
-    await ImageProcessor.initRuntime();
-
-    const detection = await this.detector!.deskew(image);
-    return detection as Canvas;
-  }
-
-  /**
    * Delete all locally cached ONNX model files.
    */
   public clearModelCache(): void {

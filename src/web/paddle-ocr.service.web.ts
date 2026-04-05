@@ -71,7 +71,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
   /**
    * Initialize the OCR service by loading models, dictionary, and the OpenCV runtime.
    *
-   * Must be called before `recognize()` or `deskewImage()`.
+   * Must be called before `recognize()`.
    */
   public async initialize(): Promise<void> {
     try {
@@ -222,19 +222,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
   ): Promise<PaddleOcrResult | FlattenedPaddleOcrResult> {
     await ImageProcessor.initRuntime();
     return super.recognize(image as any, options);
-  }
-
-  /**
-   * Straighten a tilted or skewed image.
-   *
-   * @param image - Source image as `ArrayBuffer` or browser `CanvasLike`.
-   * @returns A new canvas containing the deskewed image.
-   */
-  public override async deskewImage(
-    image: ArrayBuffer | CanvasLike,
-  ): Promise<CanvasLike> {
-    await ImageProcessor.initRuntime();
-    return super.deskewImage(image as any) as unknown as CanvasLike;
   }
 
   /**
