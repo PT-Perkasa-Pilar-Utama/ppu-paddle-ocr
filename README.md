@@ -2,7 +2,7 @@
 
 > **⚠️ BREAKING CHANGE (v5.0.0)**: The `deskew` functionality has been moved to [ppu-ocv](https://github.com/PT-Perkasa-Pilar-Utama/ppu-ocv). If you need image deskewing, please use the `DeskewService` from `ppu-ocv` instead. The `autoDeskew` option and `deskewImage()` method have been removed from this library.
 >
-> **Upgrading from v4.x?** See the [Migration Guide](#migration-guide-v4x-to-v50) below for step-by-step instructions.
+> **Upgrading from v4.x?** See the [Migration Guide](/docs/MIGRATION-V4-V5.md) below for step-by-step instructions.
 
 A lightweight, type-safe, PaddleOCR implementation in Bun/Node.js for text detection and recognition in JavaScript environments.
 
@@ -54,6 +54,30 @@ Built on top of `onnxruntime-node` and `onnxruntime-web`, ppu-paddle-ocr handles
 6.  **TypeScript Support**: Full TypeScript definitions for enhanced developer experience
 7.  **Web Support**: Supports running directly in the browser
 
+## Benchmark
+
+Run `bun task bench`. Current result:
+
+```bash
+> bun task bench
+$ bun scripts/task.ts bench
+Running benchmark: index.bench.ts
+clk: ~3.12 GHz
+cpu: Apple M1
+runtime: bun 1.3.7 (arm64-darwin)
+
+benchmark                   avg (min … max) p75 / p99    (min … top 1%)
+------------------------------------------- -------------------------------
+cached infer                   2.77 µs/iter   2.67 µs   █
+                       (2.29 µs … 65.50 µs)   5.08 µs   █▇
+                    (  0.00  b … 304.00 kb) 935.43  b ▁▃██▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+
+------------------------------------------- -------------------------------
+no cache infer               231.34 ms/iter 230.76 ms         █
+                    (226.40 ms … 255.82 ms) 231.51 ms         █
+                    ( 16.00 kb …  15.11 mb)   4.14 mb █▁▁█▁▁█▁█▁▁█▁▁▁▁██▁██
+```
+
 ## Installation
 
 Install using your preferred package manager:
@@ -94,46 +118,6 @@ await service.destroy();
 service.clearModelCache();
 ```
 
-#### Updating model library without reinstalling
-
-You can clear the cache model and force refetch/download using this one liner. You can also use this as warmup.
-
-Using Bun:
-
-`bun -e "import('ppu-paddle-ocr').then(m => new m.PaddleOcrService().clearModelCache())"`
-
-Using Node:
-
-`node -e "import('ppu-paddle-ocr').then(m => new m.PaddleOcrService().clearModelCache())"`
-
-#### Optimizing Performance with Session Options
-
-You can fine-tune the ONNX Runtime session configuration for optimal performance:
-
-```ts
-import { PaddleOcrService } from "ppu-paddle-ocr";
-
-// Create a service with optimized session options
-const service = new PaddleOcrService({
-  session: {
-    executionProviders: ["cpu"], // Use CPU-only for consistent performance
-    graphOptimizationLevel: "all", // Enable all optimizations
-    enableCpuMemArena: true, // Better memory management
-    enableMemPattern: true, // Memory pattern optimization
-    executionMode: "sequential", // Better for single-threaded performance
-    interOpNumThreads: 0, // Let ONNX decide optimal thread count
-    intraOpNumThreads: 0, // Let ONNX decide optimal thread count
-  },
-});
-
-await service.initialize();
-
-const result = await service.recognize("./assets/receipt.jpg");
-console.log(result.text);
-
-await service.destroy();
-```
-
 #### Using Custom Models
 
 You can provide custom models via file paths, URLs, or `ArrayBuffer`s during initialization. If no models are provided, the default PP-OCRv5 mobile models for English will be fetched from the [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models) repository.
@@ -152,44 +136,6 @@ const service = new PaddleOcrService({
 // Don't forget to initialize the service
 await service.initialize();
 ```
-
-## Web / Browser Support
-
-Starting from `4.0.0`, ppu-paddle-ocr supports running directly in the browser! Import from `ppu-paddle-ocr/web` instead of the root package to use browser-native capabilities (`HTMLCanvasElement`, `OffscreenCanvas`, and `fetch` buffering) instead of the Node APIs.
-
-Note that the browser build depends on `onnxruntime-web` rather than `onnxruntime-node`.
-
-### Using a Bundler (Vite, Webpack, etc)
-
-```ts
-import { PaddleOcrService } from "ppu-paddle-ocr/web";
-
-const service = new PaddleOcrService();
-await service.initialize();
-
-// If you have a file input:
-// <input type="file" id="upload" />
-const file = document.getElementById("upload").files[0];
-
-// Convert to an HTMLImageElement or an offscreen Canvas
-const img = new Image();
-img.src = URL.createObjectURL(file);
-await new Promise((r) => (img.onload = r));
-
-const canvas = document.createElement("canvas");
-canvas.width = img.width;
-canvas.height = img.height;
-canvas.getContext("2d").drawImage(img, 0, 0);
-
-const result = await service.recognize(canvas);
-console.log(result.text);
-```
-
-### Direct CDN Usage (No Bundler)
-
-You can check out our live `index.html` demo to see how to include the dependencies directly via CDN using ESM modules, and how to configure fallback model loading.
-
-See the interactive demo implementation here: [Web Demo](https://pt-perkasa-pilar-utama.github.io/ppu-paddle-ocr/)
 
 #### Changing Models and Dictionaries at Runtime
 
@@ -253,6 +199,72 @@ const result = await service.recognize("./assets/receipt.jpg", {
   flatten: true,
 });
 ```
+
+#### Optimizing Performance with Session Options
+
+You can fine-tune the ONNX Runtime session configuration for optimal performance:
+
+```ts
+import { PaddleOcrService } from "ppu-paddle-ocr";
+
+// Create a service with optimized session options
+const service = new PaddleOcrService({
+  session: {
+    executionProviders: ["cpu"], // Use CPU-only for consistent performance
+    graphOptimizationLevel: "all", // Enable all optimizations
+    enableCpuMemArena: true, // Better memory management
+    enableMemPattern: true, // Memory pattern optimization
+    executionMode: "sequential", // Better for single-threaded performance
+    interOpNumThreads: 0, // Let ONNX decide optimal thread count
+    intraOpNumThreads: 0, // Let ONNX decide optimal thread count
+  },
+});
+
+await service.initialize();
+
+const result = await service.recognize("./assets/receipt.jpg");
+console.log(result.text);
+
+await service.destroy();
+```
+
+## Web / Browser Support
+
+Starting from `4.0.0`, ppu-paddle-ocr supports running directly in the browser! Import from `ppu-paddle-ocr/web` instead of the root package to use browser-native capabilities (`HTMLCanvasElement`, `OffscreenCanvas`, and `fetch` buffering) instead of the Node APIs.
+
+Note that the browser build depends on `onnxruntime-web` rather than `onnxruntime-node`.
+
+### Using a Bundler (Vite, Webpack, etc)
+
+```ts
+import { PaddleOcrService } from "ppu-paddle-ocr/web";
+
+const service = new PaddleOcrService();
+await service.initialize();
+
+// If you have a file input:
+// <input type="file" id="upload" />
+const file = document.getElementById("upload").files[0];
+
+// Convert to an HTMLImageElement or an offscreen Canvas
+const img = new Image();
+img.src = URL.createObjectURL(file);
+await new Promise((r) => (img.onload = r));
+
+const canvas = document.createElement("canvas");
+canvas.width = img.width;
+canvas.height = img.height;
+canvas.getContext("2d").drawImage(img, 0, 0);
+
+const result = await service.recognize(canvas);
+console.log(result.text);
+```
+
+### Direct CDN Usage (No Bundler)
+
+You can check out our live `index.html` demo to see how to include the dependencies directly via CDN using ESM modules, and how to configure fallback model loading.
+
+See the interactive demo implementation here: [Web Demo](https://pt-perkasa-pilar-utama.github.io/ppu-paddle-ocr/)
 
 ## Models and Language Support
 
@@ -365,227 +377,6 @@ PaddleOCR models are designed for **text-only recognition**. They detect and rec
 
 If you need to convert PaddlePaddle models to ONNX format, see our [conversion guide](./examples/convert-onnx.ipynb).
 
-## Migration Guide: v4.x to v5.0
-
-### Overview of Breaking Changes
-
-In v5.0.0, we've moved the deskew functionality to the [ppu-ocv](https://github.com/PT-Perkasa-Pilar-Utama/ppu-ocv) library to keep ppu-paddle-ocr focused on OCR functionality. This change affects:
-
-1. The `autoDeskew` option in `DetectionOptions`
-2. The `deskewImage()` method on `PaddleOcrService`
-
-### Why This Change?
-
-- **Better Separation of Concerns**: Deskewing is an image preprocessing operation, while ppu-paddle-ocr focuses on OCR
-- **Reduced Bundle Size**: Users who don't need deskewing won't have to include that code
-- **More Flexibility**: ppu-ocv provides more advanced image processing capabilities beyond just deskewing
-
-### Installation
-
-If you were using deskew features, you'll need to install ppu-ocv (v3.0.0 or later):
-
-```bash
-npm install ppu-ocv
-# or
-bun add ppu-ocv
-# or
-yarn add ppu-ocv
-```
-
-**Note about ppu-ocv v3**: The examples below use ppu-ocv v3 API where `CanvasProcessor` is used for canvas preparation. If you're using ppu-ocv v2, use `ImageProcessor.prepareCanvas()` and `ImageProcessor.prepareBuffer()` instead.
-
-### Migration Steps
-
-#### 1. Migrating from `autoDeskew: true`
-
-**Before (v4.x):**
-
-```ts
-import { PaddleOcrService } from "ppu-paddle-ocr";
-
-const service = new PaddleOcrService({
-  detection: {
-    autoDeskew: true, // This option no longer exists
-  },
-});
-
-await service.initialize();
-const result = await service.recognize("./image.jpg");
-```
-
-**After (v5.0):**
-
-```ts
-import { PaddleOcrService } from "ppu-paddle-ocr";
-import { DeskewService, CanvasProcessor } from "ppu-ocv";
-
-// Create services
-const ocrService = new PaddleOcrService();
-const deskewService = new DeskewService();
-
-await ocrService.initialize();
-
-// Load and deskew the image first
-const imgFile = Bun.file("./image.jpg"); // or use fs.readFile in Node.js
-const fileBuffer = await imgFile.arrayBuffer();
-const canvas = await CanvasProcessor.prepareCanvas(fileBuffer);
-
-// Deskew the image
-const deskewedCanvas = await deskewService.deskewImage(canvas);
-
-// Convert back to buffer for OCR
-const deskewedBuffer = await CanvasProcessor.prepareBuffer(deskewedCanvas);
-
-// Perform OCR on the deskewed image
-const result = await ocrService.recognize(deskewedBuffer);
-```
-
-**For Node.js environments:**
-
-```ts
-import { readFile } from "fs/promises";
-import { PaddleOcrService } from "ppu-paddle-ocr";
-import { DeskewService, CanvasProcessor } from "ppu-ocv";
-
-const ocrService = new PaddleOcrService();
-const deskewService = new DeskewService();
-
-await ocrService.initialize();
-
-// Load image
-const imageBuffer = await readFile("./image.jpg");
-const canvas = await CanvasProcessor.prepareCanvas(imageBuffer.buffer);
-
-// Deskew
-const deskewedCanvas = await deskewService.deskewImage(canvas);
-const deskewedBuffer = await CanvasProcessor.prepareBuffer(deskewedCanvas);
-
-// OCR
-const result = await ocrService.recognize(deskewedBuffer);
-```
-
-**For Web/Browser environments:**
-
-```ts
-import { PaddleOcrService } from "ppu-paddle-ocr/web";
-import { DeskewService, ImageProcessor, CanvasProcessor } from "ppu-ocv/web";
-
-const ocrService = new PaddleOcrService();
-const deskewService = new DeskewService();
-
-await ocrService.initialize();
-
-// Load image from file input or create canvas
-const canvas = document.getElementById("myCanvas"); // HTMLCanvasElement
-
-// Deskew
-const deskewedCanvas = await deskewService.deskewImage(canvas);
-
-// OCR
-const result = await ocrService.recognize(deskewedCanvas);
-```
-
-#### 2. Migrating from `deskewImage()` Method
-
-**Before (v4.x):**
-
-```ts
-import { PaddleOcrService } from "ppu-paddle-ocr";
-
-const service = new PaddleOcrService();
-await service.initialize();
-
-// Standalone deskew operation
-const deskewedCanvas = await service.deskewImage("./tilted-image.jpg");
-// ... save or process deskewedCanvas
-```
-
-**After (v5.0):**
-
-```ts
-import { DeskewService, ImageProcessor, CanvasProcessor } from "ppu-ocv";
-import { writeFileSync } from "fs";
-
-const deskewService = new DeskewService({
-  verbose: true, // Optional: enable logging
-  minimumAreaThreshold: 20, // Optional: customize detection
-});
-
-// Load image
-const imgFile = Bun.file("./tilted-image.jpg");
-const fileBuffer = await imgFile.arrayBuffer();
-const canvas = await CanvasProcessor.prepareCanvas(fileBuffer);
-
-// Deskew
-const deskewedCanvas = await deskewService.deskewImage(canvas);
-
-// Save the result
-const buffer = await CanvasProcessor.prepareBuffer(deskewedCanvas);
-writeFileSync("./deskewed-output.png", new Uint8Array(buffer));
-```
-
-#### 3. Creating a Reusable Helper Function
-
-To simplify migration, you can create a helper function that wraps the deskew + OCR workflow:
-
-```ts
-import { PaddleOcrService } from "ppu-paddle-ocr";
-import { DeskewService, ImageProcessor, CanvasProcessor } from "ppu-ocv";
-
-const ocrService = new PaddleOcrService();
-const deskewService = new DeskewService();
-await ocrService.initialize();
-
-async function recognizeWithDeskew(
-  imagePath: string | ArrayBuffer,
-  options?: { flatten?: boolean },
-) {
-  // Load image
-  let buffer: ArrayBuffer;
-  if (typeof imagePath === "string") {
-    const file = Bun.file(imagePath);
-    buffer = await file.arrayBuffer();
-  } else {
-    buffer = imagePath;
-  }
-
-  // Prepare canvas
-  const canvas = await CanvasProcessor.prepareCanvas(buffer);
-
-  // Deskew
-  const deskewedCanvas = await deskewService.deskewImage(canvas);
-
-  // Convert back to buffer
-  const deskewedBuffer = await CanvasProcessor.prepareBuffer(deskewedCanvas);
-
-  // OCR
-  return await ocrService.recognize(deskewedBuffer, options);
-}
-
-// Usage (similar to v4.x with autoDeskew)
-const result = await recognizeWithDeskew("./image.jpg");
-console.log(result.text);
-```
-
-### Additional Notes
-
-- **Performance**: The deskew operation in ppu-ocv uses the same algorithm as v4.x, so performance should be equivalent
-- **Options**: `DeskewService` supports `verbose` and `minimumAreaThreshold` options for customization
-- **Manual Angle Calculation**: You can also use `calculateSkewAngle()` if you only need the angle without rotating:
-
-```ts
-const angle = await deskewService.calculateSkewAngle(canvas);
-console.log(`Detected skew angle: ${angle} degrees`);
-```
-
-### Need Help?
-
-If you encounter issues during migration, please:
-
-1. Check the [ppu-ocv documentation](https://github.com/PT-Perkasa-Pilar-Utama/ppu-ocv)
-2. Review the [deskew example](https://github.com/PT-Perkasa-Pilar-Utama/ppu-ocv/blob/main/examples/deskew.ts)
-3. Open an issue on [GitHub](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/issues)
-
 ## Configuration
 
 All options are grouped under the `PaddleOptions` interface:
@@ -677,30 +468,6 @@ Controls ONNX Runtime session configuration for optimal performance.
 | `executionMode`          |                `'sequential' \| 'parallel'`                | `'sequential'` | Execution mode for the session (`'sequential'` for single-threaded performance). |
 | `interOpNumThreads`      |                          `number`                          |      `0`       | Number of inter-op threads (0 lets ONNX decide).                                 |
 | `intraOpNumThreads`      |                          `number`                          |      `0`       | Number of intra-op threads (0 lets ONNX decide).                                 |
-
-## Benchmark
-
-Run `bun task bench`. Current result:
-
-```bash
-> bun task bench
-$ bun scripts/task.ts bench
-Running benchmark: index.bench.ts
-clk: ~3.12 GHz
-cpu: Apple M1
-runtime: bun 1.3.7 (arm64-darwin)
-
-benchmark                   avg (min … max) p75 / p99    (min … top 1%)
-------------------------------------------- -------------------------------
-cached infer                   2.77 µs/iter   2.67 µs   █
-                       (2.29 µs … 65.50 µs)   5.08 µs   █▇
-                    (  0.00  b … 304.00 kb) 935.43  b ▁▃██▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
-
-------------------------------------------- -------------------------------
-no cache infer               231.34 ms/iter 230.76 ms         █
-                    (226.40 ms … 255.82 ms) 231.51 ms         █
-                    ( 16.00 kb …  15.11 mb)   4.14 mb █▁▁█▁▁█▁█▁▁█▁▁▁▁██▁██
-```
 
 ## Contributing
 
