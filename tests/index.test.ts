@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { CanvasProcessor, ImageProcessor } from "ppu-ocv";
+import { CanvasProcessor } from "ppu-ocv";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 
 import dict from "../models/en_dict.txt" with { type: "file" };
@@ -161,7 +161,6 @@ describe("PaddleOcrService.recognize()", () => {
   });
 
   test("should recognize from Canvas input (no base64 roundtrip)", async () => {
-    await ImageProcessor.initRuntime();
     const canvas = await CanvasProcessor.prepareCanvas(imageBuffer);
     const result = await service.recognize(canvas as any, { noCache: true });
 

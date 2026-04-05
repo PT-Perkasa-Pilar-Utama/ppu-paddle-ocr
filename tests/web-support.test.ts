@@ -79,7 +79,6 @@ describe("Web PaddleOcrService instantiation", () => {
     ).rejects.toThrow("Initialization is handled proactively");
   });
 
-
   test("destroy is safe to call without initialization", async () => {
     const { PaddleOcrService } = await import("../src/web/index.js");
 
@@ -91,9 +90,7 @@ describe("Web PaddleOcrService instantiation", () => {
 
 describe("Web services do not import Node-specific modules", () => {
   test("web detection service file does not import fs, path, or os", async () => {
-    const content = await Bun.file(
-      "./src/web/detection.service.web.ts",
-    ).text();
+    const content = await Bun.file("./src/web/detection.service.web.ts").text();
     expect(content).not.toContain('from "fs"');
     expect(content).not.toContain('from "path"');
     expect(content).not.toContain('from "os"');
@@ -121,15 +118,9 @@ describe("Web services do not import Node-specific modules", () => {
   });
 
   test("web services use onnxruntime-web", async () => {
-    const det = await Bun.file(
-      "./src/web/detection.service.web.ts",
-    ).text();
-    const rec = await Bun.file(
-      "./src/web/recognition.service.web.ts",
-    ).text();
-    const ocr = await Bun.file(
-      "./src/web/paddle-ocr.service.web.ts",
-    ).text();
+    const det = await Bun.file("./src/web/detection.service.web.ts").text();
+    const rec = await Bun.file("./src/web/recognition.service.web.ts").text();
+    const ocr = await Bun.file("./src/web/paddle-ocr.service.web.ts").text();
 
     expect(det).toContain("onnxruntime-web");
     expect(rec).toContain("onnxruntime-web");
@@ -137,9 +128,7 @@ describe("Web services do not import Node-specific modules", () => {
   });
 
   test("web platform provider uses ppu-ocv/web", async () => {
-    const platform = await Bun.file(
-      "./src/web/platform.web.ts",
-    ).text();
+    const platform = await Bun.file("./src/web/platform.web.ts").text();
 
     expect(platform).toContain("ppu-ocv/web");
   });
@@ -163,9 +152,17 @@ describe("Shared modules are reused in web path", () => {
     const mainMod = await import("../src/constants.js");
     const webMod = await import("../src/web/index.js");
 
-    expect(webMod.DEFAULT_PADDLE_OPTIONS).toEqual(mainMod.DEFAULT_PADDLE_OPTIONS);
-    expect(webMod.DEFAULT_DETECTION_OPTIONS).toEqual(mainMod.DEFAULT_DETECTION_OPTIONS);
-    expect(webMod.DEFAULT_RECOGNITION_OPTIONS).toEqual(mainMod.DEFAULT_RECOGNITION_OPTIONS);
-    expect(webMod.DEFAULT_DEBUGGING_OPTIONS).toEqual(mainMod.DEFAULT_DEBUGGING_OPTIONS);
+    expect(webMod.DEFAULT_PADDLE_OPTIONS).toEqual(
+      mainMod.DEFAULT_PADDLE_OPTIONS,
+    );
+    expect(webMod.DEFAULT_DETECTION_OPTIONS).toEqual(
+      mainMod.DEFAULT_DETECTION_OPTIONS,
+    );
+    expect(webMod.DEFAULT_RECOGNITION_OPTIONS).toEqual(
+      mainMod.DEFAULT_RECOGNITION_OPTIONS,
+    );
+    expect(webMod.DEFAULT_DEBUGGING_OPTIONS).toEqual(
+      mainMod.DEFAULT_DEBUGGING_OPTIONS,
+    );
   });
 });

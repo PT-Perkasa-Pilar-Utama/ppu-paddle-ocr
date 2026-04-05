@@ -1,5 +1,5 @@
 import type { InferenceSession } from "onnxruntime-common";
-import type { Contours, cv } from "ppu-ocv";
+import { CanvasProcessor, CanvasToolkit } from "ppu-ocv/canvas";
 import {
   DEFAULT_DEBUGGING_OPTIONS,
   DEFAULT_DETECTION_OPTIONS,
@@ -72,7 +72,7 @@ export class BaseDetectionService {
     try {
       const canvasToProcess = this.platform.isCanvas(image)
         ? image
-        : await this.platform.imageProcessor.prepareCanvas(image);
+        : await CanvasProcessor.prepareCanvas(image);
 
       const input = await this.preprocessDetection(canvasToProcess);
       const detection = await this.runInference(
@@ -124,9 +124,7 @@ export class BaseDetectionService {
     } = this.calculateResizeDimensions(originalWidth, originalHeight);
 
     // Use native canvas resize (no OpenCV needed)
-    const resizedCanvas = new this.platform.canvasProcessor.CanvasProcessor(
-      canvas,
-    )
+    const resizedCanvas = new CanvasProcessor(canvas)
       .resize({ width: resizeW, height: resizeH })
       .toCanvas() as CoreCanvas;
 
@@ -325,7 +323,7 @@ export class BaseDetectionService {
     this.lastDetectionCanvas = canvas;
 
     // Use native canvas operations (no OpenCV needed)
-    const processor = new this.platform.canvasProcessor.CanvasProcessor(canvas)
+    const processor = new CanvasProcessor(canvas)
       .grayscale()
       .threshold({ thresh: 127 });
 
@@ -472,13 +470,13 @@ export class BaseDetectionService {
   ) {
     const canvas = this.platform.isCanvas(image)
       ? image
-      : await this.platform.imageProcessor.prepareCanvas(image);
+      : await CanvasProcessor.prepareCanvas(image);
 
     const ctx = canvas.getContext("2d");
 
     for (const box of boxes) {
       const { x, y, width, height } = box;
-      this.platform.imageProcessor.CanvasToolkit.getInstance().drawLine({
+      CanvasToolkit.getInstance().drawLine({
         ctx,
         x,
         y,

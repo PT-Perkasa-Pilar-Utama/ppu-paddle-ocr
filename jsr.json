@@ -1,6 +1,6 @@
 {
   "name": "@snowfluke/ppu-paddle-ocr",
-  "version": "4.1.1",
+  "version": "5.0.0",
   "license": "MIT",
   "exports": {
     ".": "./src/index.ts",

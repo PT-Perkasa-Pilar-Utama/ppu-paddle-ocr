@@ -1,5 +1,5 @@
 import * as ort from "onnxruntime-web";
-import { ImageProcessor, type CanvasLike } from "ppu-ocv/web";
+import { type CanvasLike } from "ppu-ocv/web";
 
 import type {
   FlattenedPaddleOcrResult,
@@ -76,7 +76,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
   public async initialize(): Promise<void> {
     try {
       this.log("Initializing PaddleOcrService (Web)...");
-      await ImageProcessor.initRuntime();
 
       const detModelBuffer = await this._loadResource(
         this.options.model?.detection,
@@ -220,7 +219,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
     image: ArrayBuffer | CanvasLike,
     options?: RecognizeOptions,
   ): Promise<PaddleOcrResult | FlattenedPaddleOcrResult> {
-    await ImageProcessor.initRuntime();
     return super.recognize(image as any, options);
   }
 

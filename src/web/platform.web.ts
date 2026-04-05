@@ -1,11 +1,4 @@
 import * as ort from "onnxruntime-web";
-import {
-  CanvasProcessor,
-  CanvasToolkit,
-  Contours,
-  cv,
-  ImageProcessor,
-} from "ppu-ocv/web";
 import type { CoreCanvas, PlatformProvider } from "../core/platform.js";
 
 // Provide an intelligent default for ONNX WASM paths to avoid 404s on CDN or unbundled usage.
@@ -64,18 +57,4 @@ export class WebPlatformProvider implements PlatformProvider<CoreCanvas> {
     // No-op on the web since we can't easily write to a local debug folder
     return Promise.resolve();
   }
-
-  public readonly imageProcessor = {
-    prepareCanvas: async (image: unknown): Promise<CoreCanvas> => {
-      return CanvasProcessor.prepareCanvas(image) as Promise<CoreCanvas>;
-    },
-    ImageProcessor,
-    Contours,
-    cv,
-    CanvasToolkit,
-  };
-
-  public readonly canvasProcessor = {
-    CanvasProcessor,
-  };
 }

@@ -1,15 +1,8 @@
 import type { InferenceSession, Tensor } from "onnxruntime-common";
-import type {
-  Canvas,
-  CanvasProcessor,
-  CanvasToolkit,
-  Contours,
-  ImageProcessor,
-  cv,
-} from "ppu-ocv";
+import type { Canvas } from "ppu-ocv";
 import type { CanvasLike } from "ppu-ocv/web";
 
-// Unified Canvas type to support both Node and Web Canvas variations without forcing `any`
+// Unified Canvas type to support both Node and Web Canvas variations
 export type CoreCanvas = Canvas | CanvasLike;
 
 /**
@@ -46,33 +39,4 @@ export interface PlatformProvider<TCanvas = CoreCanvas> {
     filename: string,
     path: string,
   ) => Promise<void>;
-
-  /** A wrapper for platform-specific Open-CV canvas image manipulation implementations (`ppu-ocv` vs `ppu-ocv/web`) */
-  imageProcessor: {
-    /** Injects the source Image buffer into a universally parsable Canvas */
-    prepareCanvas: (image: unknown) => Promise<TCanvas>;
-
-    /** Wrapper class handling matrix transformations (OpenCV-dependent) */
-    ImageProcessor: new (canvas: TCanvas) => ImageProcessor;
-
-    /** Wrapper class handling mathematical OpenCV Contours */
-    Contours: new (
-      mat: cv.Mat,
-      options: { mode: number; method: number },
-    ) => Contours;
-
-    /** Raw OpenCV webassembly object reference */
-    cv: typeof cv;
-
-    /** Static canvas utilities like cropping and drawing */
-    CanvasToolkit: {
-      getInstance(): CanvasToolkit;
-    };
-  };
-
-  /** Native canvas processor (no OpenCV dependency) */
-  canvasProcessor: {
-    /** Wrapper class for native canvas operations (resize, grayscale, threshold, findRegions) */
-    CanvasProcessor: new (canvas: TCanvas) => CanvasProcessor;
-  };
 }

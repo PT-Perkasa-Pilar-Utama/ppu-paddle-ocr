@@ -1,4 +1,5 @@
 import type { InferenceSession } from "onnxruntime-common";
+import { CanvasProcessor } from "ppu-ocv/canvas";
 import { DEFAULT_PADDLE_OPTIONS } from "../constants.js";
 import type { Box, PaddleOptions, RecognizeOptions } from "../interface.js";
 import { deepMerge } from "../utils.js";
@@ -109,10 +110,10 @@ export abstract class BasePaddleOcrService {
           );
         }
         imageBuffer = await this.platform.loadResource(image, image);
-        canvas = await this.platform.imageProcessor.prepareCanvas(imageBuffer);
+        canvas = await CanvasProcessor.prepareCanvas(imageBuffer);
       } else if (image instanceof ArrayBuffer) {
         imageBuffer = image;
-        canvas = await this.platform.imageProcessor.prepareCanvas(imageBuffer);
+        canvas = await CanvasProcessor.prepareCanvas(imageBuffer);
       } else {
         canvas = image;
         if (typeof (image as any).toBuffer === "function") {
@@ -191,7 +192,6 @@ export abstract class BasePaddleOcrService {
       }
 
       const results = await this.recognitor!.run(canvas, boxes, dict);
-
       const groupedResult = this.groupResultsByLine(results);
 
       const finalResult = options?.flatten

@@ -1,10 +1,10 @@
 import {
-    afterAll,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    test,
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
 } from "bun:test";
 import { ImageProcessor } from "ppu-ocv";
 
@@ -75,8 +75,6 @@ function createServiceWithMocks() {
   return { service, calls };
 }
 
-const originalInitRuntime = ImageProcessor.initRuntime;
-
 describe("PaddleOcrService canvas compatibility", () => {
   beforeAll(() => {
     Object.defineProperty(ImageProcessor, "initRuntime", {
@@ -88,7 +86,6 @@ describe("PaddleOcrService canvas compatibility", () => {
 
   afterAll(() => {
     Object.defineProperty(ImageProcessor, "initRuntime", {
-      value: originalInitRuntime,
       configurable: true,
       writable: true,
     });

@@ -10,9 +10,11 @@
     // Bundler mode
     "moduleResolution": "Bundler",
     "verbatimModuleSyntax": true,
-    "paths": {
-      "ppu-ocv/web": ["../ppu-ocv/src/index.web.ts"]
-    },
+    // Commenting out paths to use node_modules for consistent type resolution
+    // "paths": {
+    //   "ppu-ocv": ["../ppu-ocv/src/index.ts"],
+    //   "ppu-ocv/web": ["../ppu-ocv/src/index.web.ts"]
+    // },
     // Best practices
     "strict": true,
     "skipLibCheck": true,
@@ -28,6 +30,7 @@
     "declaration": true,
     "declarationDir": "lib",
     "stripInternal": true,
-    "isolatedDeclarations": true
+    "isolatedDeclarations": true,
+    "rootDir": "."
   }
 }

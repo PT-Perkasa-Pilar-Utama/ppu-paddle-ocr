@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import * as ort from "onnxruntime-node";
 import * as os from "os";
 import * as path from "path";
-import { Canvas, ImageProcessor } from "ppu-ocv";
+import { Canvas } from "ppu-ocv";
 
 import {
   BasePaddleOcrService,
@@ -331,7 +331,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
         "PaddleOcrService is not initialized. Call initialize() first.",
       );
     }
-    await ImageProcessor.initRuntime();
 
     let imageBuffer: ArrayBuffer;
     if (image instanceof ArrayBuffer) {

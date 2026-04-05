@@ -419,7 +419,6 @@
           </div>
 
           <div class="section-title" style="margin-top:1.5rem;">Detection Options</div>
-          <label class="checkbox-label"><input type="checkbox" id="cfg-det-deskew" class="input-checkbox" checked /> Auto Deskew</label>
           <div class="input-group">
             <label class="input-label">Max Side Length</label>
             <input type="number" id="cfg-det-maxside" class="input-field" placeholder="960" />
@@ -539,7 +538,6 @@
     const cfgDetModel       = document.getElementById('cfg-model-det');
     const cfgRecModel       = document.getElementById('cfg-model-rec');
     const cfgDict           = document.getElementById('cfg-model-dict');
-    const cfgDetDeskew      = document.getElementById('cfg-det-deskew');
     const cfgDetMaxSide     = document.getElementById('cfg-det-maxside');
     const cfgDetMinArea     = document.getElementById('cfg-det-minarea');
     const cfgDetPadVert     = document.getElementById('cfg-det-padvert');
@@ -637,7 +635,6 @@
        if (cfgRecModel.value.trim()) options.model.recognition = cfgRecModel.value.trim();
        if (cfgDict.value.trim()) options.model.charactersDictionary = cfgDict.value.trim();
 
-       if (cfgDetDeskew.checked === false) options.detection.autoDeskew = false;
        if (cfgDetMaxSide.value) options.detection.maxSideLength = parseInt(cfgDetMaxSide.value, 10);
        if (cfgDetMinArea.value) options.detection.minimumAreaThreshold = parseInt(cfgDetMinArea.value, 10);
        if (cfgDetPadVert.value) options.detection.paddingVertical = parseFloat(cfgDetPadVert.value);
@@ -769,29 +766,8 @@
       try {
         const t0 = performance.now();
 
-        // If auto-deskew is enabled, deskew the image first and display it
-        let imageToRecognize = resultCanvas;
-        const autoDeskew = cfgDetDeskew && cfgDetDeskew.checked;
-
-        if (autoDeskew) {
-          setStatus('loading', 'Deskewing image…');
-          const deskewedCanvas = await ocrService.deskewImage(resultCanvas);
-
-          // Render the deskewed image onto the result canvas
-          resultCanvas.width = deskewedCanvas.width;
-          resultCanvas.height = deskewedCanvas.height;
-          overlayCanvas.width = deskewedCanvas.width;
-          overlayCanvas.height = deskewedCanvas.height;
-
-          const ctx = resultCanvas.getContext('2d');
-          ctx.drawImage(deskewedCanvas, 0, 0);
-
-          imageToRecognize = resultCanvas;
-          setStatus('loading', 'Recognizing Text…');
-        }
-        
         // Use recognize with flatten: true to get all bounding boxes easily
-        const result = await ocrService.recognize(imageToRecognize, { flatten: true, noCache: true });
+        const result = await ocrService.recognize(resultCanvas, { flatten: true, noCache: true });
         
         const elapsed = (performance.now() - t0).toFixed(1);
 

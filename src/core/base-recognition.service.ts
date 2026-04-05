@@ -1,5 +1,5 @@
 import type { InferenceSession, Tensor } from "onnxruntime-common";
-import type { CanvasProcessor } from "ppu-ocv";
+import { CanvasProcessor, CanvasToolkit } from "ppu-ocv/canvas";
 import {
   DEFAULT_DEBUGGING_OPTIONS,
   DEFAULT_RECOGNITION_OPTIONS,
@@ -82,7 +82,7 @@ export class BaseRecognitionService {
     try {
       const sourceCanvasForCrop = this.platform.isCanvas(image)
         ? image
-        : await this.platform.imageProcessor.prepareCanvas(image);
+        : await CanvasProcessor.prepareCanvas(image);
 
       const validBoxes = this.filterValidBoxes(detection);
       const results = await this.processBoxesInParallel(
@@ -122,9 +122,14 @@ export class BaseRecognitionService {
       ? `${this.debugging.debugFolder}${this.platform.pathSeparator}crops`
       : "";
     if (this.debugging.debug && cropsDebugPath) {
-      this.platform.imageProcessor.CanvasToolkit.getInstance().clearOutput(
-        cropsDebugPath,
-      );
+      const toolkit = CanvasToolkit.getInstance();
+      // clearOutput is only available in Node environment
+      if (
+        "clearOutput" in toolkit &&
+        typeof toolkit.clearOutput === "function"
+      ) {
+        toolkit.clearOutput(cropsDebugPath);
+      }
     }
 
     const results: RecognitionResult[] = [];
@@ -218,7 +223,7 @@ export class BaseRecognitionService {
    * Crops a region from the source canvas based on bounding box
    */
   private cropRegion(sourceCanvas: CoreCanvas, box: Box): CoreCanvas {
-    return this.platform.imageProcessor.CanvasToolkit.getInstance().crop({
+    return CanvasToolkit.getInstance().crop({
       bbox: {
         x0: box.x,
         y0: box.y,
@@ -315,9 +320,7 @@ export class BaseRecognitionService {
     );
 
     // Use native canvas resize (no OpenCV needed)
-    const processor = new this.platform.canvasProcessor.CanvasProcessor(
-      cropCanvas,
-    ).resize({
+    const processor = new CanvasProcessor(cropCanvas).resize({
       width: resizedWidth,
       height: targetHeight,
     });

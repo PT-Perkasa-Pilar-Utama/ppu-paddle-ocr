@@ -1,14 +1,7 @@
 import * as fs from "fs/promises";
 import * as ort from "onnxruntime-node";
 import * as path from "path";
-import {
-  Canvas,
-  CanvasProcessor,
-  CanvasToolkit,
-  Contours,
-  cv,
-  ImageProcessor,
-} from "ppu-ocv";
+import { Canvas, CanvasToolkit } from "ppu-ocv";
 import type { CoreCanvas, PlatformProvider } from "../core/platform.js";
 
 export class NodePlatformProvider implements PlatformProvider<CoreCanvas> {
@@ -60,19 +53,4 @@ export class NodePlatformProvider implements PlatformProvider<CoreCanvas> {
       path: outputDir,
     });
   }
-
-  public readonly imageProcessor = {
-    prepareCanvas: async (image: unknown): Promise<CoreCanvas> => {
-      // In Node, we can prepare canvas from ArrayBuffer or local Buffer
-      return CanvasProcessor.prepareCanvas(image) as Promise<CoreCanvas>;
-    },
-    ImageProcessor,
-    Contours,
-    cv,
-    CanvasToolkit,
-  };
-
-  public readonly canvasProcessor = {
-    CanvasProcessor,
-  };
 }
