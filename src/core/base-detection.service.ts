@@ -123,15 +123,12 @@ export class BaseDetectionService {
       ratio: resizeRatio,
     } = this.calculateResizeDimensions(originalWidth, originalHeight);
 
-    const processor = new this.platform.imageProcessor.ImageProcessor(canvas);
-    let resizedCanvas: CoreCanvas;
-    try {
-      resizedCanvas = processor
-        .resize({ width: resizeW, height: resizeH })
-        .toCanvas();
-    } finally {
-      processor.destroy();
-    }
+    // Use native canvas resize (no OpenCV needed)
+    const resizedCanvas = new this.platform.canvasProcessor.CanvasProcessor(
+      canvas,
+    )
+      .resize({ width: resizeW, height: resizeH })
+      .toCanvas() as CoreCanvas;
 
     const width = Math.ceil(resizeW / 32) * 32;
     const height = Math.ceil(resizeH / 32) * 32;
@@ -327,83 +324,70 @@ export class BaseDetectionService {
     const canvas = this.tensorToCanvas(detection, width, height);
     this.lastDetectionCanvas = canvas;
 
-    const processor = new this.platform.imageProcessor.ImageProcessor(canvas);
-    try {
-      processor
-        .grayscale()
-        .convert({ rtype: this.platform.imageProcessor.cv.CV_8UC1 });
+    // Use native canvas operations (no OpenCV needed)
+    const processor = new this.platform.canvasProcessor.CanvasProcessor(canvas)
+      .grayscale()
+      .threshold({ thresh: 127 });
 
-      const contours = new this.platform.imageProcessor.Contours(
-        processor.toMat(),
-        {
-          mode: this.platform.imageProcessor.cv.RETR_LIST,
-          method: this.platform.imageProcessor.cv.CHAIN_APPROX_SIMPLE,
-        },
-      );
+    // Use native region detection instead of OpenCV contours
+    const regions = processor.findRegions({
+      foreground: "light",
+      minArea: minBoxAreaOnPadded,
+      thresh: 0, // Use 0 for resized binary images (matches OpenCV behavior)
+      padding: {
+        vertical: paddingVertical,
+        horizontal: paddingHorizontal,
+      },
+      scale: 1 / resizeRatio, // Map coordinates back to original image space
+    });
 
-      const boxes = this.extractBoxesFromContours(
-        contours,
-        width,
-        height,
-        resizeRatio,
-        originalWidth,
-        originalHeight,
-        minBoxAreaOnPadded,
-        paddingVertical,
-        paddingHorizontal,
-      );
+    const boxes = this.extractBoxesFromRegions(
+      regions,
+      originalWidth,
+      originalHeight,
+    );
 
-      contours.destroy();
-
-      this.log(`Found ${boxes.length} potential text boxes`);
-      return boxes;
-    } finally {
-      processor.destroy();
-    }
+    this.log(`Found ${boxes.length} potential text boxes`);
+    return boxes;
   }
 
   /**
-   * Extract boxes from contours
+   * Extract boxes from detected regions (native canvas implementation)
    */
-  private extractBoxesFromContours(
-    contours: Contours,
-    width: number,
-    height: number,
-    resizeRatio: number,
+  private extractBoxesFromRegions(
+    regions: Array<{
+      bbox: { x0: number; y0: number; x1: number; y1: number };
+      area: number;
+    }>,
     originalWidth: number,
     originalHeight: number,
-    minBoxArea: number,
-    paddingVertical: number,
-    paddingHorizontal: number,
   ): Box[] {
     const boxes: Box[] = [];
 
-    contours.iterate((contour: cv.Mat) => {
-      const rect = contours.getRect(contour);
+    for (const region of regions) {
+      const { bbox } = region;
 
-      if (rect.width * rect.height <= minBoxArea) {
-        return;
+      // Convert from exclusive x1/y1 to width/height format
+      const box: Box = {
+        x: Math.max(0, bbox.x0),
+        y: Math.max(0, bbox.y0),
+        width: bbox.x1 - bbox.x0,
+        height: bbox.y1 - bbox.y0,
+      };
+
+      // Ensure box is within original image bounds
+      if (box.x + box.width > originalWidth) {
+        box.width = originalWidth - box.x;
+      }
+      if (box.y + box.height > originalHeight) {
+        box.height = originalHeight - box.y;
       }
 
-      const paddedRect = this.applyPaddingToRect(
-        rect,
-        width,
-        height,
-        paddingVertical,
-        paddingHorizontal,
-      );
-
-      const finalBox = this.convertToOriginalCoordinates(
-        paddedRect,
-        resizeRatio,
-        originalWidth,
-        originalHeight,
-      );
-
-      if (finalBox.width > 5 && finalBox.height > 5) {
-        boxes.push(finalBox);
+      // Filter out very small boxes
+      if (box.width > 5 && box.height > 5) {
+        boxes.push(box);
       }
-    });
+    }
 
     return boxes;
   }

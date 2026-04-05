@@ -67,13 +67,15 @@ export class WebPlatformProvider implements PlatformProvider<CoreCanvas> {
 
   public readonly imageProcessor = {
     prepareCanvas: async (image: unknown): Promise<CoreCanvas> => {
-      return CanvasProcessor.prepareCanvas(
-        image as any,
-      ) as unknown as CoreCanvas;
+      return CanvasProcessor.prepareCanvas(image) as Promise<CoreCanvas>;
     },
-    ImageProcessor: ImageProcessor as any,
-    Contours: Contours as any,
-    cv: cv as any,
-    CanvasToolkit: CanvasToolkit as any,
+    ImageProcessor,
+    Contours,
+    cv,
+    CanvasToolkit,
+  };
+
+  public readonly canvasProcessor = {
+    CanvasProcessor,
   };
 }

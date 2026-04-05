@@ -64,11 +64,15 @@ export class NodePlatformProvider implements PlatformProvider<CoreCanvas> {
   public readonly imageProcessor = {
     prepareCanvas: async (image: unknown): Promise<CoreCanvas> => {
       // In Node, we can prepare canvas from ArrayBuffer or local Buffer
-      return CanvasProcessor.prepareCanvas(image as any);
+      return CanvasProcessor.prepareCanvas(image) as Promise<CoreCanvas>;
     },
-    ImageProcessor: ImageProcessor as any,
-    Contours: Contours as any,
-    cv: cv as any,
-    CanvasToolkit: CanvasToolkit as any,
+    ImageProcessor,
+    Contours,
+    cv,
+    CanvasToolkit,
+  };
+
+  public readonly canvasProcessor = {
+    CanvasProcessor,
   };
 }

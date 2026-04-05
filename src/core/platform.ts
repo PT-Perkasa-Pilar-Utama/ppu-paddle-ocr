@@ -1,6 +1,7 @@
 import type { InferenceSession, Tensor } from "onnxruntime-common";
 import type {
   Canvas,
+  CanvasProcessor,
   CanvasToolkit,
   Contours,
   ImageProcessor,
@@ -51,7 +52,7 @@ export interface PlatformProvider<TCanvas = CoreCanvas> {
     /** Injects the source Image buffer into a universally parsable Canvas */
     prepareCanvas: (image: unknown) => Promise<TCanvas>;
 
-    /** Wrapper class handling matrix transformations */
+    /** Wrapper class handling matrix transformations (OpenCV-dependent) */
     ImageProcessor: new (canvas: TCanvas) => ImageProcessor;
 
     /** Wrapper class handling mathematical OpenCV Contours */
@@ -67,5 +68,11 @@ export interface PlatformProvider<TCanvas = CoreCanvas> {
     CanvasToolkit: {
       getInstance(): CanvasToolkit;
     };
+  };
+
+  /** Native canvas processor (no OpenCV dependency) */
+  canvasProcessor: {
+    /** Wrapper class for native canvas operations (resize, grayscale, threshold, findRegions) */
+    CanvasProcessor: new (canvas: TCanvas) => CanvasProcessor;
   };
 }

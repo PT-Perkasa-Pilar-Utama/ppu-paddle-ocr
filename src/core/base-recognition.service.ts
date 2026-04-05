@@ -1,5 +1,5 @@
 import type { InferenceSession, Tensor } from "onnxruntime-common";
-import type { ImageProcessor } from "ppu-ocv";
+import type { CanvasProcessor } from "ppu-ocv";
 import {
   DEFAULT_DEBUGGING_OPTIONS,
   DEFAULT_RECOGNITION_OPTIONS,
@@ -297,53 +297,49 @@ export class BaseRecognitionService {
     tensorWidth: number;
     tensorHeight: number;
   }> {
-    const processor = new this.platform.imageProcessor.ImageProcessor(
-      cropCanvas,
-    );
-    try {
-      const targetHeight = this.options.imageHeight!;
+    const targetHeight = this.options.imageHeight!;
 
-      const originalWidth = processor.width;
-      const originalHeight = processor.height;
+    const originalWidth = cropCanvas.width;
+    const originalHeight = cropCanvas.height;
 
-      if (originalHeight === 0 || originalWidth === 0) {
-        throw new Error(
-          `Crop dimensions are zero: ${originalWidth}x${originalHeight}`,
-        );
-      }
-
-      const aspectRatio = originalWidth / originalHeight;
-      const resizedWidth = Math.max(
-        BaseRecognitionService.MIN_CROP_WIDTH,
-        Math.round(targetHeight * aspectRatio),
+    if (originalHeight === 0 || originalWidth === 0) {
+      throw new Error(
+        `Crop dimensions are zero: ${originalWidth}x${originalHeight}`,
       );
-
-      processor.resize({
-        width: resizedWidth,
-        height: targetHeight,
-      });
-
-      const imageTensor = this.createImageTensor(
-        processor,
-        resizedWidth,
-        targetHeight,
-      );
-
-      return {
-        imageTensor,
-        tensorWidth: resizedWidth,
-        tensorHeight: targetHeight,
-      };
-    } finally {
-      processor.destroy();
     }
+
+    const aspectRatio = originalWidth / originalHeight;
+    const resizedWidth = Math.max(
+      BaseRecognitionService.MIN_CROP_WIDTH,
+      Math.round(targetHeight * aspectRatio),
+    );
+
+    // Use native canvas resize (no OpenCV needed)
+    const processor = new this.platform.canvasProcessor.CanvasProcessor(
+      cropCanvas,
+    ).resize({
+      width: resizedWidth,
+      height: targetHeight,
+    });
+
+    const imageTensor = this.createImageTensor(
+      processor,
+      resizedWidth,
+      targetHeight,
+    );
+
+    return {
+      imageTensor,
+      tensorWidth: resizedWidth,
+      tensorHeight: targetHeight,
+    };
   }
 
   /**
    * Creates a normalized image tensor from the preprocessed canvas
    */
   private createImageTensor(
-    processor: ImageProcessor,
+    processor: CanvasProcessor,
     width: number,
     height: number,
   ): Float32Array {
