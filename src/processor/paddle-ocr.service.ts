@@ -201,15 +201,19 @@ export class PaddleOcrService extends BasePaddleOcrService {
         `Character dictionary loaded with ${charactersDictionary.length} entries.`,
       );
 
+      const engine = this.options.processing?.engine || "opencv";
+
       this.detector = new DetectionService(
         this.detectionSession!,
         this.options.detection,
         this.options.debugging,
+        engine,
       );
       this.recognitor = new RecognitionService(
         this.recognitionSession!,
         this.options.recognition,
         this.options.debugging,
+        engine,
       );
 
       this.options.model!.detection = undefined;

@@ -2,6 +2,8 @@ import type {
   DebuggingOptions,
   DetectionOptions,
   PaddleOptions,
+  ProcessingEngine,
+  ProcessingOptions,
   RecognitionOptions,
   SessionOptions,
 } from "./interface.js";
@@ -40,6 +42,14 @@ export const DEFAULT_SESSION_OPTIONS: SessionOptions = {
   intraOpNumThreads: 0,
 };
 
+/** Default image processing engine. */
+export const DEFAULT_PROCESSING_ENGINE: ProcessingEngine = "opencv";
+
+/** Default image processing options. */
+export const DEFAULT_PROCESSING_OPTIONS: ProcessingOptions = {
+  engine: DEFAULT_PROCESSING_ENGINE,
+};
+
 /** Default combined options used when no custom config is provided. */
 export const DEFAULT_PADDLE_OPTIONS: PaddleOptions = {
   model: {},
@@ -47,4 +57,5 @@ export const DEFAULT_PADDLE_OPTIONS: PaddleOptions = {
   recognition: DEFAULT_RECOGNITION_OPTIONS,
   debugging: DEFAULT_DEBUGGING_OPTIONS,
   session: DEFAULT_SESSION_OPTIONS,
+  processing: DEFAULT_PROCESSING_OPTIONS,
 };

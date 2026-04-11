@@ -1,9 +1,5 @@
 # ppu-paddle-ocr
 
-> **⚠️ BREAKING CHANGE (v5.0.0)**: The `deskew` functionality has been moved to [ppu-ocv](https://github.com/PT-Perkasa-Pilar-Utama/ppu-ocv). If you need image deskewing, please use the `DeskewService` from `ppu-ocv` instead. The `autoDeskew` option and `deskewImage()` method have been removed from this library.
->
-> **Upgrading from v4.x?** See the [Migration Guide](/docs/MIGRATION-V4-V5.md) below for step-by-step instructions.
-
 A lightweight, type-safe, PaddleOCR implementation in Bun/Node.js for text detection and recognition in JavaScript environments.
 
 ![ppu-paddle-ocr demo](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/refs/heads/main/assets/ppu-paddle-ocr-demo.jpg)
@@ -21,6 +17,10 @@ await service.destroy();
 ```
 
 You can combine it further by using open-cv https://github.com/PT-Perkasa-Pilar-Utama/ppu-ocv for more improved accuracy.
+
+> **Upgrading from v4.x?** See the [Migration Guide](/docs/MIGRATION-V4-V5.md) below for step-by-step instructions.
+
+> **New in v5.1.0**: The default image processing engine is now **OpenCV** (restored from v4 behavior). You can still opt into the lighter canvas-native engine via `processing: { engine: "canvas-native" }`. See [Processing Engine](#processing-engine) for details.
 
 #### Paddle works best with grayscale/thresholded image
 
@@ -62,20 +62,28 @@ Run `bun task bench`. Current result:
 > bun task bench
 $ bun scripts/task.ts bench
 Running benchmark: index.bench.ts
-clk: ~3.12 GHz
+clk: ~3.03 GHz
 cpu: Apple M1
 runtime: bun 1.3.7 (arm64-darwin)
 
 benchmark                   avg (min … max) p75 / p99    (min … top 1%)
 ------------------------------------------- -------------------------------
-cached infer                   2.77 µs/iter   2.67 µs   █
-                       (2.29 µs … 65.50 µs)   5.08 µs   █▇
-                    (  0.00  b … 304.00 kb) 935.43  b ▁▃██▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+cached infer                   2.59 µs/iter   2.54 µs     █
+                       (2.17 µs … 82.08 µs)   4.25 µs     █
+                    (  0.00  b … 288.00 kb) 701.72  b ▂▅▂██▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
 
 ------------------------------------------- -------------------------------
-no cache infer               231.34 ms/iter 230.76 ms         █
-                    (226.40 ms … 255.82 ms) 231.51 ms         █
-                    ( 16.00 kb …  15.11 mb)   4.14 mb █▁▁█▁▁█▁█▁▁█▁▁▁▁██▁██
+opencv: no cache             245.83 ms/iter 257.50 ms     █    █
+                    (217.75 ms … 346.86 ms) 266.70 ms ▅▅▅▅█    █      ▅▅  ▅
+                    (160.00 kb …  10.77 mb)   3.22 mb █████▁▁▁▁█▁▁▁▁▁▁██▁▁█
+
+canvas-native: no cache      225.62 ms/iter 226.50 ms    ███
+                    (222.81 ms … 231.70 ms) 229.66 ms ▅  ███▅    ▅▅       ▅
+                    (  0.00  b …   8.88 mb)   1.01 mb █▁▁████▁▁▁▁██▁▁▁▁▁▁▁█
+
+summary
+  canvas-native: no cache
+   1.09x faster than opencv: no cache
 ```
 
 ## Installation
@@ -377,6 +385,32 @@ PaddleOCR models are designed for **text-only recognition**. They detect and rec
 
 If you need to convert PaddlePaddle models to ONNX format, see our [conversion guide](./examples/convert-onnx.ipynb).
 
+## Processing Engine
+
+Starting from v5.1.0, you can choose between two image processing engines for the detection and recognition preprocessing pipeline:
+
+| Engine            | Default | OpenCV Required | Description                                                                                    |
+| :---------------- | :-----: | :-------------: | :--------------------------------------------------------------------------------------------- |
+| `"opencv"`        |   Yes   |       Yes       | Uses OpenCV.js (`ImageProcessor` / `Contours` from `ppu-ocv`). More accurate region detection. |
+| `"canvas-native"` |   No    |       No        | Pure HTML Canvas operations (`CanvasProcessor` from `ppu-ocv/canvas`). Lighter, no OpenCV dep. |
+
+The **OpenCV** engine is the default because it produces more accurate bounding boxes during text detection using proper contour analysis. The **canvas-native** engine is a good alternative for environments where OpenCV is unavailable (e.g., browser extensions) or when minimizing dependencies is a priority.
+
+> [!NOTE]
+> The Web/browser build (`ppu-paddle-ocr/web`) always uses `canvas-native` regardless of this setting, since OpenCV.js is not bundled in the web entry point.
+
+```ts
+// Use the default OpenCV engine (recommended)
+const service = new PaddleOcrService();
+
+// Or explicitly choose canvas-native for lighter processing
+const service = new PaddleOcrService({
+  processing: { engine: "canvas-native" },
+});
+
+await service.initialize();
+```
+
 ## Configuration
 
 All options are grouped under the `PaddleOptions` interface:
@@ -397,6 +431,9 @@ export interface PaddleOptions {
 
   /** ONNX Runtime session configuration options. */
   session?: SessionOptions;
+
+  /** Controls the image processing backend. */
+  processing?: ProcessingOptions;
 }
 ```
 
@@ -499,7 +536,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 If you encounter any issues or have suggestions, please open an issue in the repository.
 
-Happy coding!
+Join our community on [Slack](https://join.slack.com/t/ppupaddleocrcommunity/shared_invite/zt-3uzp1uuma-lrkEq8OYBYhGdUtzRoVmUg) to get help, share feedback, or discuss features.
 
 ## Scripts
 

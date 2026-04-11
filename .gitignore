@@ -9,3 +9,5 @@ dist/*
 
 *.traineddata
 .DS_Store
+
+private-tests

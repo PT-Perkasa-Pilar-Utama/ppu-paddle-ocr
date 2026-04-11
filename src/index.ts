@@ -31,6 +31,8 @@ export type {
   DetectionOptions,
   ModelPathOptions,
   PaddleOptions,
+  ProcessingEngine,
+  ProcessingOptions,
   RecognitionOptions,
 } from "./interface.js";
 
@@ -44,5 +46,7 @@ export {
   DEFAULT_DEBUGGING_OPTIONS,
   DEFAULT_DETECTION_OPTIONS,
   DEFAULT_PADDLE_OPTIONS,
+  DEFAULT_PROCESSING_ENGINE,
+  DEFAULT_PROCESSING_OPTIONS,
   DEFAULT_RECOGNITION_OPTIONS,
 } from "./constants.js";

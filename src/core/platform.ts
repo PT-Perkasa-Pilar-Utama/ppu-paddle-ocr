@@ -1,9 +1,32 @@
 import type { InferenceSession, Tensor } from "onnxruntime-common";
-import type { Canvas } from "ppu-ocv";
+import type { Canvas, Contours, ImageProcessor, cv } from "ppu-ocv";
 import type { CanvasLike } from "ppu-ocv/web";
 
 // Unified Canvas type to support both Node and Web Canvas variations
 export type CoreCanvas = Canvas | CanvasLike;
+
+/**
+ * Optional wrapper for platform-specific OpenCV image manipulation.
+ *
+ * Only populated when `processing.engine === "opencv"` (Node/Bun).
+ * Web builds leave this `undefined` and always use canvas-native processing.
+ */
+export interface ImageProcessorProvider<TCanvas = CoreCanvas> {
+  /** Injects the source image buffer into a universally parsable Canvas */
+  prepareCanvas: (image: unknown) => Promise<TCanvas>;
+
+  /** Wrapper class handling matrix transformations */
+  ImageProcessor: new (canvas: TCanvas) => ImageProcessor;
+
+  /** Wrapper class handling mathematical OpenCV contours */
+  Contours: new (
+    mat: cv.Mat,
+    options: { mode: number; method: number },
+  ) => Contours;
+
+  /** Raw OpenCV WebAssembly object reference */
+  cv: typeof cv;
+}
 
 /**
  * A generic abstraction mapping specifically to pure runtime-level APIs
@@ -39,4 +62,7 @@ export interface PlatformProvider<TCanvas = CoreCanvas> {
     filename: string,
     path: string,
   ) => Promise<void>;
+
+  /** OpenCV-based image processor (only available in Node/Bun environments) */
+  imageProcessor?: ImageProcessorProvider<TCanvas>;
 }

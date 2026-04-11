@@ -9,7 +9,8 @@ import { WebPlatformProvider } from "./platform.web.js";
 export type { RecognitionResult };
 
 /**
- * Service for detecting and recognizing text in images using Web implementation
+ * Service for detecting and recognizing text in images using Web implementation.
+ * Web always uses canvas-native engine (no OpenCV available in browser).
  */
 export class RecognitionService extends BaseRecognitionService {
   constructor(
@@ -17,6 +18,12 @@ export class RecognitionService extends BaseRecognitionService {
     options: Partial<RecognitionOptions> = {},
     debugging: Partial<DebuggingOptions> = {},
   ) {
-    super(new WebPlatformProvider(), session, options, debugging);
+    super(
+      new WebPlatformProvider(),
+      session,
+      options,
+      debugging,
+      "canvas-native",
+    );
   }
 }

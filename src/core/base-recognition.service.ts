@@ -7,6 +7,7 @@ import {
 import type {
   Box,
   DebuggingOptions,
+  ProcessingEngine,
   RecognitionOptions,
 } from "../interface.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
@@ -31,6 +32,7 @@ export class BaseRecognitionService {
   protected readonly debugging: DebuggingOptions;
   protected readonly session: InferenceSession;
   protected readonly platform: PlatformProvider;
+  protected readonly engine: ProcessingEngine;
 
   private static readonly BLANK_INDEX = 0;
   private static readonly UNK_TOKEN = "<unk>";
@@ -41,6 +43,7 @@ export class BaseRecognitionService {
     session: InferenceSession,
     options: Partial<RecognitionOptions> = {},
     debugging: Partial<DebuggingOptions> = {},
+    engine: ProcessingEngine = "opencv",
   ) {
     this.platform = platform;
     this.session = session;
@@ -54,6 +57,13 @@ export class BaseRecognitionService {
       ...DEFAULT_DEBUGGING_OPTIONS,
       ...debugging,
     };
+
+    // Fall back to canvas-native if opencv is requested but imageProcessor is unavailable
+    if (engine === "opencv" && !this.platform.imageProcessor) {
+      this.engine = "canvas-native";
+    } else {
+      this.engine = engine;
+    }
   }
 
   /**
@@ -82,7 +92,9 @@ export class BaseRecognitionService {
     try {
       const sourceCanvasForCrop = this.platform.isCanvas(image)
         ? image
-        : await CanvasProcessor.prepareCanvas(image);
+        : this.engine === "opencv" && this.platform.imageProcessor
+          ? await this.platform.imageProcessor.prepareCanvas(image)
+          : await CanvasProcessor.prepareCanvas(image);
 
       const validBoxes = this.filterValidBoxes(detection);
       const results = await this.processBoxesInParallel(
@@ -182,8 +194,12 @@ export class BaseRecognitionService {
       }
 
       return { text: recognizedText, box, confidence };
-    } catch (e: any) {
-      console.error(`Error processing box ${index + 1}: ${e.message}`, e.stack);
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      console.error(
+        `Error processing box ${index + 1}: ${err.message}`,
+        err.stack,
+      );
       return null;
     }
   }
@@ -319,27 +335,54 @@ export class BaseRecognitionService {
       Math.round(targetHeight * aspectRatio),
     );
 
-    // Use native canvas resize (no OpenCV needed)
-    const processor = new CanvasProcessor(cropCanvas).resize({
-      width: resizedWidth,
-      height: targetHeight,
-    });
+    if (this.engine === "opencv" && this.platform.imageProcessor) {
+      // OpenCV-based resize
+      const imgProcessor = new this.platform.imageProcessor.ImageProcessor(
+        cropCanvas,
+      );
+      try {
+        imgProcessor.resize({
+          width: resizedWidth,
+          height: targetHeight,
+        });
 
-    const imageTensor = this.createImageTensor(
-      processor,
-      resizedWidth,
-      targetHeight,
-    );
+        const imageTensor = this.createImageTensorFromCanvas(
+          imgProcessor.toCanvas(),
+          resizedWidth,
+          targetHeight,
+        );
 
-    return {
-      imageTensor,
-      tensorWidth: resizedWidth,
-      tensorHeight: targetHeight,
-    };
+        return {
+          imageTensor,
+          tensorWidth: resizedWidth,
+          tensorHeight: targetHeight,
+        };
+      } finally {
+        imgProcessor.destroy();
+      }
+    } else {
+      // Canvas-native resize
+      const processor = new CanvasProcessor(cropCanvas).resize({
+        width: resizedWidth,
+        height: targetHeight,
+      });
+
+      const imageTensor = this.createImageTensor(
+        processor,
+        resizedWidth,
+        targetHeight,
+      );
+
+      return {
+        imageTensor,
+        tensorWidth: resizedWidth,
+        tensorHeight: targetHeight,
+      };
+    }
   }
 
   /**
-   * Creates a normalized image tensor from the preprocessed canvas
+   * Creates a normalized image tensor from a CanvasProcessor
    */
   private createImageTensor(
     processor: CanvasProcessor,
@@ -347,6 +390,17 @@ export class BaseRecognitionService {
     height: number,
   ): Float32Array {
     const canvas = processor.toCanvas();
+    return this.createImageTensorFromCanvas(canvas, width, height);
+  }
+
+  /**
+   * Creates a normalized image tensor from a canvas (shared by both engines)
+   */
+  private createImageTensorFromCanvas(
+    canvas: CoreCanvas,
+    width: number,
+    height: number,
+  ): Float32Array {
     const ctx = canvas.getContext("2d");
     const imageData = ctx.getImageData(0, 0, width, height);
     const pixelData = imageData.data; // RGBA format

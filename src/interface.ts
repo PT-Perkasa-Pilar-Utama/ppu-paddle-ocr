@@ -1,4 +1,14 @@
 /**
+ * The image processing engine to use for preprocessing.
+ *
+ * - `"opencv"` – Uses OpenCV.js (`ImageProcessor` / `Contours` from `ppu-ocv`).
+ *   More accurate region detection; recommended for production use. **(default)**
+ * - `"canvas-native"` – Uses pure HTML Canvas operations (`CanvasProcessor` from `ppu-ocv/canvas`).
+ *   No OpenCV dependency; suitable for lightweight or browser-extension environments.
+ */
+export type ProcessingEngine = "opencv" | "canvas-native";
+
+/**
  * Paths to the OCR model and dictionary files.
  */
 export interface ModelPathOptions {
@@ -129,6 +139,22 @@ export interface RecognizeOptions {
 }
 
 /**
+ * Controls the image processing backend used for detection and recognition.
+ */
+export interface ProcessingOptions {
+  /**
+   * The image processing engine used for detection preprocessing and
+   * recognition resizing.
+   *
+   * - `"opencv"` – Uses OpenCV.js via `ppu-ocv` (more accurate, **default**).
+   * - `"canvas-native"` – Pure canvas operations via `ppu-ocv/canvas` (no OpenCV dependency).
+   *
+   * @default "opencv"
+   */
+  engine?: ProcessingEngine;
+}
+
+/**
  * Full configuration for the PaddleOCR service.
  * Combines model file paths with detection, recognition, and debugging parameters.
  */
@@ -157,6 +183,11 @@ export interface PaddleOptions {
    * ONNX Runtime session configuration options.
    */
   session?: SessionOptions;
+
+  /**
+   * Controls the image processing backend.
+   */
+  processing?: ProcessingOptions;
 }
 
 /**

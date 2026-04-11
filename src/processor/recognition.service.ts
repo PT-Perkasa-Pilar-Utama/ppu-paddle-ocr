@@ -3,7 +3,11 @@ import {
   BaseRecognitionService,
   type RecognitionResult,
 } from "../core/base-recognition.service.js";
-import type { DebuggingOptions, RecognitionOptions } from "../interface.js";
+import type {
+  DebuggingOptions,
+  ProcessingEngine,
+  RecognitionOptions,
+} from "../interface.js";
 import { NodePlatformProvider } from "./platform.node.js";
 
 export type { RecognitionResult };
@@ -16,7 +20,8 @@ export class RecognitionService extends BaseRecognitionService {
     session: ort.InferenceSession,
     options: Partial<RecognitionOptions> = {},
     debugging: Partial<DebuggingOptions> = {},
+    engine: ProcessingEngine = "opencv",
   ) {
-    super(new NodePlatformProvider(), session, options, debugging);
+    super(new NodePlatformProvider(), session, options, debugging, engine);
   }
 }

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.0] - 2026-04-11
+
+### Added
+
+- **Processing engine selection** (`processing.engine` option): Choose between `"opencv"` (default) and `"canvas-native"` for the image preprocessing pipeline.
+- `ProcessingEngine` type, `ProcessingOptions` interface, `DEFAULT_PROCESSING_ENGINE` and `DEFAULT_PROCESSING_OPTIONS` exports.
+- Engine parity regression tests (`tests/engine-parity.test.ts`) to detect divergence between the two engines.
+
+### Changed
+
+- **Default processing engine restored to OpenCV**: v5.0.0 switched entirely to canvas-native processing, which caused regressions in bounding box accuracy for some images (boxes appearing ~8px narrower). The default is now `"opencv"` again, matching v4 behavior. Users who prefer the lighter canvas-native engine can still opt in via `processing: { engine: "canvas-native" }`.
+- `BaseDetectionService` and `BaseRecognitionService` now accept an `engine` parameter to dynamically select the processing backend.
+- Node `DetectionService` / `RecognitionService` constructors accept an optional `engine` parameter.
+- Web services always use `canvas-native` (no OpenCV available in browser).
+
+### Fixed
+
+- Fixed bounding box width regression (issue [#8](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/issues/8)) where canvas-native `findRegions` produced narrower boxes compared to OpenCV `findContours`.
+
 ## [5.0.0] - 2026-04-05
 
 ### BREAKING CHANGES

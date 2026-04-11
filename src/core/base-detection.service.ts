@@ -1,10 +1,16 @@
-import type { InferenceSession } from "onnxruntime-common";
+import type { InferenceSession, Tensor } from "onnxruntime-common";
+import type { Contours, cv } from "ppu-ocv";
 import { CanvasProcessor, CanvasToolkit } from "ppu-ocv/canvas";
 import {
   DEFAULT_DEBUGGING_OPTIONS,
   DEFAULT_DETECTION_OPTIONS,
 } from "../constants.js";
-import type { Box, DebuggingOptions, DetectionOptions } from "../interface.js";
+import type {
+  Box,
+  DebuggingOptions,
+  DetectionOptions,
+  ProcessingEngine,
+} from "../interface.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
 
 /**
@@ -36,6 +42,7 @@ export class BaseDetectionService {
   protected readonly debugging: DebuggingOptions;
   protected readonly session: InferenceSession;
   protected readonly platform: PlatformProvider;
+  protected readonly engine: ProcessingEngine;
 
   private static readonly NUM_CHANNELS = 3;
   private lastDetectionCanvas: CoreCanvas | null = null;
@@ -45,12 +52,20 @@ export class BaseDetectionService {
     session: InferenceSession,
     options: Partial<DetectionOptions> = {},
     debugging: Partial<DebuggingOptions> = {},
+    engine: ProcessingEngine = "opencv",
   ) {
     this.platform = platform;
     this.session = session;
 
     this.options = { ...DEFAULT_DETECTION_OPTIONS, ...options };
     this.debugging = { ...DEFAULT_DEBUGGING_OPTIONS, ...debugging };
+
+    // Fall back to canvas-native if opencv is requested but imageProcessor is unavailable
+    if (engine === "opencv" && !this.platform.imageProcessor) {
+      this.engine = "canvas-native";
+    } else {
+      this.engine = engine;
+    }
   }
 
   /**
@@ -72,7 +87,9 @@ export class BaseDetectionService {
     try {
       const canvasToProcess = this.platform.isCanvas(image)
         ? image
-        : await CanvasProcessor.prepareCanvas(image);
+        : this.engine === "opencv" && this.platform.imageProcessor
+          ? await this.platform.imageProcessor.prepareCanvas(image)
+          : await CanvasProcessor.prepareCanvas(image);
 
       const input = await this.preprocessDetection(canvasToProcess);
       const detection = await this.runInference(
@@ -123,10 +140,24 @@ export class BaseDetectionService {
       ratio: resizeRatio,
     } = this.calculateResizeDimensions(originalWidth, originalHeight);
 
-    // Use native canvas resize (no OpenCV needed)
-    const resizedCanvas = new CanvasProcessor(canvas)
-      .resize({ width: resizeW, height: resizeH })
-      .toCanvas() as CoreCanvas;
+    let resizedCanvas: CoreCanvas;
+
+    if (this.engine === "opencv" && this.platform.imageProcessor) {
+      // OpenCV-based resize
+      const processor = new this.platform.imageProcessor.ImageProcessor(canvas);
+      try {
+        resizedCanvas = processor
+          .resize({ width: resizeW, height: resizeH })
+          .toCanvas();
+      } finally {
+        processor.destroy();
+      }
+    } else {
+      // Canvas-native resize
+      resizedCanvas = new CanvasProcessor(canvas)
+        .resize({ width: resizeW, height: resizeH })
+        .toCanvas() as CoreCanvas;
+    }
 
     const width = Math.ceil(resizeW / 32) * 32;
     const height = Math.ceil(resizeH / 32) * 32;
@@ -145,7 +176,7 @@ export class BaseDetectionService {
       `Detection preprocessed: original(${originalWidth}x${originalHeight}), ` +
         `model_input(${width}x${height}), resize_ratio: ${resizeRatio.toFixed(
           4,
-        )}`,
+        )}, engine: ${this.engine}`,
     );
 
     return {
@@ -238,7 +269,7 @@ export class BaseDetectionService {
     width: number,
     height: number,
   ): Promise<Float32Array | null> {
-    let inputTensor: any | undefined;
+    let inputTensor: Tensor | undefined;
     try {
       this.log("Running detection inference...");
 
@@ -322,6 +353,134 @@ export class BaseDetectionService {
     const canvas = this.tensorToCanvas(detection, width, height);
     this.lastDetectionCanvas = canvas;
 
+    if (this.engine === "opencv" && this.platform.imageProcessor) {
+      return this.postprocessWithOpenCV(
+        canvas,
+        width,
+        height,
+        resizeRatio,
+        originalWidth,
+        originalHeight,
+        minBoxAreaOnPadded,
+        paddingVertical,
+        paddingHorizontal,
+      );
+    }
+
+    return this.postprocessWithCanvasNative(
+      canvas,
+      resizeRatio,
+      originalWidth,
+      originalHeight,
+      minBoxAreaOnPadded,
+      paddingVertical,
+      paddingHorizontal,
+    );
+  }
+
+  /**
+   * Post-process detection using OpenCV contours (v4-compatible, more accurate)
+   */
+  private postprocessWithOpenCV(
+    canvas: CoreCanvas,
+    width: number,
+    height: number,
+    resizeRatio: number,
+    originalWidth: number,
+    originalHeight: number,
+    minBoxAreaOnPadded: number,
+    paddingVertical: number,
+    paddingHorizontal: number,
+  ): Box[] {
+    const ip = this.platform.imageProcessor!;
+    const processor = new ip.ImageProcessor(canvas);
+    try {
+      processor.grayscale().convert({ rtype: ip.cv.CV_8UC1 });
+
+      const contours = new ip.Contours(processor.toMat(), {
+        mode: ip.cv.RETR_LIST,
+        method: ip.cv.CHAIN_APPROX_SIMPLE,
+      });
+
+      const boxes = this.extractBoxesFromContours(
+        contours,
+        width,
+        height,
+        resizeRatio,
+        originalWidth,
+        originalHeight,
+        minBoxAreaOnPadded,
+        paddingVertical,
+        paddingHorizontal,
+      );
+
+      contours.destroy();
+
+      this.log(`Found ${boxes.length} potential text boxes (opencv)`);
+      return boxes;
+    } finally {
+      processor.destroy();
+    }
+  }
+
+  /**
+   * Extract boxes from OpenCV contours
+   */
+  private extractBoxesFromContours(
+    contours: Contours,
+    width: number,
+    height: number,
+    resizeRatio: number,
+    originalWidth: number,
+    originalHeight: number,
+    minBoxArea: number,
+    paddingVertical: number,
+    paddingHorizontal: number,
+  ): Box[] {
+    const boxes: Box[] = [];
+
+    contours.iterate((contour: cv.Mat) => {
+      const rect = contours.getRect(contour);
+
+      if (rect.width * rect.height <= minBoxArea) {
+        return;
+      }
+
+      const paddedRect = this.applyPaddingToRect(
+        rect,
+        width,
+        height,
+        paddingVertical,
+        paddingHorizontal,
+      );
+
+      const finalBox = this.convertToOriginalCoordinates(
+        paddedRect,
+        resizeRatio,
+        originalWidth,
+        originalHeight,
+      );
+
+      if (finalBox.width > 5 && finalBox.height > 5) {
+        boxes.push(finalBox);
+      }
+    });
+
+    return boxes;
+  }
+
+  /**
+   * Post-process detection using canvas-native region detection
+   */
+  private postprocessWithCanvasNative(
+    canvas: CoreCanvas,
+    resizeRatio: number,
+    originalWidth: number,
+    originalHeight: number,
+    minBoxAreaOnPadded: number,
+    paddingVertical: number,
+    paddingHorizontal: number,
+  ): Box[] {
     // Use native canvas operations (no OpenCV needed)
     const processor = new CanvasProcessor(canvas)
       .grayscale()
@@ -345,7 +504,7 @@ export class BaseDetectionService {
       originalHeight,
     );
 
-    this.log(`Found ${boxes.length} potential text boxes`);
+    this.log(`Found ${boxes.length} potential text boxes (canvas-native)`);
     return boxes;
   }
 
