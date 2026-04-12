@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import * as ort from "onnxruntime-node";
 import * as os from "os";
 import * as path from "path";
-import { Canvas } from "ppu-ocv";
+import { Canvas, ImageProcessor } from "ppu-ocv";
 
 import {
   BasePaddleOcrService,
@@ -202,6 +202,15 @@ export class PaddleOcrService extends BasePaddleOcrService {
       );
 
       const engine = this.options.processing?.engine || "opencv";
+
+      // Eagerly initialize OpenCV WASM runtime when using the opencv engine.
+      // Without this, the first OpenCV operation triggers a lazy synchronous
+      // import + WASM compilation of @techstark/opencv-js, causing a severe
+      // performance regression (3-6x slower first inference).
+      if (engine === "opencv") {
+        await ImageProcessor.initRuntime();
+        this.log("OpenCV runtime initialized.");
+      }
 
       this.detector = new DetectionService(
         this.detectionSession!,

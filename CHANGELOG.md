@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.1] - 2026-04-12
+
+### Fixed
+
+- **Performance regression fix**: Restored eager `ImageProcessor.initRuntime()` call during `initialize()` when using the OpenCV engine. In v5.0.0 this call was removed when OpenCV was dropped; v5.1.0 restored the OpenCV code path but not the runtime initialization, causing the OpenCV WASM module to be lazily compiled on first use — resulting in 3-6x slower first inference and high variance in subsequent calls.
+
 ## [5.1.0] - 2026-04-11
 
 ### Added
