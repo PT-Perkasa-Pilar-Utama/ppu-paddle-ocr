@@ -133,10 +133,12 @@ summary
 Install using your preferred package manager:
 
 ```bash
-npm install ppu-paddle-ocr
-yarn add ppu-paddle-ocr
-bun add ppu-paddle-ocr
+npm install ppu-paddle-ocr onnxruntime-node onnxruntime-web
+yarn add ppu-paddle-ocr onnxruntime-node onnxruntime-web
+bun add ppu-paddle-ocr onnxruntime-node onnxruntime-web
 ```
+
+You can omit between `onnxruntime-node` or `onnxruntime-web` depending on your use case / targeted environment.
 
 ## Usage
 
