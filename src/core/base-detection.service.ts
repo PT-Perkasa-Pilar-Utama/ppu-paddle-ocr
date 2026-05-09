@@ -158,7 +158,7 @@ export class BaseDetectionService {
    * Calculate dimensions for resizing the image
    */
   private calculateResizeDimensions(originalWidth: number, originalHeight: number) {
-    const MAX_SIDE_LEN = this.options.maxSideLength ?? 960;
+    const MAX_SIDE_LEN = this.options.maxSideLength ?? 640;
 
     let resizeW = originalWidth;
     let resizeH = originalHeight;
@@ -285,7 +285,7 @@ export class BaseDetectionService {
   private postprocessDetection(
     detection: Float32Array,
     input: PreprocessDetectionResult,
-    minBoxAreaOnPadded: number = this.options.minimumAreaThreshold || 20,
+    minBoxAreaOnPadded: number = this.options.minimumAreaThreshold ?? 50,
     paddingVertical: number = this.options.paddingVertical || 0.4,
     paddingHorizontal: number = this.options.paddingHorizontal || 0.6
   ): Box[] {
