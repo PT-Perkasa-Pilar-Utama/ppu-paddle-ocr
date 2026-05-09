@@ -1,0 +1,64 @@
+name: ✨ Feature request
+description: Suggest a new capability, API, or behaviour for ppu-paddle-ocr.
+title: "feat: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This template is for **library-level** feature requests (new API, new options, new platform support).
+
+        For requests about new **models** (e.g. "add Vietnamese PP-OCRv5 mobile"), file the issue in the
+        [ppu-paddle-ocr-models repo](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/issues) instead.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What are you trying to do that the current API makes hard or impossible?
+      placeholder: |
+        I want to stream OCR results as each line is recognised, instead of waiting
+        for all lines to finish. On long documents the user-facing latency feels bad.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would the API look like? Sketch a usage example if you have one in mind.
+      render: ts
+      placeholder: |
+        const svc = new PaddleOcrService();
+        await svc.initialize();
+
+        for await (const line of svc.recognizeStreaming(buf)) {
+          console.log(line.text);
+        }
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds did you try? Why weren't they good enough?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Which build does this apply to?
+      multiple: true
+      options:
+        - Node / Bun (`ppu-paddle-ocr`)
+        - Web (`ppu-paddle-ocr/web`)
+        - Both
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Links to related issues, upstream capabilities you're modelling this on, etc.

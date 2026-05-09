@@ -1,0 +1,29 @@
+name: 📝 Documentation
+description: Typos, wrong examples, unclear sections, or missing docs.
+title: "docs: "
+labels: ["documentation", "triage"]
+body:
+  - type: input
+    id: where
+    attributes:
+      label: Where?
+      description: Which file(s), section, or URL?
+      placeholder: e.g. README.md → 'WebGPU Acceleration' section, or src/interface.ts (DetectionOptions)
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: What's wrong or missing?
+      placeholder: |
+        The `maxSideLength` default is listed as 960 in the README table but the
+        constant in `src/constants.ts` is 640.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested fix
+      description: If you already know what should be there, drop a concrete suggestion.
