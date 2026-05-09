@@ -376,11 +376,11 @@ These models are automatically downloaded and cached on the first run. PP-OCRv5 
 Downloaded models are stored under the user's home directory, in a fixed
 `.cache/ppu-paddle-ocr` subfolder (resolved via `os.homedir()`):
 
-| OS      | Resolved path                                 |
-| :------ | :-------------------------------------------- |
-| macOS   | `~/.cache/ppu-paddle-ocr`                     |
-| Linux   | `~/.cache/ppu-paddle-ocr`                     |
-| Windows | `C:\Users\<username>\.cache\ppu-paddle-ocr`   |
+| OS      | Resolved path                               |
+| :------ | :------------------------------------------ |
+| macOS   | `~/.cache/ppu-paddle-ocr`                   |
+| Linux   | `~/.cache/ppu-paddle-ocr`                   |
+| Windows | `C:\Users\<username>\.cache\ppu-paddle-ocr` |
 
 The path is the same per-user across runs, so the first `initialize()` is slow (network download) and every subsequent run re-uses the cached `.onnx` files.
 

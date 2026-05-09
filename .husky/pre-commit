@@ -1,1 +1,37 @@
+# Whole-repo format + lint autofix *before* lint-staged.
+#
+# `bun run fmt` (what CI runs) checks every file in the repo, not just the
+# staged ones. So even if lint-staged formatted the files you touched,
+# an unrelated file lingering in an unformatted state is enough to make CI
+# red. That's what causes the embarrassing "fix: apply formatter" follow-up
+# commits on main.
+#
+# This hook runs `bun run fmt:fix` and `bun run lint:fix` against the
+# entire repo first, then `git add -u` restages whatever those fixers
+# touched so the fixes land in THIS commit rather than a follow-up. After
+# that, lint-staged runs the strict lint + type-check checks; anything
+# still failing aborts the commit.
+#
+# The hook is still bypassable via `git commit --no-verify`, so the CI
+# workflow remains the ultimate guardrail. But for normal commits —
+# including agent-driven `git commit -am` runs — it guarantees the repo
+# is already clean by the time the commit is made.
+#
+# Caveat: if you partially staged hunks of a file (staged some changes,
+# left others working-tree-only), the formatter may rewrite the unstaged
+# hunks too, and `git add -u` will include them. Inspect with
+# `git diff --cached` before pushing if partial-staging matters to you.
+
+set -e
+
+echo "→ pre-commit: formatting whole repo..."
+bun run fmt:fix
+
+echo "→ pre-commit: auto-fixing lint issues..."
+bun run lint:fix || true
+
+echo "→ pre-commit: re-staging fixer output..."
+git add -u
+
+echo "→ pre-commit: running strict lint + type-check (via lint-staged)..."
 bunx lint-staged
