@@ -73,23 +73,23 @@ Run `bun task bench`. Current result:
 
 ```bash
 > bun run bench/index.bench.ts
-clk: ~3.02 GHz
+clk: ~3.03 GHz
 cpu: Apple M1
 runtime: bun 1.3.13 (arm64-darwin)
 
 benchmark                           avg (min … max) p75 / p99    (min … top 1%)
 --------------------------------------------------- -------------------------------
-[per-box][opencv][noCache]           207.39 ms/iter 208.32 ms      █
-                            (204.62 ms … 210.31 ms) 209.93 ms ▅  ▅ █  ▅ ▅▅▅ ▅ ▅   ▅
-                            ( 16.00 kb …  30.64 mb)   7.55 mb █▁▁█▁█▁▁█▁███▁█▁█▁▁▁█
+[per-box][opencv][noCache]           206.60 ms/iter 207.79 ms    █
+                            (204.07 ms … 210.91 ms) 209.55 ms █  █
+                            (  1.41 mb …  29.34 mb)   9.13 mb █▁▁█▁▁██▁▁▁▁█▁█▁▁▁█▁█
 
-[per-line][opencv][noCache]          190.89 ms/iter 191.67 ms    █
-                            (189.61 ms … 194.07 ms) 192.25 ms ▅▅▅█▅▅    ▅     ▅  ▅▅
-                            (  0.00  b …  16.86 mb)   4.80 mb ██████▁▁▁▁█▁▁▁▁▁█▁▁██
+[per-line][opencv][noCache]          188.75 ms/iter 188.89 ms    █
+                            (187.91 ms … 191.31 ms) 189.30 ms    █
+                            (  0.00  b …   5.92 mb)   1.74 mb █▁▁█▁▁█▁█▁▁▁████▁▁▁▁█
 
-[cross-line][opencv][noCache]        195.11 ms/iter 192.98 ms █
-                            (188.91 ms … 218.96 ms) 214.98 ms █▅▅
-                            (  0.00  b …  22.41 mb)   3.91 mb ███▇▇▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▇
+[cross-line][opencv][noCache]        193.43 ms/iter 190.81 ms █  █
+                            (187.26 ms … 216.95 ms) 208.64 ms ██ █
+                            (  0.00  b …   6.56 mb)   1.47 mb ████▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁█
 
 summary
   [per-line][opencv][noCache]
@@ -97,22 +97,22 @@ summary
    1.09x faster than [per-box][opencv][noCache]
 
 --------------------------------------------------- -------------------------------
-[per-box][canvas-native][noCache]    213.73 ms/iter 214.30 ms           █
-                            (212.01 ms … 215.91 ms) 214.92 ms ▅ ▅   ▅▅  █▅  ▅ ▅ ▅ ▅
-                            (  0.00  b …  16.17 mb)   3.29 mb █▁█▁▁▁██▁▁██▁▁█▁█▁█▁█
+[per-box][canvas-native][noCache]    212.86 ms/iter 212.75 ms    █  █
+                            (211.40 ms … 215.12 ms) 214.95 ms ▅ ▅█ ▅█▅▅          ▅▅
+                            (  0.00  b …  17.11 mb)   1.52 mb █▁██▁████▁▁▁▁▁▁▁▁▁▁██
 
-[per-line][canvas-native][noCache]   203.02 ms/iter 203.83 ms      █     █    █ █
-                            (200.57 ms … 206.55 ms) 204.13 ms ▅    █     █▅   █ █ ▅
-                            (  0.00  b …  14.98 mb)   1.38 mb █▁▁▁▁█▁▁▁▁▁██▁▁▁█▁█▁█
+[per-line][canvas-native][noCache]   200.04 ms/iter 199.92 ms    █
+                            (199.17 ms … 202.50 ms) 201.70 ms    █
+                            (  0.00  b … 144.00 kb)  29.09 kb ▇▇▁█▇▇▇▇▁▁▁▁▁▁▁▁▁▁▁▁▇
 
-[cross-line][canvas-native][noCache] 205.67 ms/iter 206.49 ms        █
-                            (203.44 ms … 210.00 ms) 207.29 ms ▅  ▅▅▅ █   ▅▅   ▅  ▅▅
-                            (  0.00  b …  14.19 mb)   2.13 mb █▁▁███▁█▁▁▁██▁▁▁█▁▁██
+[cross-line][canvas-native][noCache] 198.32 ms/iter 198.70 ms    █  █
+                            (196.81 ms … 201.58 ms) 200.92 ms ▅▅▅█▅ █  ▅▅         ▅
+                            (  0.00  b …   2.34 mb) 436.00 kb █████▁█▁▁██▁▁▁▁▁▁▁▁▁█
 
 summary
-  [per-line][canvas-native][noCache]
-   1.01x faster than [cross-line][canvas-native][noCache]
-   1.05x faster than [per-box][canvas-native][noCache]
+  [cross-line][canvas-native][noCache]
+   1.01x faster than [per-line][canvas-native][noCache]
+   1.07x faster than [per-box][canvas-native][noCache]
 
 === Accuracy on /Users/vexeee/Documents/project/paddle-ocr.js/bench/../assets/receipt.jpg ===
   ground truth length: 383 chars
