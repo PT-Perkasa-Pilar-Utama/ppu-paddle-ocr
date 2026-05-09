@@ -47,6 +47,17 @@ export const MODEL_BASE_URL =
 export const DICT_BASE_URL =
   "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main";
 
+/** Default model URLs used when no custom paths are provided. */
+export const DEFAULT_MODEL_URLS: Readonly<{
+  detection: string;
+  recognition: string;
+  charactersDictionary: string;
+}> = {
+  detection: `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.onnx`,
+  recognition: `${MODEL_BASE_URL}/recognition/multi/en/v5/en_PP-OCRv5_mobile_rec_infer.onnx`,
+  charactersDictionary: `${DICT_BASE_URL}/recognition/multi/en/v5/ppocrv5_en_dict.txt`,
+};
+
 /**
  * Abstract base class for platform-agnostic PaddleOCR service.
  *

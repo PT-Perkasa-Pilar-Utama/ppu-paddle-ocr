@@ -8,8 +8,7 @@ import { CanvasProcessor } from "ppu-ocv/canvas";
 
 import {
   BasePaddleOcrService,
-  DICT_BASE_URL,
-  MODEL_BASE_URL,
+  DEFAULT_MODEL_URLS,
 } from "../core/base-paddle-ocr.service.js";
 import { globalImageCache, ImageCache } from "../core/image-cache.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
@@ -20,6 +19,67 @@ import { RecognitionService } from "./recognition.service.js";
 import type { RecognitionResult } from "./recognition.service.js";
 
 const CACHE_DIR = path.join(os.homedir(), ".cache", "ppu-paddle-ocr");
+
+async function fetchAndCacheResource(url: string, verbose?: boolean): Promise<ArrayBuffer> {
+  const fileName = path.basename(new URL(url).pathname);
+  const cachePath = path.join(CACHE_DIR, fileName);
+
+  if (existsSync(cachePath)) {
+    if (verbose) console.log(`[PaddleOcrService] Loading cached resource from: ${cachePath}`);
+    const buf = readFileSync(cachePath);
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  }
+
+  console.log(
+    `[PaddleOcrService] Downloading resource: ${fileName}\n` +
+      `                 Cached at: ${CACHE_DIR}`
+  );
+  if (verbose) console.log(`[PaddleOcrService] Fetching resource from URL: ${url}`);
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch resource from ${url}`);
+  }
+  if (!response.body) {
+    throw new Error("Response body is null or undefined");
+  }
+
+  const contentLength = response.headers.get("Content-Length");
+  const totalLength = contentLength ? parseInt(contentLength, 10) : 0;
+  let receivedLength = 0;
+  const chunks: Uint8Array[] = [];
+
+  const reader = response.body.getReader();
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    chunks.push(value);
+    receivedLength += value.length;
+
+    if (totalLength > 0) {
+      const percentage = ((receivedLength / totalLength) * 100).toFixed(2);
+      process.stdout.write(`\rDownloading... ${percentage}%`);
+    }
+  }
+  process.stdout.write("\n");
+
+  const buffer = new Uint8Array(receivedLength);
+  let position = 0;
+  for (const chunk of chunks) {
+    buffer.set(chunk, position);
+    position += chunk.length;
+  }
+
+  if (!existsSync(CACHE_DIR)) {
+    mkdirSync(CACHE_DIR, { recursive: true });
+  }
+  writeFileSync(cachePath, Buffer.from(buffer));
+
+  return buffer.buffer;
+}
 
 /**
  * PaddleOcrService - Provides OCR functionality using PaddleOCR models.
@@ -39,65 +99,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
    * If the resource is already in the cache, it loads it from there.
    */
   private async _fetchAndCache(url: string): Promise<ArrayBuffer> {
-    const fileName = path.basename(new URL(url).pathname);
-    const cachePath = path.join(CACHE_DIR, fileName);
-
-    if (existsSync(cachePath)) {
-      this.log(`Loading cached resource from: ${cachePath}`);
-      const buf = readFileSync(cachePath);
-      return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
-    }
-
-    console.log(
-      `[PaddleOcrService] Downloading resource: ${fileName}\n` +
-        `                 Cached at: ${CACHE_DIR}`
-    );
-    this.log(`Fetching resource from URL: ${url}`);
-
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch resource from ${url}`);
-    }
-    if (!response.body) {
-      throw new Error("Response body is null or undefined");
-    }
-
-    const contentLength = response.headers.get("Content-Length");
-    const totalLength = contentLength ? parseInt(contentLength, 10) : 0;
-    let receivedLength = 0;
-    const chunks: Uint8Array[] = [];
-
-    const reader = response.body.getReader();
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-      chunks.push(value);
-      receivedLength += value.length;
-
-      if (totalLength > 0) {
-        const percentage = ((receivedLength / totalLength) * 100).toFixed(2);
-        process.stdout.write(`\rDownloading... ${percentage}%`);
-      }
-    }
-    process.stdout.write("\n"); // Move to the next line
-
-    const buffer = new Uint8Array(receivedLength);
-    let position = 0;
-    for (const chunk of chunks) {
-      buffer.set(chunk, position);
-      position += chunk.length;
-    }
-
-    this.log(`Caching resource to: ${cachePath}`);
-    if (!existsSync(CACHE_DIR)) {
-      mkdirSync(CACHE_DIR, { recursive: true });
-    }
-    writeFileSync(cachePath, Buffer.from(buffer));
-
-    return buffer.buffer;
+    return fetchAndCacheResource(url, this.options.debugging?.verbose);
   }
 
   /**
@@ -148,7 +150,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
       // Load detection model
       const detModelBuffer = await this._loadResource(
         this.options.model?.detection,
-        `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.onnx`
+        DEFAULT_MODEL_URLS.detection
       );
 
       // Use configured session options
@@ -164,7 +166,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
       // Load recognition model
       const recModelBuffer = await this._loadResource(
         this.options.model?.recognition,
-        `${MODEL_BASE_URL}/recognition/multi/en/v5/en_PP-OCRv5_mobile_rec_infer.onnx`
+        DEFAULT_MODEL_URLS.recognition
       );
       this.recognitionSession = await ort.InferenceSession.create(
         new Uint8Array(recModelBuffer),
@@ -178,7 +180,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
       // Load character dictionary
       const dictBuffer = await this._loadResource(
         this.options.model?.charactersDictionary,
-        `${DICT_BASE_URL}/recognition/multi/en/v5/ppocrv5_en_dict.txt`
+        DEFAULT_MODEL_URLS.charactersDictionary
       );
       const dictionaryContent = Buffer.from(dictBuffer).toString("utf-8");
       const charactersDictionary = dictionaryContent.split("\n");
@@ -239,7 +241,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
     this.log("Changing detection model...");
     const modelBuffer = await this._loadResource(
       model,
-      `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.onnx`
+      DEFAULT_MODEL_URLS.detection
     );
 
     await this.detectionSession?.release();
@@ -259,7 +261,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
     this.log("Changing recognition model...");
     const modelBuffer = await this._loadResource(
       model,
-      `${MODEL_BASE_URL}/recognition/multi/en/v5/en_PP-OCRv5_mobile_rec_infer.onnx`
+      DEFAULT_MODEL_URLS.recognition
     );
 
     await this.recognitionSession?.release();
@@ -279,7 +281,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
     this.log("Changing text dictionary...");
     const dictBuffer = await this._loadResource(
       dictionary,
-      `${DICT_BASE_URL}/recognition/multi/en/v5/ppocrv5_en_dict.txt`
+      DEFAULT_MODEL_URLS.charactersDictionary
     );
 
     const dictionaryContent = Buffer.from(dictBuffer).toString("utf-8");
@@ -462,6 +464,24 @@ export class PaddleOcrService extends BasePaddleOcrService {
 
     result.text = fullText;
     return result;
+  }
+
+  /**
+   * Pre-download all default models to the local cache directory.
+   * Call this before `initialize()` to avoid first-run download delays or
+   * to warm the cache in CI/CD pipelines and test suites.
+   */
+  public static async downloadModels(options?: { verbose?: boolean }): Promise<void> {
+    const verbose = options?.verbose ?? false;
+    const urls = [
+      DEFAULT_MODEL_URLS.detection,
+      DEFAULT_MODEL_URLS.recognition,
+      DEFAULT_MODEL_URLS.charactersDictionary,
+    ];
+
+    for (const url of urls) {
+      await fetchAndCacheResource(url, verbose);
+    }
   }
 
   /**

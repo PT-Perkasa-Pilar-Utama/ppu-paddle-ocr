@@ -20,6 +20,7 @@
  */
 
 export type { FlattenedPaddleOcrResult, PaddleOcrResult } from "../core/base-paddle-ocr.service.js";
+export { DEFAULT_MODEL_URLS } from "../core/base-paddle-ocr.service.js";
 export { PaddleOcrService } from "./paddle-ocr.service.web.js";
 
 export type {

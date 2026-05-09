@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import type { Canvas } from "ppu-ocv";
 import { CanvasProcessor } from "ppu-ocv";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
@@ -12,6 +12,10 @@ const imgFile = Bun.file(`${import.meta.dir}/../assets/receipt.jpg`);
 const gtFile = Bun.file(`${import.meta.dir}/../assets/receipt-ground-truth.txt`);
 const imageBuffer = await imgFile.arrayBuffer();
 const groundTruth = (await gtFile.text()).trim();
+
+beforeAll(async () => {
+  await PaddleOcrService.downloadModels();
+});
 
 describe("PaddleOcrService Initialization", () => {
   let service: PaddleOcrService | null = null;
