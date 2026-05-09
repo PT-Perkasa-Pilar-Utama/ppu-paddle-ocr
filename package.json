@@ -65,7 +65,8 @@
     "lint:fix": "oxlint --fix",
     "fmt": "oxfmt --check",
     "fmt:fix": "oxfmt .",
-    "demo": "bunx -y serve -l 3456 ."
+    "demo": "bunx -y serve -l 3456 .",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@types/bun": "latest",
