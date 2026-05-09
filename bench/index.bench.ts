@@ -1,6 +1,6 @@
 import { bench, run, summary } from "mitata";
 import { PaddleOcrService } from "../src";
-import type { ProcessingEngine, RecognitionStrategy } from "../src/interface.js";
+import type { RecognitionStrategy } from "../src/interface.js";
 import { levenshteinDistance } from "../src/utils.js";
 
 const strategies: RecognitionStrategy[] = ["per-box", "per-line", "cross-line"];
@@ -18,9 +18,56 @@ function measureAccuracy(ocrText: string) {
   return { dist, accuracy };
 }
 
-// --- Accuracy measurement ---
+// --- Benchmarks ---
 
-console.log("\n=== Accuracy (Levenshtein distance vs ground truth) ===");
+type ServiceMap = Record<RecognitionStrategy, PaddleOcrService>;
+
+function buildServices(engine: "opencv" | "canvas-native"): ServiceMap {
+  const map: Partial<ServiceMap> = {};
+  for (const strategy of strategies) {
+    map[strategy] = new PaddleOcrService({
+      processing: { engine },
+      recognition: { strategy, charactersDictionary: [] as string[] },
+    });
+  }
+  return map as ServiceMap;
+}
+
+const openCVServices = buildServices("opencv");
+for (const strategy of strategies) await openCVServices[strategy].initialize();
+
+const canvasNativeServices = buildServices("canvas-native");
+for (const strategy of strategies) await canvasNativeServices[strategy].initialize();
+
+// Summary 1: opencv (all strategies)
+summary(() => {
+  for (const strategy of strategies) {
+    bench(`[${strategy}][opencv][noCache]`, async () => {
+      await openCVServices[strategy].recognize(fileBuffer, { noCache: true });
+    });
+  }
+})
+
+// Summary 2: canvas-native (all strategies)
+summary(() => {
+  for (const strategy of strategies) {
+    bench(`[${strategy}][canvas-native][noCache]`, async () => {
+      await canvasNativeServices[strategy].recognize(fileBuffer, { noCache: true });
+    });
+  }
+})
+
+await run();
+
+for (const strategy of strategies) await openCVServices[strategy].destroy();
+for (const strategy of strategies) await canvasNativeServices[strategy].destroy();
+
+
+{
+
+  // --- Accuracy measurement ---
+
+console.log(`\n=== Accuracy on ${imgFile.name} ===`);
 console.log(`  ground truth length: ${groundTruth.length} chars\n`);
 
 for (const engine of engines) {
@@ -37,49 +84,4 @@ for (const engine of engines) {
     await service.destroy();
   }
   console.log();
-}
-
-// --- Benchmarks ---
-
-const allServices: PaddleOcrService[] = [];
-
-async function makeService(engine: ProcessingEngine, strategy: RecognitionStrategy) {
-  const s = new PaddleOcrService({
-    processing: { engine },
-    recognition: { strategy, charactersDictionary: [] as string[] },
-  });
-  await s.initialize();
-  await s.recognize(fileBuffer, { noCache: true });
-  allServices.push(s);
-  return s;
-}
-
-// Summary 1: opencv (all strategies)
-{
-  const svcs = await Promise.all(strategies.map((s) => makeService("opencv", s)));
-  summary(() => {
-    for (let i = 0; i < strategies.length; i++) {
-      bench(`[${strategies[i]}][opencv][noCache]`, async () => {
-        await svcs[i]?.recognize(fileBuffer, { noCache: true });
-      });
-    }
-  });
-}
-
-// Summary 2: canvas-native (all strategies)
-{
-  const svcs = await Promise.all(strategies.map((s) => makeService("canvas-native", s)));
-  summary(() => {
-    for (let i = 0; i < strategies.length; i++) {
-      bench(`[${strategies[i]}][canvas-native][noCache]`, async () => {
-        await svcs[i]?.recognize(fileBuffer, { noCache: true });
-      });
-    }
-  });
-}
-
-await run();
-
-for (const s of allServices) {
-  await s.destroy();
-}
+}}

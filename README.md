@@ -71,31 +71,60 @@ Built on top of `onnxruntime-node` and `onnxruntime-web`, ppu-paddle-ocr handles
 Run `bun task bench`. Current result:
 
 ```bash
-> bun task bench
-$ bun scripts/task.ts bench
-Running benchmark: index.bench.ts
-clk: ~3.03 GHz
+> bun run bench/index.bench.ts
+clk: ~3.02 GHz
 cpu: Apple M1
-runtime: bun 1.3.7 (arm64-darwin)
+runtime: bun 1.3.13 (arm64-darwin)
 
-benchmark                   avg (min … max) p75 / p99    (min … top 1%)
-------------------------------------------- -------------------------------
-cached infer                   2.59 µs/iter   2.54 µs     █
-                       (2.17 µs … 82.08 µs)   4.25 µs     █
-                    (  0.00  b … 288.00 kb) 701.72  b ▂▅▂██▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+benchmark                           avg (min … max) p75 / p99    (min … top 1%)
+--------------------------------------------------- -------------------------------
+[per-box][opencv][noCache]           207.39 ms/iter 208.32 ms      █
+                            (204.62 ms … 210.31 ms) 209.93 ms ▅  ▅ █  ▅ ▅▅▅ ▅ ▅   ▅
+                            ( 16.00 kb …  30.64 mb)   7.55 mb █▁▁█▁█▁▁█▁███▁█▁█▁▁▁█
 
-------------------------------------------- -------------------------------
-opencv: no cache             245.83 ms/iter 257.50 ms     █    █
-                    (217.75 ms … 346.86 ms) 266.70 ms ▅▅▅▅█    █      ▅▅  ▅
-                    (160.00 kb …  10.77 mb)   3.22 mb █████▁▁▁▁█▁▁▁▁▁▁██▁▁█
+[per-line][opencv][noCache]          190.89 ms/iter 191.67 ms    █
+                            (189.61 ms … 194.07 ms) 192.25 ms ▅▅▅█▅▅    ▅     ▅  ▅▅
+                            (  0.00  b …  16.86 mb)   4.80 mb ██████▁▁▁▁█▁▁▁▁▁█▁▁██
 
-canvas-native: no cache      225.62 ms/iter 226.50 ms    ███
-                    (222.81 ms … 231.70 ms) 229.66 ms ▅  ███▅    ▅▅       ▅
-                    (  0.00  b …   8.88 mb)   1.01 mb █▁▁████▁▁▁▁██▁▁▁▁▁▁▁█
+[cross-line][opencv][noCache]        195.11 ms/iter 192.98 ms █
+                            (188.91 ms … 218.96 ms) 214.98 ms █▅▅
+                            (  0.00  b …  22.41 mb)   3.91 mb ███▇▇▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▇
 
 summary
-  canvas-native: no cache
-   1.09x faster than opencv: no cache
+  [per-line][opencv][noCache]
+   1.02x faster than [cross-line][opencv][noCache]
+   1.09x faster than [per-box][opencv][noCache]
+
+--------------------------------------------------- -------------------------------
+[per-box][canvas-native][noCache]    213.73 ms/iter 214.30 ms           █
+                            (212.01 ms … 215.91 ms) 214.92 ms ▅ ▅   ▅▅  █▅  ▅ ▅ ▅ ▅
+                            (  0.00  b …  16.17 mb)   3.29 mb █▁█▁▁▁██▁▁██▁▁█▁█▁█▁█
+
+[per-line][canvas-native][noCache]   203.02 ms/iter 203.83 ms      █     █    █ █
+                            (200.57 ms … 206.55 ms) 204.13 ms ▅    █     █▅   █ █ ▅
+                            (  0.00  b …  14.98 mb)   1.38 mb █▁▁▁▁█▁▁▁▁▁██▁▁▁█▁█▁█
+
+[cross-line][canvas-native][noCache] 205.67 ms/iter 206.49 ms        █
+                            (203.44 ms … 210.00 ms) 207.29 ms ▅  ▅▅▅ █   ▅▅   ▅  ▅▅
+                            (  0.00  b …  14.19 mb)   2.13 mb █▁▁███▁█▁▁▁██▁▁▁█▁▁██
+
+summary
+  [per-line][canvas-native][noCache]
+   1.01x faster than [cross-line][canvas-native][noCache]
+   1.05x faster than [per-box][canvas-native][noCache]
+
+=== Accuracy on /Users/vexeee/Documents/project/paddle-ocr.js/bench/../assets/receipt.jpg ===
+  ground truth length: 383 chars
+
+  [opencv]
+    per-box        accuracy=97.91%  dist=8
+    per-line       accuracy=99.22%  dist=3
+    cross-line     accuracy=96.34%  dist=14
+
+  [canvas-native]
+    per-box        accuracy=97.65%  dist=9
+    per-line       accuracy=98.43%  dist=6
+    cross-line     accuracy=97.65%  dist=9
 ```
 
 ## Installation
