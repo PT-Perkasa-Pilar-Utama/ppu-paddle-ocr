@@ -144,41 +144,49 @@ export class PaddleOcrService extends BasePaddleOcrService {
     try {
       this.log("Initializing PaddleOcrService...");
 
-      // Load detection model
-      const detModelBuffer = await this._loadResource(
-        this.options.model?.detection,
-        DEFAULT_MODEL_URLS.detection
-      );
+      const engine = this.options.processing?.engine || "opencv";
 
-      // Use configured session options
-      this.detectionSession = await ort.InferenceSession.create(
-        new Uint8Array(detModelBuffer),
-        this.options.session ?? {}
-      );
+      // Phase 1 (I/O-bound): fetch all three resources in parallel.
+      // On a cold first-run this overlaps up to three HTTP downloads; on
+      // warm runs the file-system reads are trivially parallel.
+      const [detModelBuffer, recModelBuffer, dictBuffer] = await Promise.all([
+        this._loadResource(this.options.model?.detection, DEFAULT_MODEL_URLS.detection),
+        this._loadResource(this.options.model?.recognition, DEFAULT_MODEL_URLS.recognition),
+        this._loadResource(
+          this.options.model?.charactersDictionary,
+          DEFAULT_MODEL_URLS.charactersDictionary
+        ),
+      ]);
+
+      // Phase 2 (CPU/WASM-bound): create both ORT sessions in parallel, and
+      // (when using the opencv engine) initialise the OpenCV WASM runtime at
+      // the same time. `ort.InferenceSession.create` for each model takes
+      // hundreds of ms due to the "all" graph optimisation pass, so running
+      // them concurrently roughly halves cold-start time in practice.
+      //
+      // The OpenCV runtime initialisation is mandatory on the opencv path:
+      // the first OpenCV call otherwise triggers a lazy synchronous WASM
+      // compilation that makes the first OCR recognize 3-6x slower. Doing
+      // it here, in parallel with session creation, hides that cost.
+      const [detectionSession, recognitionSession] = await Promise.all([
+        ort.InferenceSession.create(new Uint8Array(detModelBuffer), this.options.session ?? {}),
+        ort.InferenceSession.create(new Uint8Array(recModelBuffer), this.options.session ?? {}),
+        engine === "opencv" ? ImageProcessor.initRuntime() : Promise.resolve(),
+      ]);
+
+      this.detectionSession = detectionSession;
+      this.recognitionSession = recognitionSession;
+
       if (this.options.model) this.options.model.detection = detModelBuffer;
-      this.log(
-        `Detection ONNX model loaded successfully\n\tinput: ${this.detectionSession.inputNames}\n\toutput: ${this.detectionSession.outputNames}`
-      );
-
-      // Load recognition model
-      const recModelBuffer = await this._loadResource(
-        this.options.model?.recognition,
-        DEFAULT_MODEL_URLS.recognition
-      );
-      this.recognitionSession = await ort.InferenceSession.create(
-        new Uint8Array(recModelBuffer),
-        this.options.session ?? {}
-      );
       if (this.options.model) this.options.model.recognition = recModelBuffer;
       this.log(
-        `Recognition ONNX model loaded successfully\n\tinput: ${this.recognitionSession.inputNames}\n\toutput: ${this.recognitionSession.outputNames}`
+        `Detection ONNX model loaded successfully\n\tinput: ${detectionSession.inputNames}\n\toutput: ${detectionSession.outputNames}`
+      );
+      this.log(
+        `Recognition ONNX model loaded successfully\n\tinput: ${recognitionSession.inputNames}\n\toutput: ${recognitionSession.outputNames}`
       );
 
-      // Load character dictionary
-      const dictBuffer = await this._loadResource(
-        this.options.model?.charactersDictionary,
-        DEFAULT_MODEL_URLS.charactersDictionary
-      );
+      // Decode the dictionary (synchronous, tiny — ~10 KB).
       const dictionaryContent = Buffer.from(dictBuffer).toString("utf-8");
       const charactersDictionary = dictionaryContent.split("\n");
 
@@ -191,25 +199,18 @@ export class PaddleOcrService extends BasePaddleOcrService {
         this.options.recognition.charactersDictionary = charactersDictionary;
       this.log(`Character dictionary loaded with ${charactersDictionary.length} entries.`);
 
-      const engine = this.options.processing?.engine || "opencv";
-
-      // Eagerly initialize OpenCV WASM runtime when using the opencv engine.
-      // Without this, the first OpenCV operation triggers a lazy synchronous
-      // import + WASM compilation of @techstark/opencv-js, causing a severe
-      // performance regression (3-6x slower first inference).
       if (engine === "opencv") {
-        await ImageProcessor.initRuntime();
         this.log("OpenCV runtime initialized.");
       }
 
       this.detector = new DetectionService(
-        this.detectionSession as NonNullable<typeof this.detectionSession>,
+        detectionSession,
         this.options.detection,
         this.options.debugging,
         engine
       );
       this.recognitor = new RecognitionService(
-        this.recognitionSession as NonNullable<typeof this.recognitionSession>,
+        recognitionSession,
         this.options.recognition,
         this.options.debugging,
         engine

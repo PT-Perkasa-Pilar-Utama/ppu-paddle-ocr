@@ -135,31 +135,41 @@ export class PaddleOcrService extends BasePaddleOcrService {
 
       await this._resolveSessionExecutionProviders();
 
-      const detModelBuffer = await this._loadResource(
-        this.options.model?.detection,
-        DEFAULT_MODEL_URLS.detection
-      );
+      // Phase 1 (network-bound): fetch all three resources concurrently.
+      // On a cold first load each request is a separate HTTP fetch; on
+      // warm loads they're served from the browser's HTTP cache in parallel.
+      const [detModelBuffer, recModelBuffer, dictBuffer] = await Promise.all([
+        this._loadResource(this.options.model?.detection, DEFAULT_MODEL_URLS.detection),
+        this._loadResource(this.options.model?.recognition, DEFAULT_MODEL_URLS.recognition),
+        this._loadResource(
+          this.options.model?.charactersDictionary,
+          DEFAULT_MODEL_URLS.charactersDictionary
+        ),
+      ]);
 
-      this.detectionSession = await this._createSession(new Uint8Array(detModelBuffer));
+      // Phase 2 (WebGPU/WASM compile-bound): create both ORT sessions in
+      // parallel. `ort.InferenceSession.create` on the webgpu backend does
+      // shader compilation which is comparatively expensive; running it for
+      // detection and recognition concurrently halves the wall-clock time.
+      // Both calls pass through _createSession so a WebGPU failure still
+      // falls back cleanly to WASM for that session.
+      const [detectionSession, recognitionSession] = await Promise.all([
+        this._createSession(new Uint8Array(detModelBuffer)),
+        this._createSession(new Uint8Array(recModelBuffer)),
+      ]);
+
+      this.detectionSession = detectionSession;
+      this.recognitionSession = recognitionSession;
+
       if (this.options.model) this.options.model.detection = detModelBuffer;
-      this.log(
-        `Detection ONNX model loaded successfully\n\tinput: ${this.detectionSession.inputNames}\n\toutput: ${this.detectionSession.outputNames}`
-      );
-
-      const recModelBuffer = await this._loadResource(
-        this.options.model?.recognition,
-        DEFAULT_MODEL_URLS.recognition
-      );
-      this.recognitionSession = await this._createSession(new Uint8Array(recModelBuffer));
       if (this.options.model) this.options.model.recognition = recModelBuffer;
       this.log(
-        `Recognition ONNX model loaded successfully\n\tinput: ${this.recognitionSession.inputNames}\n\toutput: ${this.recognitionSession.outputNames}`
+        `Detection ONNX model loaded successfully\n\tinput: ${detectionSession.inputNames}\n\toutput: ${detectionSession.outputNames}`
+      );
+      this.log(
+        `Recognition ONNX model loaded successfully\n\tinput: ${recognitionSession.inputNames}\n\toutput: ${recognitionSession.outputNames}`
       );
 
-      const dictBuffer = await this._loadResource(
-        this.options.model?.charactersDictionary,
-        DEFAULT_MODEL_URLS.charactersDictionary
-      );
       const dictionaryContent = new TextDecoder("utf-8").decode(dictBuffer);
       const charactersDictionary = dictionaryContent.split("\n");
 
@@ -173,12 +183,12 @@ export class PaddleOcrService extends BasePaddleOcrService {
       this.log(`Character dictionary loaded with ${charactersDictionary.length} entries.`);
 
       this.detector = new DetectionService(
-        this.detectionSession as unknown as ort.InferenceSession,
+        detectionSession as unknown as ort.InferenceSession,
         this.options.detection,
         this.options.debugging
       );
       this.recognitor = new RecognitionService(
-        this.recognitionSession as unknown as ort.InferenceSession,
+        recognitionSession as unknown as ort.InferenceSession,
         this.options.recognition,
         this.options.debugging
       );
