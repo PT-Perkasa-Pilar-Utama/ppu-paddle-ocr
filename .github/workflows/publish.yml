@@ -3,9 +3,8 @@
 name: Publish
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
 
 jobs:
   publish:
@@ -24,5 +23,11 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Publish package
+      - name: Publish package to jsr
         run: bunx jsr publish
+
+      - name: Configure npm auth
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
+
+      - name: Build and publish to npm
+        run: bun run build:publish
