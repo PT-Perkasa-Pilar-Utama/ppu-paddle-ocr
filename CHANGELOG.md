@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.3.0] - 2026-05-09
+
+### Added
+
+- **WebGPU execution provider** (web build). `PaddleOcrService` imported from `ppu-paddle-ocr/web` now probes `navigator.gpu` during `initialize()` and prefers `["webgpu", "wasm"]` when available, falling back silently to `["wasm"]` otherwise. WebGPU session creation that errors out (e.g. a model uses an op WebGPU does not support) triggers a transparent retry on WebAssembly. Typical speedup on Chrome/Edge with a compatible GPU is **2–5× faster recognition** with no code changes.
+- `isWebGpuAvailable()` and `getDefaultWebExecutionProviders()` exported from `ppu-paddle-ocr/web` for conditional UI ("GPU-accelerated" indicators) and explicit provider selection.
+- `examples/quantize-onnx.py` — helper script for producing INT8 dynamic quantized recognition models from the FP32 ONNX files in [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models). Quantizes `MatMul` / `Gemm` only (`Conv` is skipped because `ConvInteger` is not implemented in `onnxruntime-node`'s CPU backend). Typically 20–50% faster recognition on x86-64 CPUs with VNNI and on WebAssembly, with no measurable accuracy loss on the receipt sample.
+
+### Changed
+
+- Bumped internal `onnxruntime-web` CDN URL and the `ort.env.wasm.wasmPaths` default from 1.24.2 to 1.26.0 (so WebGPU is available out-of-the-box).
+
+### Documentation
+
+- README now documents the model-cache folder location per OS (macOS, Linux, Windows).
+- New README section **"WebGPU Acceleration"** covering auto-detection, how to override the provider preference, and how to probe support from user code.
+- New README section **"INT8 Quantized Recognition Models (advanced)"** with platform-specific guidance — explicitly calls out that INT8 is **slower** than FP32 on Apple Silicon, so users on macOS ARM64 should stick with FP32.
+
+### Developer experience
+
+- Pre-commit hook now runs `bun run fmt:fix` and `bun run lint:fix` across the whole repo before delegating strict lint + type-check to lint-staged, and restages the fixer output via `git add -u`. Commits land clean without a follow-up "fix: apply formatter" commit.
+- `package.json` now has a `"prepare": "husky"` script so `bun install` reliably activates husky on fresh clones (previously missing, which is why hooks silently did nothing).
+- GitHub issue templates (bug, accuracy, performance, install, feature, documentation) and a pull request template with What/Why/How sections.
+- CI pinned to Bun 1.2.23 until the Bun 1.3.x test-runner SIGILL on exit is fixed upstream.
+
 ## [5.2.1] - 2026-05-09
 
 ### Performance
