@@ -13,25 +13,19 @@ if (version !== "v4" && version !== "v5") {
   process.exit(1);
 }
 
-const { PaddleOcrService } = await import(
-  `./${version}/node_modules/ppu-paddle-ocr/index.js`
-);
+const { PaddleOcrService } = await import(`./${version}/node_modules/ppu-paddle-ocr/index.js`);
 
-const rootDir = import.meta.dir + "/..";
+const rootDir = `${import.meta.dir}/..`;
 
-const detModel = rootDir + "/models/PP-OCRv5_mobile_det_infer.onnx";
-const recModel = rootDir + "/models/en_PP-OCRv4_mobile_rec_infer.onnx";
-const dict = rootDir + "/models/en_dict.txt";
+const detModel = `${rootDir}/models/PP-OCRv5_mobile_det_infer.onnx`;
+const recModel = `${rootDir}/models/en_PP-OCRv4_mobile_rec_infer.onnx`;
+const dict = `${rootDir}/models/en_dict.txt`;
 
-const receiptBuf = await Bun.file(
-  rootDir + "/assets/receipt.jpg",
-).arrayBuffer();
+const receiptBuf = await Bun.file(`${rootDir}/assets/receipt.jpg`).arrayBuffer();
 
 let privateBuf: ArrayBuffer | null = null;
 try {
-  privateBuf = await Bun.file(
-    rootDir + "/private-tests/private-test-1.png",
-  ).arrayBuffer();
+  privateBuf = await Bun.file(`${rootDir}/private-tests/private-test-1.png`).arrayBuffer();
 } catch {}
 
 const images: ArrayBuffer[] = [receiptBuf];
@@ -40,7 +34,7 @@ if (privateBuf) images.push(privateBuf);
 console.log(`\n=== ppu-paddle-ocr ${version} ===`);
 console.log(`Images: ${images.length}`);
 
-const serviceOpts: any = {
+const serviceOpts: Record<string, unknown> = {
   model: {
     detection: detModel,
     recognition: recModel,
@@ -63,10 +57,10 @@ console.log(`initialize(): ${initMs.toFixed(1)} ms`);
 
 // --- Phase 2: first recognize (cold) ---
 const t1 = performance.now();
-const firstResult = await service.recognize(images[0]!, { noCache: true });
+const firstResult = await service.recognize(images[0] ?? new ArrayBuffer(0), { noCache: true });
 const firstMs = performance.now() - t1;
 console.log(
-  `first recognize(): ${firstMs.toFixed(1)} ms (detected ${firstResult.lines?.flat().length ?? "?"} items)`,
+  `first recognize(): ${firstMs.toFixed(1)} ms (detected ${firstResult.lines?.flat().length ?? "?"} items)`
 );
 
 // --- Phase 3: warm recognize ---
@@ -82,19 +76,17 @@ for (let round = 0; round < WARM_ROUNDS; round++) {
 
 const avg = warmRuns.reduce((a, b) => a + b, 0) / warmRuns.length;
 const sorted = [...warmRuns].sort((a, b) => a - b);
-const min = sorted[0]!;
-const median = sorted[Math.floor(sorted.length / 2)]!;
-const p95 = sorted[Math.floor(sorted.length * 0.95)]!;
-const max = sorted[sorted.length - 1]!;
+const min = sorted[0] ?? 0;
+const median = sorted[Math.floor(sorted.length / 2)] ?? 0;
+const p95 = sorted[Math.floor(sorted.length * 0.95)] ?? 0;
+const max = sorted[sorted.length - 1] ?? 0;
 
 console.log(
-  `warm recognize() (${warmRuns.length} runs): min=${min.toFixed(1)} avg=${avg.toFixed(1)} median=${median.toFixed(1)} p95=${p95.toFixed(1)} max=${max.toFixed(1)} ms`,
+  `warm recognize() (${warmRuns.length} runs): min=${min.toFixed(1)} avg=${avg.toFixed(1)} median=${median.toFixed(1)} p95=${p95.toFixed(1)} max=${max.toFixed(1)} ms`
 );
 
 const totalMs = initMs + firstMs + warmRuns.reduce((a, b) => a + b, 0);
 console.log(`total wall-clock: ${totalMs.toFixed(1)} ms`);
-console.log(
-  `individual runs: [${warmRuns.map((r) => r.toFixed(1)).join(", ")}]`,
-);
+console.log(`individual runs: [${warmRuns.map((r) => r.toFixed(1)).join(", ")}]`);
 
 await service.destroy();
