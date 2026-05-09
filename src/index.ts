@@ -19,10 +19,7 @@
  * ```
  */
 
-export type {
-  FlattenedPaddleOcrResult,
-  PaddleOcrResult,
-} from "./core/base-paddle-ocr.service.js";
+export type { FlattenedPaddleOcrResult, PaddleOcrResult } from "./core/base-paddle-ocr.service.js";
 export { PaddleOcrService } from "./processor/paddle-ocr.service.js";
 
 export type {
@@ -34,6 +31,7 @@ export type {
   ProcessingEngine,
   ProcessingOptions,
   RecognitionOptions,
+  RecognitionStrategy,
 } from "./interface.js";
 
 export type { PreprocessDetectionResult } from "./core/base-detection.service.js";

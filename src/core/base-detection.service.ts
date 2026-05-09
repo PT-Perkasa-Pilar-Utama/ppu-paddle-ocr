@@ -1,16 +1,8 @@
 import type { InferenceSession, Tensor } from "onnxruntime-common";
 import type { Contours, cv } from "ppu-ocv";
 import { CanvasProcessor, CanvasToolkit } from "ppu-ocv/canvas";
-import {
-  DEFAULT_DEBUGGING_OPTIONS,
-  DEFAULT_DETECTION_OPTIONS,
-} from "../constants.js";
-import type {
-  Box,
-  DebuggingOptions,
-  DetectionOptions,
-  ProcessingEngine,
-} from "../interface.js";
+import { DEFAULT_DEBUGGING_OPTIONS, DEFAULT_DETECTION_OPTIONS } from "../constants.js";
+import type { Box, DebuggingOptions, DetectionOptions, ProcessingEngine } from "../interface.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
 
 /**
@@ -19,7 +11,7 @@ import type { CoreCanvas, PlatformProvider } from "./platform.js";
  * Contains the normalized float tensor, dimensions, and scale factors
  * needed to map detection output back to original image coordinates.
  */
-export interface PreprocessDetectionResult {
+export type PreprocessDetectionResult = {
   /** Normalized float tensor (CHW layout, 3 channels). */
   tensor: Float32Array;
   /** Width of the padded/resized tensor in pixels. */
@@ -32,7 +24,7 @@ export interface PreprocessDetectionResult {
   originalWidth: number;
   /** Original image height before preprocessing. */
   originalHeight: number;
-}
+};
 
 /**
  * Service for detecting text regions in images
@@ -52,7 +44,7 @@ export class BaseDetectionService {
     session: InferenceSession,
     options: Partial<DetectionOptions> = {},
     debugging: Partial<DebuggingOptions> = {},
-    engine: ProcessingEngine = "opencv",
+    engine: ProcessingEngine = "opencv"
   ) {
     this.platform = platform;
     this.session = session;
@@ -85,18 +77,17 @@ export class BaseDetectionService {
     this.log("Starting text detection process");
 
     try {
-      const canvasToProcess = this.platform.isCanvas(image)
-        ? image
-        : this.engine === "opencv" && this.platform.imageProcessor
-          ? await this.platform.imageProcessor.prepareCanvas(image)
-          : await CanvasProcessor.prepareCanvas(image);
+      let canvasToProcess: CoreCanvas;
+      if (this.platform.isCanvas(image)) {
+        canvasToProcess = image;
+      } else if (this.engine === "opencv" && this.platform.imageProcessor) {
+        canvasToProcess = await this.platform.imageProcessor.prepareCanvas(image);
+      } else {
+        canvasToProcess = await CanvasProcessor.prepareCanvas(image);
+      }
 
       const input = await this.preprocessDetection(canvasToProcess);
-      const detection = await this.runInference(
-        input.tensor,
-        input.width,
-        input.height,
-      );
+      const detection = await this.runInference(input.tensor, input.width, input.height);
 
       if (!detection) {
         console.error("Text detection failed (output tensor is null)");
@@ -105,12 +96,8 @@ export class BaseDetectionService {
 
       const detectedBoxes = this.postprocessDetection(detection, input);
 
-      if (this.debugging.debug && this.debugging.debugFolder) {
-        await this.debugDetectionCanvas(
-          this.lastDetectionCanvas!,
-          input.width,
-          input.height,
-        );
+      if (this.debugging.debug && this.debugging.debugFolder && this.lastDetectionCanvas) {
+        await this.debugDetectionCanvas(this.lastDetectionCanvas, input.width, input.height);
         await this.debugDetectedBoxes(canvasToProcess, detectedBoxes);
       }
 
@@ -120,7 +107,7 @@ export class BaseDetectionService {
     } catch (error) {
       console.error(
         "Error during text detection:",
-        error instanceof Error ? error.message : String(error),
+        error instanceof Error ? error.message : String(error)
       );
       return [];
     }
@@ -129,9 +116,7 @@ export class BaseDetectionService {
   /**
    * Preprocess an image for text detection
    */
-  private async preprocessDetection(
-    canvas: CoreCanvas,
-  ): Promise<PreprocessDetectionResult> {
+  private async preprocessDetection(canvas: CoreCanvas): Promise<PreprocessDetectionResult> {
     const { width: originalWidth, height: originalHeight } = canvas;
 
     const {
@@ -146,9 +131,7 @@ export class BaseDetectionService {
       // OpenCV-based resize
       const processor = new this.platform.imageProcessor.ImageProcessor(canvas);
       try {
-        resizedCanvas = processor
-          .resize({ width: resizeW, height: resizeH })
-          .toCanvas();
+        resizedCanvas = processor.resize({ width: resizeW, height: resizeH }).toCanvas();
       } finally {
         processor.destroy();
       }
@@ -162,21 +145,15 @@ export class BaseDetectionService {
     const width = Math.ceil(resizeW / 32) * 32;
     const height = Math.ceil(resizeH / 32) * 32;
 
-    const paddedCanvas = this.createPaddedCanvas(
-      resizedCanvas,
-      resizeW,
-      resizeH,
-      width,
-      height,
-    );
+    const paddedCanvas = this.createPaddedCanvas(resizedCanvas, resizeW, resizeH, width, height);
 
     const tensor = this.imageToTensor(paddedCanvas, width, height);
 
     this.log(
       `Detection preprocessed: original(${originalWidth}x${originalHeight}), ` +
         `model_input(${width}x${height}), resize_ratio: ${resizeRatio.toFixed(
-          4,
-        )}, engine: ${this.engine}`,
+          4
+        )}, engine: ${this.engine}`
     );
 
     return {
@@ -192,11 +169,8 @@ export class BaseDetectionService {
   /**
    * Calculate dimensions for resizing the image
    */
-  private calculateResizeDimensions(
-    originalWidth: number,
-    originalHeight: number,
-  ) {
-    const MAX_SIDE_LEN = this.options.maxSideLength!;
+  private calculateResizeDimensions(originalWidth: number, originalHeight: number) {
+    const MAX_SIDE_LEN = this.options.maxSideLength ?? 960;
 
     let resizeW = originalWidth;
     let resizeH = originalHeight;
@@ -219,7 +193,7 @@ export class BaseDetectionService {
     resizeW: number,
     resizeH: number,
     targetWidth: number,
-    targetHeight: number,
+    targetHeight: number
   ): CoreCanvas {
     const paddedCanvas = this.platform.createCanvas(targetWidth, targetHeight);
     const paddedCtx = paddedCanvas.getContext("2d");
@@ -230,32 +204,36 @@ export class BaseDetectionService {
   /**
    * Convert an image to a normalized tensor for model input
    */
-  private imageToTensor(
-    canvas: CoreCanvas,
-    width: number,
-    height: number,
-  ): Float32Array {
+  private imageToTensor(canvas: CoreCanvas, width: number, height: number): Float32Array {
     const ctx = canvas.getContext("2d");
     const imageData = ctx.getImageData(0, 0, width, height);
     const rgbaData = imageData.data;
 
-    const tensor = new Float32Array(
-      BaseDetectionService.NUM_CHANNELS * height * width,
-    );
-    const { mean, stdDeviation } = this.options;
+    const channelSize = height * width;
+    const tensor = new Float32Array(BaseDetectionService.NUM_CHANNELS * channelSize);
+    const mean = this.options.mean ?? [0.485, 0.456, 0.406];
+    const stdDeviation = this.options.stdDeviation ?? [0.229, 0.224, 0.225];
+    const meanR = mean[0] ?? 0.485,
+      meanG = mean[1] ?? 0.456,
+      meanB = mean[2] ?? 0.406;
+    const stdR = stdDeviation[0] ?? 0.229,
+      stdG = stdDeviation[1] ?? 0.224,
+      stdB = stdDeviation[2] ?? 0.225;
+    const invStdR = 1.0 / stdR,
+      invStdG = 1.0 / stdG,
+      invStdB = 1.0 / stdB;
+    const rOffset = 0;
+    const gOffset = channelSize;
+    const bOffset = channelSize * 2;
 
-    for (let h = 0; h < height; h++) {
-      for (let w = 0; w < width; w++) {
-        const rgbaIdx = (h * width + w) * 4;
-        const tensorBaseIdx = h * width + w;
-
-        // Normalize RGB values
-        for (let c = 0; c < BaseDetectionService.NUM_CHANNELS; c++) {
-          const pixelValue = rgbaData[rgbaIdx + c]! / 255.0;
-          const normalizedValue = (pixelValue - mean![c]!) / stdDeviation![c]!;
-          tensor[c * height * width + tensorBaseIdx] = normalizedValue;
-        }
-      }
+    for (let i = 0; i < channelSize; i++) {
+      const rgbaIdx = i * 4;
+      const r = (rgbaData[rgbaIdx] ?? 0) / 255.0;
+      const g = (rgbaData[rgbaIdx + 1] ?? 0) / 255.0;
+      const b = (rgbaData[rgbaIdx + 2] ?? 0) / 255.0;
+      tensor[rOffset + i] = (r - meanR) * invStdR;
+      tensor[gOffset + i] = (g - meanG) * invStdG;
+      tensor[bOffset + i] = (b - meanB) * invStdB;
     }
 
     return tensor;
@@ -267,29 +245,23 @@ export class BaseDetectionService {
   private async runInference(
     tensor: Float32Array,
     width: number,
-    height: number,
+    height: number
   ): Promise<Float32Array | null> {
     let inputTensor: Tensor | undefined;
     try {
       this.log("Running detection inference...");
 
-      inputTensor = new this.platform.ort.Tensor("float32", tensor, [
-        1,
-        3,
-        height,
-        width,
-      ]);
+      inputTensor = new this.platform.ort.Tensor("float32", tensor, [1, 3, height, width]);
 
       const feeds = { x: inputTensor };
       const results = await this.session.run(feeds);
-      const outputTensor =
-        results[this.session.outputNames[0] || "sigmoid_0.tmp_0"];
+      const outputTensor = results[this.session.outputNames[0] || "sigmoid_0.tmp_0"];
 
       this.log("Detection inference complete!");
 
       if (!outputTensor) {
         console.error(
-          `Output tensor ${this.session.outputNames[0]} not found in detection results`,
+          `Output tensor ${this.session.outputNames[0]} not found in detection results`
         );
         return null;
       }
@@ -298,7 +270,7 @@ export class BaseDetectionService {
     } catch (error) {
       console.error(
         "Error during model inference:",
-        error instanceof Error ? error.message : String(error),
+        error instanceof Error ? error.message : String(error)
       );
       throw error;
     } finally {
@@ -309,28 +281,21 @@ export class BaseDetectionService {
   /**
    * Convert a tensor to a canvas for visualization and processing
    */
-  private tensorToCanvas(
-    tensor: Float32Array,
-    width: number,
-    height: number,
-  ): CoreCanvas {
+  private tensorToCanvas(tensor: Float32Array, width: number, height: number): CoreCanvas {
     const canvas = this.platform.createCanvas(width, height);
     const ctx = canvas.getContext("2d");
     const imageData = ctx.createImageData(width, height);
     const data = imageData.data;
+    const totalPixels = width * height;
 
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const mapIndex = y * width + x;
-        const probability = tensor[mapIndex] || 0;
-        const grayValue = Math.round(probability * 255);
-
-        const pixelIdx = (y * width + x) * 4;
-        data[pixelIdx] = grayValue; // R
-        data[pixelIdx + 1] = grayValue; // G
-        data[pixelIdx + 2] = grayValue; // B
-        data[pixelIdx + 3] = 255; // A
-      }
+    for (let i = 0; i < totalPixels; i++) {
+      const probability = tensor[i] || 0;
+      const grayValue = Math.round(probability * 255);
+      const pixelIdx = i * 4;
+      data[pixelIdx] = grayValue;
+      data[pixelIdx + 1] = grayValue;
+      data[pixelIdx + 2] = grayValue;
+      data[pixelIdx + 3] = 255;
     }
 
     ctx.putImageData(imageData, 0, 0);
@@ -345,7 +310,7 @@ export class BaseDetectionService {
     input: PreprocessDetectionResult,
     minBoxAreaOnPadded: number = this.options.minimumAreaThreshold || 20,
     paddingVertical: number = this.options.paddingVertical || 0.4,
-    paddingHorizontal: number = this.options.paddingHorizontal || 0.6,
+    paddingHorizontal: number = this.options.paddingHorizontal || 0.6
   ): Box[] {
     this.log("Post-processing detection results...");
 
@@ -363,7 +328,7 @@ export class BaseDetectionService {
         originalHeight,
         minBoxAreaOnPadded,
         paddingVertical,
-        paddingHorizontal,
+        paddingHorizontal
       );
     }
 
@@ -374,7 +339,7 @@ export class BaseDetectionService {
       originalHeight,
       minBoxAreaOnPadded,
       paddingVertical,
-      paddingHorizontal,
+      paddingHorizontal
     );
   }
 
@@ -390,9 +355,9 @@ export class BaseDetectionService {
     originalHeight: number,
     minBoxAreaOnPadded: number,
     paddingVertical: number,
-    paddingHorizontal: number,
+    paddingHorizontal: number
   ): Box[] {
-    const ip = this.platform.imageProcessor!;
+    const ip = this.platform.imageProcessor as NonNullable<typeof this.platform.imageProcessor>;
     const processor = new ip.ImageProcessor(canvas);
     try {
       processor.grayscale().convert({ rtype: ip.cv.CV_8UC1 });
@@ -411,7 +376,7 @@ export class BaseDetectionService {
         originalHeight,
         minBoxAreaOnPadded,
         paddingVertical,
-        paddingHorizontal,
+        paddingHorizontal
       );
 
       contours.destroy();
@@ -435,7 +400,7 @@ export class BaseDetectionService {
     originalHeight: number,
     minBoxArea: number,
     paddingVertical: number,
-    paddingHorizontal: number,
+    paddingHorizontal: number
   ): Box[] {
     const boxes: Box[] = [];
 
@@ -451,14 +416,14 @@ export class BaseDetectionService {
         width,
         height,
         paddingVertical,
-        paddingHorizontal,
+        paddingHorizontal
       );
 
       const finalBox = this.convertToOriginalCoordinates(
         paddedRect,
         resizeRatio,
         originalWidth,
-        originalHeight,
+        originalHeight
       );
 
       if (finalBox.width > 5 && finalBox.height > 5) {
@@ -479,12 +444,10 @@ export class BaseDetectionService {
     originalHeight: number,
     minBoxAreaOnPadded: number,
     paddingVertical: number,
-    paddingHorizontal: number,
+    paddingHorizontal: number
   ): Box[] {
     // Use native canvas operations (no OpenCV needed)
-    const processor = new CanvasProcessor(canvas)
-      .grayscale()
-      .threshold({ thresh: 127 });
+    const processor = new CanvasProcessor(canvas).grayscale().threshold({ thresh: 127 });
 
     // Use native region detection instead of OpenCV contours
     const regions = processor.findRegions({
@@ -498,11 +461,7 @@ export class BaseDetectionService {
       scale: 1 / resizeRatio, // Map coordinates back to original image space
     });
 
-    const boxes = this.extractBoxesFromRegions(
-      regions,
-      originalWidth,
-      originalHeight,
-    );
+    const boxes = this.extractBoxesFromRegions(regions, originalWidth, originalHeight);
 
     this.log(`Found ${boxes.length} potential text boxes (canvas-native)`);
     return boxes;
@@ -517,7 +476,7 @@ export class BaseDetectionService {
       area: number;
     }>,
     originalWidth: number,
-    originalHeight: number,
+    originalHeight: number
   ): Box[] {
     const boxes: Box[] = [];
 
@@ -557,7 +516,7 @@ export class BaseDetectionService {
     maxWidth: number,
     maxHeight: number,
     paddingVertical: number,
-    paddingHorizontal: number,
+    paddingHorizontal: number
   ) {
     const verticalPadding = Math.round(rect.height * paddingVertical);
     const horizontalPadding = Math.round(rect.height * paddingHorizontal);
@@ -570,14 +529,8 @@ export class BaseDetectionService {
     x = Math.max(0, x);
     y = Math.max(0, y);
 
-    const rightEdge = Math.min(
-      maxWidth,
-      rect.x + rect.width + horizontalPadding,
-    );
-    const bottomEdge = Math.min(
-      maxHeight,
-      rect.y + rect.height + verticalPadding,
-    );
+    const rightEdge = Math.min(maxWidth, rect.x + rect.width + horizontalPadding);
+    const bottomEdge = Math.min(maxHeight, rect.y + rect.height + verticalPadding);
     width = rightEdge - x;
     height = bottomEdge - y;
 
@@ -591,7 +544,7 @@ export class BaseDetectionService {
     rect: { x: number; y: number; width: number; height: number },
     resizeRatio: number,
     originalWidth: number,
-    originalHeight: number,
+    originalHeight: number
   ): Box {
     const scaledX = rect.x / resizeRatio;
     const scaledY = rect.y / resizeRatio;
@@ -611,10 +564,10 @@ export class BaseDetectionService {
    */
   private async debugDetectionCanvas(
     canvas: CoreCanvas,
-    width: number,
-    height: number,
+    _width: number,
+    _height: number
   ): Promise<void> {
-    const dir = this.debugging.debugFolder!;
+    const dir = this.debugging.debugFolder ?? "";
     await this.platform.saveDebugImage(canvas, "detection-debug", dir);
 
     this.log(`Probability map visualized and saved to: ${dir}`);
@@ -623,10 +576,7 @@ export class BaseDetectionService {
   /**
    * Debug the bounding boxes by drawing a rectangle onto the original image
    */
-  private async debugDetectedBoxes(
-    image: ArrayBuffer | CoreCanvas,
-    boxes: Box[],
-  ) {
+  private async debugDetectedBoxes(image: ArrayBuffer | CoreCanvas, boxes: Box[]) {
     const canvas = this.platform.isCanvas(image)
       ? image
       : await CanvasProcessor.prepareCanvas(image);
@@ -644,7 +594,7 @@ export class BaseDetectionService {
       });
     }
 
-    const dir = this.debugging.debugFolder!;
+    const dir = this.debugging.debugFolder ?? "";
     await this.platform.saveDebugImage(canvas, "boxes-debug", dir);
 
     this.log(`Boxes visualized and saved to: ${dir}`);

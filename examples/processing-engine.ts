@@ -11,7 +11,7 @@ import { PaddleOcrService } from "../src";
  *   Lighter weight, suitable for browser extensions or minimal setups.
  */
 
-const imagePath = import.meta.dir + "/../assets/receipt.jpg";
+const imagePath = `${import.meta.dir}/../assets/receipt.jpg`;
 const imgFile = Bun.file(imagePath);
 const fileBuffer = await imgFile.arrayBuffer();
 
@@ -62,8 +62,8 @@ await canvasService.destroy();
 // --- Summary ---
 console.log("=== Summary ===");
 console.log(
-  `OpenCV:        ${opencvTime} ms, ${opencvResult.lines.flat().length} items, confidence ${opencvResult.confidence.toFixed(4)}`,
+  `OpenCV:        ${opencvTime} ms, ${opencvResult.lines.flat().length} items, confidence ${opencvResult.confidence.toFixed(4)}`
 );
 console.log(
-  `Canvas-native: ${canvasTime} ms, ${canvasResult.lines.flat().length} items, confidence ${canvasResult.confidence.toFixed(4)}`,
+  `Canvas-native: ${canvasTime} ms, ${canvasResult.lines.flat().length} items, confidence ${canvasResult.confidence.toFixed(4)}`
 );

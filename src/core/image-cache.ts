@@ -2,7 +2,7 @@
  * Simple LRU cache for processed images to avoid redundant processing
  */
 export class ImageCache {
-  private cache: Map<string, any> = new Map();
+  private cache: Map<string, unknown> = new Map();
   private maxSize: number;
 
   constructor(maxSize = 10) {
@@ -12,7 +12,7 @@ export class ImageCache {
   /**
    * Get item from cache
    */
-  get(key: string): any {
+  get(key: string): unknown {
     const value = this.cache.get(key);
     if (value !== undefined) {
       // Move to end (most recently used)
@@ -26,7 +26,7 @@ export class ImageCache {
   /**
    * Set item in cache
    */
-  set(key: string, value: any): void {
+  set(key: string, value: unknown): void {
     if (this.cache.has(key)) {
       this.cache.delete(key);
     } else if (this.cache.size >= this.maxSize) {
