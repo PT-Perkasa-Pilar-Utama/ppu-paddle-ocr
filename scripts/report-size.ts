@@ -1,6 +1,6 @@
 import { minify } from "uglify-js";
 
-const DIR = import.meta.dir + "/../lib/";
+const DIR = `${import.meta.dir}/../lib/`;
 
 const sizes: {
   entry: string;
@@ -10,8 +10,7 @@ const sizes: {
   minifiedGzip: number;
 }[] = [];
 
-const toByte = (num: number) =>
-  num >= 1e3 ? (num / 1e3).toFixed(2) + "KB" : num + "B";
+const toByte = (num: number) => (num >= 1e3 ? `${(num / 1e3).toFixed(2)}KB` : `${num}B`);
 
 for await (const path of new Bun.Glob("**/*.js").scan(DIR)) {
   const file = Bun.file(DIR + path);
@@ -41,5 +40,5 @@ console.table(
     Minify: toByte(val.minified),
     GZIP: toByte(val.gzip),
     "Minify GZIP": toByte(val.minifiedGzip),
-  })),
+  }))
 );

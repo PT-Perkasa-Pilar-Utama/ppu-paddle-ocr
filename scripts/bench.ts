@@ -1,7 +1,7 @@
 import { Glob } from "bun";
 import { exec } from "./utils";
 
-const DIR = import.meta.dir + "/../bench";
+const DIR = `${import.meta.dir}/../bench`;
 const exe = { raw: "bun run" };
 
 let exactBench = process.argv[2];

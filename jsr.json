@@ -1,19 +1,13 @@
 {
   "name": "@snowfluke/ppu-paddle-ocr",
-  "version": "5.1.1",
+  "version": "5.2.0",
   "license": "MIT",
   "exports": {
     ".": "./src/index.ts",
     "./web": "./src/web/index.ts"
   },
   "publish": {
-    "include": [
-      "LICENSE",
-      "README.md",
-      "package.json",
-      "tsconfig.json",
-      "src/**/*.ts"
-    ],
+    "include": ["LICENSE", "README.md", "package.json", "tsconfig.json", "src/**/*.ts"],
     "exclude": [
       "tests",
       "assets",

@@ -29,17 +29,14 @@ for (const path of new Bun.Glob("**/*.ts").scanSync(SOURCEDIR)) {
   const pathExtStart = path.lastIndexOf(".");
   const outPathNoExt = `${OUTDIR}/${path.substring(0, pathExtStart >>> 0)}`;
 
-  Bun.file(srcPath)
-    .text()
-    .then((buf) => {
-      const res = transpiler.transformSync(buf);
-      if (res.length !== 0) {
-        Bun.write(`${outPathNoExt}.js`, res.replace(/const /g, "let "));
-      }
-
-      Bun.write(
-        `${outPathNoExt}.d.ts`,
-        transpileDeclaration(buf, tsconfig as any).outputText,
-      );
-    });
+  const buf = await Bun.file(srcPath).text();
+  const res = transpiler.transformSync(buf);
+  if (res.length !== 0) {
+    Bun.write(`${outPathNoExt}.js`, res.replace(/const /g, "let "));
+  }
+  Bun.write(
+    `${outPathNoExt}.d.ts`,
+    transpileDeclaration(buf, tsconfig as unknown as Parameters<typeof transpileDeclaration>[1])
+      .outputText
+  );
 }
