@@ -25,8 +25,8 @@ You can combine it further by using open-cv https://github.com/PT-Perkasa-Pilar-
 Control how detected boxes are fed into the recognition model. Each strategy works by cropping detected regions from the canvas and stitching them side-by-side before running inference. 
 
 The goal is to reduce the number of recognition inferences: 
-- with the default `per-box` strategy, *n* detected boxes produce *n* separate inferences. 
-- `per-line` merges boxes on the same line into a single crop, and
+- `per-box` strategy, *n* detected boxes produce *n* separate inferences. 
+- `per-line` (default) merges boxes on the same line into a single crop, and
 - `cross-line` bin-packs crops across lines to minimize total inference calls, improving throughput on images with many text regions.
 
 ![recognition strategies](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/refs/heads/main/assets/recognition-strategies.jpg)
