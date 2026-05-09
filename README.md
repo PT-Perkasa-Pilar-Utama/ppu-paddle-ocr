@@ -470,6 +470,34 @@ PaddleOCR models are designed for **text-only recognition**. They detect and rec
 
 If you need to convert PaddlePaddle models to ONNX format, see our [conversion guide](./examples/convert-onnx.ipynb).
 
+### INT8 Quantized Recognition Models (advanced)
+
+The PP-OCRv5 recognition model is dominated by transformer MatMul operations, which can be dynamically quantized from FP32 to INT8 with **no accuracy loss** on typical inputs (measured 99.22% → 99.22% on the receipt sample) and a 20–50% speedup on **x86-64 CPUs with VNNI** (Intel 10th-gen+, AMD Zen 3+) and on **WebAssembly** in older browsers.
+
+> [!NOTE]
+> On Apple Silicon (M-series), INT8 is currently **not faster** than FP32 because ONNX Runtime Node uses highly tuned FP32 NEON/Accelerate kernels that beat the INT8 MLAS path. Stick with FP32 on macOS ARM64.
+
+A quantization helper script is provided at [`examples/quantize-onnx.py`](./examples/quantize-onnx.py):
+
+```bash
+pip install onnxruntime onnx sympy
+python examples/quantize-onnx.py /path/to/en_PP-OCRv5_mobile_rec_infer.onnx
+# -> produces en_PP-OCRv5_mobile_rec_infer_int8.onnx
+```
+
+The script quantizes only `MatMul` / `Gemm` ops (not `Conv`) because `ConvInteger` is not implemented in the CPU backend of `onnxruntime-node`. For recognition this covers the dominant compute path. Detection models don't benefit significantly from dynamic quantization and are skipped.
+
+Use the quantized model via the `model.recognition` option:
+
+```ts
+const service = new PaddleOcrService({
+  model: {
+    recognition: "https://example.com/en_PP-OCRv5_mobile_rec_infer_int8.onnx",
+  },
+});
+await service.initialize();
+```
+
 ## Processing Engine
 
 Starting from v5.1.0, you can choose between two image processing engines for the detection and recognition preprocessing pipeline:
