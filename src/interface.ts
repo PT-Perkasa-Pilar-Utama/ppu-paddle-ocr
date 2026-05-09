@@ -1,3 +1,5 @@
+import type { InferenceSession } from "onnxruntime-common";
+
 /**
  * The image processing engine to use for preprocessing.
  *
@@ -157,6 +159,12 @@ export type RecognizeOptions = {
   flatten?: boolean;
 
   /**
+   * Override the recognition strategy for this call.
+   * If omitted, the strategy from the service options is used.
+   */
+  strategy?: RecognitionStrategy;
+
+  /**
    * Custom character dictionary for this specific call.
    * If provided, caching will be disabled for this call.
    */
@@ -223,49 +231,18 @@ export type PaddleOptions = {
 
 /**
  * ONNX Runtime session configuration options.
+ *
+ * Extends the native `InferenceSession.SessionOptions` from ONNX Runtime
+ * so that any valid provider configuration (e.g. WebAssembly, CUDA, CoreML)
+ * is accepted without type mismatch.
  */
-export type SessionOptions = {
+export type SessionOptions = InferenceSession.SessionOptions & {
   /**
-   * Execution providers to use for inference (e.g., 'cpu', 'cuda').
+   * Execution providers to use for inference (e.g., 'cpu', 'cuda', 'wasm').
+   * Accepts provider name strings or provider-specific configuration objects.
    * @default ['cpu']
    */
-  executionProviders?: string[];
-
-  /**
-   * Graph optimization level for ONNX Runtime.
-   * @default 'all'
-   */
-  graphOptimizationLevel?: "disabled" | "basic" | "extended" | "layout" | "all";
-
-  /**
-   * Enable CPU memory arena for better memory management.
-   * @default true
-   */
-  enableCpuMemArena?: boolean;
-
-  /**
-   * Enable memory pattern optimization.
-   * @default true
-   */
-  enableMemPattern?: boolean;
-
-  /**
-   * Execution mode for the session.
-   * @default 'sequential'
-   */
-  executionMode?: "sequential" | "parallel";
-
-  /**
-   * Number of inter-op threads. 0 lets ONNX decide.
-   * @default 0
-   */
-  interOpNumThreads?: number;
-
-  /**
-   * Number of intra-op threads. 0 lets ONNX decide.
-   * @default 0
-   */
-  intraOpNumThreads?: number;
+  executionProviders?: InferenceSession.SessionOptions["executionProviders"];
 };
 
 /**

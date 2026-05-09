@@ -384,9 +384,11 @@ export class PaddleOcrService extends BasePaddleOcrService {
     const sourceCanvas =
       image instanceof ArrayBuffer ? await CanvasProcessor.prepareCanvas(image) : image;
 
-    const strategy = this.options.recognition?.strategy ?? "per-line";
-    const detection = await (this.detector as NonNullable<typeof this.detector>).run(sourceCanvas);
-    const recognition = await (this.recognitor as NonNullable<typeof this.recognitor>).run(
+    const strategy = options?.strategy ?? this.options.recognition?.strategy ?? "per-line";
+    const detector = this.detector as NonNullable<BasePaddleOcrService["detector"]>;
+    const recognitor = this.recognitor as NonNullable<BasePaddleOcrService["recognitor"]>;
+    const detection = await detector.run(sourceCanvas);
+    const recognition = await recognitor.run(
       sourceCanvas,
       detection,
       charactersDictionary,
