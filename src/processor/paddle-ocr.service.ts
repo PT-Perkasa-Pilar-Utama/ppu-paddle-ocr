@@ -2,7 +2,9 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import * as ort from "onnxruntime-node";
 import * as os from "os";
 import * as path from "path";
-import { Canvas, ImageProcessor } from "ppu-ocv";
+import type { Canvas } from "ppu-ocv";
+import { ImageProcessor } from "ppu-ocv";
+import { CanvasProcessor } from "ppu-ocv/canvas";
 
 import {
   BasePaddleOcrService,
@@ -11,16 +13,11 @@ import {
 } from "../core/base-paddle-ocr.service.js";
 import { globalImageCache, ImageCache } from "../core/image-cache.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
-import type {
-  FlattenedPaddleOcrResult,
-  PaddleOcrResult,
-} from "../web/paddle-ocr.service.web.js";
+import type { FlattenedPaddleOcrResult, PaddleOcrResult } from "../web/paddle-ocr.service.web.js";
 import { DetectionService } from "./detection.service.js";
 import { NodePlatformProvider } from "./platform.node.js";
-import {
-  RecognitionService,
-  type RecognitionResult,
-} from "./recognition.service.js";
+import { RecognitionService } from "./recognition.service.js";
+import type { RecognitionResult } from "./recognition.service.js";
 
 const CACHE_DIR = path.join(os.homedir(), ".cache", "ppu-paddle-ocr");
 
@@ -53,7 +50,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
 
     console.log(
       `[PaddleOcrService] Downloading resource: ${fileName}\n` +
-        `                 Cached at: ${CACHE_DIR}`,
+        `                 Cached at: ${CACHE_DIR}`
     );
     this.log(`Fetching resource from URL: ${url}`);
 
@@ -108,7 +105,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
    */
   private async _loadResource(
     source: string | ArrayBuffer | undefined,
-    defaultUrl: string,
+    defaultUrl: string
   ): Promise<ArrayBuffer> {
     if (source instanceof ArrayBuffer) {
       this.log("Loading resource from ArrayBuffer");
@@ -122,10 +119,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
         const resolvedPath = path.resolve(process.cwd(), source);
         this.log(`Loading resource from path: ${resolvedPath}`);
         const buf = readFileSync(resolvedPath);
-        return buf.buffer.slice(
-          buf.byteOffset,
-          buf.byteOffset + buf.byteLength,
-        );
+        return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
       }
     }
 
@@ -134,7 +128,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
 
   protected async initSessions(): Promise<void> {
     throw new Error(
-      "Initialization is handled proactively in PaddleOcrService. Call initialize() instead.",
+      "Initialization is handled proactively in PaddleOcrService. Call initialize() instead."
     );
   }
 
@@ -154,52 +148,49 @@ export class PaddleOcrService extends BasePaddleOcrService {
       // Load detection model
       const detModelBuffer = await this._loadResource(
         this.options.model?.detection,
-        `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.onnx`,
+        `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.onnx`
       );
 
       // Use configured session options
       this.detectionSession = await ort.InferenceSession.create(
         new Uint8Array(detModelBuffer),
-        this.options.session!,
+        this.options.session ?? {}
       );
-      this.options.model!.detection = detModelBuffer;
+      if (this.options.model) this.options.model.detection = detModelBuffer;
       this.log(
-        `Detection ONNX model loaded successfully\n\tinput: ${this.detectionSession.inputNames}\n\toutput: ${this.detectionSession.outputNames}`,
+        `Detection ONNX model loaded successfully\n\tinput: ${this.detectionSession.inputNames}\n\toutput: ${this.detectionSession.outputNames}`
       );
 
       // Load recognition model
       const recModelBuffer = await this._loadResource(
         this.options.model?.recognition,
-        `${MODEL_BASE_URL}/recognition/multi/en/v5/en_PP-OCRv5_mobile_rec_infer.onnx`,
+        `${MODEL_BASE_URL}/recognition/multi/en/v5/en_PP-OCRv5_mobile_rec_infer.onnx`
       );
       this.recognitionSession = await ort.InferenceSession.create(
         new Uint8Array(recModelBuffer),
-        this.options.session!,
+        this.options.session ?? {}
       );
-      this.options.model!.recognition = recModelBuffer;
+      if (this.options.model) this.options.model.recognition = recModelBuffer;
       this.log(
-        `Recognition ONNX model loaded successfully\n\tinput: ${this.recognitionSession.inputNames}\n\toutput: ${this.recognitionSession.outputNames}`,
+        `Recognition ONNX model loaded successfully\n\tinput: ${this.recognitionSession.inputNames}\n\toutput: ${this.recognitionSession.outputNames}`
       );
 
       // Load character dictionary
       const dictBuffer = await this._loadResource(
         this.options.model?.charactersDictionary,
-        `${DICT_BASE_URL}/recognition/multi/en/v5/ppocrv5_en_dict.txt`,
+        `${DICT_BASE_URL}/recognition/multi/en/v5/ppocrv5_en_dict.txt`
       );
       const dictionaryContent = Buffer.from(dictBuffer).toString("utf-8");
       const charactersDictionary = dictionaryContent.split("\n");
 
       if (charactersDictionary.length === 0) {
-        throw new Error(
-          "Character dictionary is empty or could not be loaded.",
-        );
+        throw new Error("Character dictionary is empty or could not be loaded.");
       }
 
-      this.options.model!.charactersDictionary = dictBuffer;
-      this.options.recognition!.charactersDictionary = charactersDictionary;
-      this.log(
-        `Character dictionary loaded with ${charactersDictionary.length} entries.`,
-      );
+      if (this.options.model) this.options.model.charactersDictionary = dictBuffer;
+      if (this.options.recognition)
+        this.options.recognition.charactersDictionary = charactersDictionary;
+      this.log(`Character dictionary loaded with ${charactersDictionary.length} entries.`);
 
       const engine = this.options.processing?.engine || "opencv";
 
@@ -213,20 +204,20 @@ export class PaddleOcrService extends BasePaddleOcrService {
       }
 
       this.detector = new DetectionService(
-        this.detectionSession!,
+        this.detectionSession as NonNullable<typeof this.detectionSession>,
         this.options.detection,
         this.options.debugging,
-        engine,
+        engine
       );
       this.recognitor = new RecognitionService(
-        this.recognitionSession!,
+        this.recognitionSession as NonNullable<typeof this.recognitionSession>,
         this.options.recognition,
         this.options.debugging,
-        engine,
+        engine
       );
 
-      this.options.model!.detection = undefined;
-      this.options.model!.recognition = undefined;
+      if (this.options.model) this.options.model.detection = undefined;
+      if (this.options.model) this.options.model.recognition = undefined;
     } catch (error) {
       console.error("Failed to initialize PaddleOcrService:", error);
       throw error;
@@ -244,21 +235,19 @@ export class PaddleOcrService extends BasePaddleOcrService {
    * Changes the detection model for the current instance.
    * @param model - The new detection model as a path, URL, or ArrayBuffer.
    */
-  public async changeDetectionModel(
-    model: ArrayBuffer | string,
-  ): Promise<void> {
+  public async changeDetectionModel(model: ArrayBuffer | string): Promise<void> {
     this.log("Changing detection model...");
     const modelBuffer = await this._loadResource(
       model,
-      `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.onnx`,
+      `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.onnx`
     );
 
     await this.detectionSession?.release();
     this.detectionSession = await ort.InferenceSession.create(
       new Uint8Array(modelBuffer),
-      this.options.session!,
+      this.options.session ?? {}
     );
-    this.options.model!.detection = modelBuffer;
+    if (this.options.model) this.options.model.detection = modelBuffer;
     this.log("Detection model changed successfully.");
   }
 
@@ -266,21 +255,19 @@ export class PaddleOcrService extends BasePaddleOcrService {
    * Changes the recognition model for the current instance.
    * @param model - The new recognition model as a path, URL, or ArrayBuffer.
    */
-  public async changeRecognitionModel(
-    model: ArrayBuffer | string,
-  ): Promise<void> {
+  public async changeRecognitionModel(model: ArrayBuffer | string): Promise<void> {
     this.log("Changing recognition model...");
     const modelBuffer = await this._loadResource(
       model,
-      `${MODEL_BASE_URL}/recognition/multi/en/v5/en_PP-OCRv5_mobile_rec_infer.onnx`,
+      `${MODEL_BASE_URL}/recognition/multi/en/v5/en_PP-OCRv5_mobile_rec_infer.onnx`
     );
 
     await this.recognitionSession?.release();
     this.recognitionSession = await ort.InferenceSession.create(
       new Uint8Array(modelBuffer),
-      this.options.session!,
+      this.options.session ?? {}
     );
-    this.options.model!.recognition = modelBuffer;
+    if (this.options.model) this.options.model.recognition = modelBuffer;
     this.log("Recognition model changed successfully.");
   }
 
@@ -288,13 +275,11 @@ export class PaddleOcrService extends BasePaddleOcrService {
    * Changes the text dictionary for the current instance.
    * @param dictionary - The new dictionary as a path, URL, ArrayBuffer, or string content.
    */
-  public async changeTextDictionary(
-    dictionary: ArrayBuffer | string,
-  ): Promise<void> {
+  public async changeTextDictionary(dictionary: ArrayBuffer | string): Promise<void> {
     this.log("Changing text dictionary...");
     const dictBuffer = await this._loadResource(
       dictionary,
-      `${DICT_BASE_URL}/recognition/multi/en/v5/ppocrv5_en_dict.txt`,
+      `${DICT_BASE_URL}/recognition/multi/en/v5/ppocrv5_en_dict.txt`
     );
 
     const dictionaryContent = Buffer.from(dictBuffer).toString("utf-8");
@@ -304,10 +289,11 @@ export class PaddleOcrService extends BasePaddleOcrService {
       throw new Error("Character dictionary is empty or could not be loaded.");
     }
 
-    this.options.model!.charactersDictionary = dictBuffer;
-    this.options.recognition!.charactersDictionary = charactersDictionary;
+    if (this.options.model) this.options.model.charactersDictionary = dictBuffer;
+    if (this.options.recognition)
+      this.options.recognition.charactersDictionary = charactersDictionary;
     this.log(
-      `Character dictionary changed successfully with ${charactersDictionary.length} entries.`,
+      `Character dictionary changed successfully with ${charactersDictionary.length} entries.`
     );
   }
 
@@ -320,7 +306,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
    */
   public override recognize(
     image: ArrayBuffer | Canvas,
-    options: RecognizeOptions & { flatten: true },
+    options: RecognizeOptions & { flatten: true }
   ): Promise<FlattenedPaddleOcrResult>;
 
   /**
@@ -332,20 +318,19 @@ export class PaddleOcrService extends BasePaddleOcrService {
    */
   public override recognize(
     image: ArrayBuffer | Canvas,
-    options?: RecognizeOptions & { flatten?: false },
+    options?: RecognizeOptions & { flatten?: false }
   ): Promise<PaddleOcrResult>;
 
   public override async recognize(
     image: ArrayBuffer | Canvas,
-    options?: RecognizeOptions,
+    options?: RecognizeOptions
   ): Promise<PaddleOcrResult | FlattenedPaddleOcrResult> {
     if (!this.isInitialized()) {
-      throw new Error(
-        "PaddleOcrService is not initialized. Call initialize() first.",
-      );
+      throw new Error("PaddleOcrService is not initialized. Call initialize() first.");
     }
 
     let imageBuffer: ArrayBuffer;
+
     if (image instanceof ArrayBuffer) {
       imageBuffer = image;
     } else {
@@ -353,7 +338,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
         const buffer = image.toBuffer("image/png");
         imageBuffer = buffer.buffer.slice(
           buffer.byteOffset,
-          buffer.byteOffset + buffer.byteLength,
+          buffer.byteOffset + buffer.byteLength
         ) as ArrayBuffer;
       } else {
         const ctx = image.getContext("2d");
@@ -361,27 +346,23 @@ export class PaddleOcrService extends BasePaddleOcrService {
         const data = imageData.data;
         imageBuffer = data.buffer.slice(
           data.byteOffset,
-          data.byteOffset + data.byteLength,
+          data.byteOffset + data.byteLength
         ) as ArrayBuffer;
       }
     }
 
     const cacheKey = ImageCache.generateKey(imageBuffer);
 
-    // Check cache first (only if noCache is false and no custom dictionary)
-    const cacheResult =
-      !options?.noCache && !options?.dictionary
-        ? globalImageCache.get(cacheKey)
-        : undefined;
+    const cacheResult = (
+      !options?.noCache && !options?.dictionary ? globalImageCache.get(cacheKey) : undefined
+    ) as (PaddleOcrResult & Partial<FlattenedPaddleOcrResult>) | undefined;
     if (cacheResult) {
       this.log("Using cached OCR result");
 
       if (options?.flatten) {
         return {
           text: cacheResult.text,
-          results: (cacheResult as any).lines
-            ? (cacheResult as any).lines.flat()
-            : (cacheResult as FlattenedPaddleOcrResult).results,
+          results: cacheResult.lines ? cacheResult.lines.flat() : (cacheResult.results ?? []),
           confidence: cacheResult.confidence,
         };
       }
@@ -396,17 +377,20 @@ export class PaddleOcrService extends BasePaddleOcrService {
       charactersDictionary = dictionaryContent.split("\n");
 
       if (charactersDictionary.length === 0) {
-        throw new Error(
-          "Custom character dictionary is empty or could not be loaded.",
-        );
+        throw new Error("Custom character dictionary is empty or could not be loaded.");
       }
     }
 
-    const detection = await this.detector!.run(image);
-    const recognition = await this.recognitor!.run(
-      image,
+    const sourceCanvas =
+      image instanceof ArrayBuffer ? await CanvasProcessor.prepareCanvas(image) : image;
+
+    const strategy = this.options.recognition?.strategy ?? "per-line";
+    const detection = await (this.detector as NonNullable<typeof this.detector>).run(sourceCanvas);
+    const recognition = await (this.recognitor as NonNullable<typeof this.recognitor>).run(
+      sourceCanvas,
       detection,
       charactersDictionary,
+      strategy
     );
 
     // Grouping the recognition result logic to build lines
@@ -424,12 +408,10 @@ export class PaddleOcrService extends BasePaddleOcrService {
       globalImageCache.set(cacheKey, result);
     }
 
-    return result as any;
+    return result as PaddleOcrResult | FlattenedPaddleOcrResult;
   }
 
-  private processRecognition(
-    recognition: RecognitionResult[],
-  ): PaddleOcrResult {
+  private processRecognition(recognition: RecognitionResult[]): PaddleOcrResult {
     const result: PaddleOcrResult = {
       text: "",
       lines: [],
@@ -440,19 +422,19 @@ export class PaddleOcrService extends BasePaddleOcrService {
       return result;
     }
 
-    const totalConfidence = recognition.reduce(
-      (sum, r) => sum + r.confidence,
-      0,
-    );
+    const totalConfidence = recognition.reduce((sum, r) => sum + r.confidence, 0);
     result.confidence = totalConfidence / recognition.length;
 
-    let currentLine: RecognitionResult[] = [recognition[0]!];
-    let fullText = recognition[0]!.text;
-    let avgHeight = recognition[0]!.box.height;
+    const firstRec = recognition[0];
+    if (!firstRec) return result;
+    let currentLine: RecognitionResult[] = [firstRec];
+    let fullText = firstRec.text;
+    let avgHeight = firstRec.box.height;
 
     for (let i = 1; i < recognition.length; i++) {
-      const current = recognition[i]!;
-      const previous = recognition[i - 1]!;
+      const current = recognition[i];
+      const previous = recognition[i - 1];
+      if (!current || !previous) continue;
 
       const verticalGap = Math.abs(current.box.y - previous.box.y);
       const threshold = avgHeight * 0.5;
@@ -461,9 +443,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
         currentLine.push(current);
         fullText += ` ${current.text}`;
 
-        avgHeight =
-          currentLine.reduce((sum, r) => sum + r.box.height, 0) /
-          currentLine.length;
+        avgHeight = currentLine.reduce((sum, r) => sum + r.box.height, 0) / currentLine.length;
       } else {
         result.lines.push([...currentLine]);
 

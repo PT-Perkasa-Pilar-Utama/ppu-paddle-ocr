@@ -11,7 +11,7 @@ export type CoreCanvas = Canvas | CanvasLike;
  * Only populated when `processing.engine === "opencv"` (Node/Bun).
  * Web builds leave this `undefined` and always use canvas-native processing.
  */
-export interface ImageProcessorProvider<TCanvas = CoreCanvas> {
+export type ImageProcessorProvider<TCanvas = CoreCanvas> = {
   /** Injects the source image buffer into a universally parsable Canvas */
   prepareCanvas: (image: unknown) => Promise<TCanvas>;
 
@@ -19,14 +19,11 @@ export interface ImageProcessorProvider<TCanvas = CoreCanvas> {
   ImageProcessor: new (canvas: TCanvas) => ImageProcessor;
 
   /** Wrapper class handling mathematical OpenCV contours */
-  Contours: new (
-    mat: cv.Mat,
-    options: { mode: number; method: number },
-  ) => Contours;
+  Contours: new (mat: cv.Mat, options: { mode: number; method: number }) => Contours;
 
   /** Raw OpenCV WebAssembly object reference */
   cv: typeof cv;
-}
+};
 
 /**
  * A generic abstraction mapping specifically to pure runtime-level APIs
@@ -34,7 +31,7 @@ export interface ImageProcessorProvider<TCanvas = CoreCanvas> {
  *
  * This injects the platform-specific dependencies into the shared Core logic.
  */
-export interface PlatformProvider<TCanvas = CoreCanvas> {
+export type PlatformProvider<TCanvas = CoreCanvas> = {
   /** The specific pathing delimiter used on this platform (ie '/' vs '\') */
   pathSeparator: string;
 
@@ -53,16 +50,12 @@ export interface PlatformProvider<TCanvas = CoreCanvas> {
   /** Resolves resources asynchronously via local FileSystem (`fs`) or HTTP (`fetch`) based on the environment */
   loadResource: (
     source: string | ArrayBuffer | undefined,
-    defaultUrl: string,
+    defaultUrl: string
   ) => Promise<ArrayBuffer>;
 
   /** Optionally dump a given Canvas representation directly onto the disk (No-Op on Web context) */
-  saveDebugImage: (
-    canvas: TCanvas,
-    filename: string,
-    path: string,
-  ) => Promise<void>;
+  saveDebugImage: (canvas: TCanvas, filename: string, path: string) => Promise<void>;
 
   /** OpenCV-based image processor (only available in Node/Bun environments) */
   imageProcessor?: ImageProcessorProvider<TCanvas>;
-}
+};

@@ -4,13 +4,12 @@ import type { CoreCanvas, PlatformProvider } from "../core/platform.js";
 // Provide an intelligent default for ONNX WASM paths to avoid 404s on CDN or unbundled usage.
 // Users can override this by explicitly setting ort.env.wasm.wasmPaths before initialization.
 if (typeof window !== "undefined" && !ort.env.wasm.wasmPaths) {
-  ort.env.wasm.wasmPaths =
-    "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.24.2/dist/";
+  ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.24.2/dist/";
 }
 
 export class WebPlatformProvider implements PlatformProvider<CoreCanvas> {
   public readonly pathSeparator = "/";
-  public readonly ort = ort as any;
+  public readonly ort = ort as unknown as PlatformProvider["ort"];
 
   public createCanvas(_width: number, _height: number): CoreCanvas {
     // CanvasToolkit in the web handles creating actual HTMLCanvasElement or OffscreenCanvas internally
@@ -25,15 +24,14 @@ export class WebPlatformProvider implements PlatformProvider<CoreCanvas> {
   public isCanvas(image: unknown): image is CoreCanvas {
     return !!(
       image instanceof HTMLCanvasElement ||
-      (typeof OffscreenCanvas !== "undefined" &&
-        image instanceof OffscreenCanvas) ||
-      (image && typeof (image as any).getContext === "function")
+      (typeof OffscreenCanvas !== "undefined" && image instanceof OffscreenCanvas) ||
+      (image && typeof (image as Record<string, unknown>).getContext === "function")
     );
   }
 
   public async loadResource(
     source: string | ArrayBuffer | undefined,
-    defaultUrl: string,
+    defaultUrl: string
   ): Promise<ArrayBuffer> {
     if (source instanceof ArrayBuffer) {
       return source;
@@ -52,7 +50,7 @@ export class WebPlatformProvider implements PlatformProvider<CoreCanvas> {
   public async saveDebugImage(
     _canvas: CoreCanvas,
     _filename: string,
-    _outputDir: string,
+    _outputDir: string
   ): Promise<void> {
     // No-op on the web since we can't easily write to a local debug folder
     return Promise.resolve();

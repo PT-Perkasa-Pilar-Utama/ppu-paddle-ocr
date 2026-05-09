@@ -3,7 +3,7 @@ import * as ort from "onnxruntime-node";
 import * as path from "path";
 import { Canvas, CanvasToolkit, Contours, ImageProcessor, cv } from "ppu-ocv";
 import { CanvasProcessor } from "ppu-ocv/canvas";
-import type { CoreCanvas, PlatformProvider } from "../core/platform.js";
+import type { CoreCanvas, ImageProcessorProvider, PlatformProvider } from "../core/platform.js";
 
 export class NodePlatformProvider implements PlatformProvider<CoreCanvas> {
   public readonly pathSeparator: string = path.sep;
@@ -19,7 +19,7 @@ export class NodePlatformProvider implements PlatformProvider<CoreCanvas> {
 
   public async loadResource(
     source: string | ArrayBuffer | undefined,
-    defaultUrl: string,
+    defaultUrl: string
   ): Promise<ArrayBuffer> {
     if (source instanceof ArrayBuffer) {
       return source;
@@ -38,14 +38,14 @@ export class NodePlatformProvider implements PlatformProvider<CoreCanvas> {
     const buffer = await fs.readFile(sourceToLoad);
     return buffer.buffer.slice(
       buffer.byteOffset,
-      buffer.byteOffset + buffer.byteLength,
+      buffer.byteOffset + buffer.byteLength
     ) as ArrayBuffer;
   }
 
   public async saveDebugImage(
     canvas: CoreCanvas,
     filename: string,
-    outputDir: string,
+    outputDir: string
   ): Promise<void> {
     await fs.mkdir(outputDir, { recursive: true });
     await CanvasToolkit.getInstance().saveImage({
@@ -55,13 +55,14 @@ export class NodePlatformProvider implements PlatformProvider<CoreCanvas> {
     });
   }
 
-  public readonly imageProcessor = {
+  public readonly imageProcessor: ImageProcessorProvider<CoreCanvas> = {
     prepareCanvas: async (image: unknown): Promise<CoreCanvas> => {
       // In ppu-ocv v3, prepareCanvas lives on CanvasProcessor
-      return CanvasProcessor.prepareCanvas(image as any) as Promise<CoreCanvas>;
+      return CanvasProcessor.prepareCanvas(image as ArrayBuffer) as Promise<CoreCanvas>;
     },
-    ImageProcessor: ImageProcessor as any,
-    Contours: Contours as any,
-    cv: cv as any,
+    ImageProcessor:
+      ImageProcessor as unknown as ImageProcessorProvider<CoreCanvas>["ImageProcessor"],
+    Contours: Contours as unknown as ImageProcessorProvider<CoreCanvas>["Contours"],
+    cv: cv as unknown as ImageProcessorProvider<CoreCanvas>["cv"],
   };
 }

@@ -23,10 +23,7 @@ export function deepMerge<T extends Record<string, unknown>>(
           if (!targetValue || !isObject(targetValue)) {
             target[key] = {} as T[Extract<keyof T, string>];
           }
-          deepMerge(
-            target[key] as Record<string, unknown>,
-            sourceValue as Record<string, unknown>,
-          );
+          deepMerge(target[key] as Record<string, unknown>, sourceValue as Record<string, unknown>);
         } else if (sourceValue !== undefined) {
           target[key] = sourceValue as T[Extract<keyof T, string>];
         }
@@ -35,6 +32,31 @@ export function deepMerge<T extends Record<string, unknown>>(
   }
 
   return deepMerge(target, ...sources);
+}
+
+export function levenshteinDistance(a: string, b: string): number {
+  const m = a.length;
+  const n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+
+  let prev = new Uint16Array(n + 1);
+  let curr = new Uint16Array(n + 1);
+
+  for (let j = 0; j <= n; j++) prev[j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min((curr[j - 1] ?? 0) + 1, (prev[j] ?? 0) + 1, (prev[j - 1] ?? 0) + cost);
+    }
+    const tmp = prev;
+    prev = curr;
+    curr = tmp;
+  }
+
+  return prev[n] ?? 0;
 }
 
 /**
