@@ -39,7 +39,7 @@ summary(() => {
       await openCVService.recognize(fileBuffer, { noCache: true, strategy });
     });
   }
-})
+});
 
 // Summary 2: canvas-native (all strategies)
 summary(() => {
@@ -48,7 +48,7 @@ summary(() => {
       await canvasNativeService.recognize(fileBuffer, { noCache: true, strategy });
     });
   }
-})
+});
 
 await run();
 

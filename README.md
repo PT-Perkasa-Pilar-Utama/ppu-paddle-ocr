@@ -22,10 +22,11 @@ You can combine it further by using open-cv https://github.com/PT-Perkasa-Pilar-
 
 > **New in v5.2.0**: Recognition strategies `per-box` (default), `per-line`, and `cross-line`
 
-Control how detected boxes are fed into the recognition model. Each strategy works by cropping detected regions from the canvas and stitching them side-by-side before running inference. 
+Control how detected boxes are fed into the recognition model. Each strategy works by cropping detected regions from the canvas and stitching them side-by-side before running inference.
 
-The goal is to reduce the number of recognition inferences: 
-- `per-box` strategy, *n* detected boxes produce *n* separate inferences. 
+The goal is to reduce the number of recognition inferences:
+
+- `per-box` strategy, _n_ detected boxes produce _n_ separate inferences.
 - `per-line` (default) merges boxes on the same line into a single crop, and
 - `cross-line` bin-packs crops across lines to minimize total inference calls, improving throughput on images with many text regions.
 
