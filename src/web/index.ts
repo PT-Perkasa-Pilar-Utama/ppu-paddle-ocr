@@ -40,6 +40,8 @@ export { DetectionService } from "./detection.service.web.js";
 export type { RecognitionResult } from "../core/base-recognition.service.js";
 export { RecognitionService } from "./recognition.service.web.js";
 
+export { getDefaultWebExecutionProviders, isWebGpuAvailable } from "./platform.web.js";
+
 export {
   DEFAULT_DEBUGGING_OPTIONS,
   DEFAULT_DETECTION_OPTIONS,
