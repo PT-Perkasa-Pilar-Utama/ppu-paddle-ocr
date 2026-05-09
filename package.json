@@ -1,6 +1,6 @@
 {
   "name": "ppu-paddle-ocr",
-  "version": "5.1.1",
+  "version": "5.2.0",
   "description": "Blazing-fast and lightweight PaddleOCR library for Web, Node.js and Bun. Perform accurate text detection and recognition with a simple, modern, and type-safe API. Ideal for document processing, data extraction, and computer vision tasks.",
   "keywords": [
     "accurate-ocr",
@@ -55,25 +55,30 @@
   },
   "scripts": {
     "task": "bun scripts/task.ts",
+    "build": "bun task build",
     "build:test": "bun task build && bun test",
     "build:publish": "bun task build && bun task report-size && bun task publish",
     "clear-cache": "bun scripts/clear-cache.ts",
-    "lint": "prettier --check ./src",
-    "lint:fix": "prettier --write ./src",
+    "type-check": "bunx tsgo --noEmit",
+    "test": "bun test",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "fmt": "oxfmt --check",
+    "fmt:fix": "oxfmt .",
     "demo": "bunx -y serve -l 3456 ."
   },
   "devDependencies": {
-    "@stylistic/eslint-plugin": "latest",
     "@types/bun": "latest",
     "@types/uglify-js": "latest",
+    "@typescript/native-preview": "^7.0.0-dev.20260509.2",
     "canvas": "^3.2.1",
     "mitata": "latest",
     "onnxruntime-node": "^1.23.2",
     "onnxruntime-web": "^1.24.2",
-    "prettier": "^3.8.1",
+    "oxfmt": "^0.48.0",
+    "oxlint": "^1.63.0",
     "tsx": "latest",
     "typescript": "latest",
-    "typescript-eslint": "latest",
     "uglify-js": ">=2.4.24"
   },
   "repository": {
