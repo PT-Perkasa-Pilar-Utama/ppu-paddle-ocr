@@ -53,8 +53,8 @@ export const DEFAULT_MODEL_URLS: Readonly<{
   recognition: string;
   charactersDictionary: string;
 }> = {
-  detection: `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.onnx`,
-  recognition: `${MODEL_BASE_URL}/recognition/multi/en/v5/en_PP-OCRv5_mobile_rec_infer.onnx`,
+  detection: `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.ort`,
+  recognition: `${MODEL_BASE_URL}/recognition/multi/en/v5/en_PP-OCRv5_mobile_rec_infer.ort`,
   charactersDictionary: `${DICT_BASE_URL}/recognition/multi/en/v5/ppocrv5_en_dict.txt`,
 };
 
