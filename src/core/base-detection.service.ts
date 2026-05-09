@@ -125,27 +125,15 @@ export class BaseDetectionService {
       ratio: resizeRatio,
     } = this.calculateResizeDimensions(originalWidth, originalHeight);
 
-    let resizedCanvas: CoreCanvas;
-
-    if (this.engine === "opencv" && this.platform.imageProcessor) {
-      // OpenCV-based resize
-      const processor = new this.platform.imageProcessor.ImageProcessor(canvas);
-      try {
-        resizedCanvas = processor.resize({ width: resizeW, height: resizeH }).toCanvas();
-      } finally {
-        processor.destroy();
-      }
-    } else {
-      // Canvas-native resize
-      resizedCanvas = new CanvasProcessor(canvas)
-        .resize({ width: resizeW, height: resizeH })
-        .toCanvas() as CoreCanvas;
-    }
-
     const width = Math.ceil(resizeW / 32) * 32;
     const height = Math.ceil(resizeH / 32) * 32;
 
-    const paddedCanvas = this.createPaddedCanvas(resizedCanvas, resizeW, resizeH, width, height);
+    // Canvas `drawImage` handles scaling and placement into the padded
+    // target in a single call, which avoids the intermediate OpenCV
+    // resize + Mat ↔ Canvas round trip for detection preprocessing.
+    const paddedCanvas = this.platform.createCanvas(width, height);
+    const paddedCtx = paddedCanvas.getContext("2d");
+    paddedCtx.drawImage(canvas, 0, 0, originalWidth, originalHeight, 0, 0, resizeW, resizeH);
 
     const tensor = this.imageToTensor(paddedCanvas, width, height);
 
@@ -186,23 +174,8 @@ export class BaseDetectionService {
   }
 
   /**
-   * Create a padded canvas from the resized image
-   */
-  private createPaddedCanvas(
-    resizedCanvas: CoreCanvas,
-    resizeW: number,
-    resizeH: number,
-    targetWidth: number,
-    targetHeight: number
-  ): CoreCanvas {
-    const paddedCanvas = this.platform.createCanvas(targetWidth, targetHeight);
-    const paddedCtx = paddedCanvas.getContext("2d");
-    paddedCtx.drawImage(resizedCanvas, 0, 0, resizeW, resizeH);
-    return paddedCanvas;
-  }
-
-  /**
-   * Convert an image to a normalized tensor for model input
+   * Convert an image to a normalized tensor for model input.
+   * Hot loop; assumes well-formed inputs to avoid per-pixel null coalescing.
    */
   private imageToTensor(canvas: CoreCanvas, width: number, height: number): Float32Array {
     const ctx = canvas.getContext("2d");
@@ -213,27 +186,31 @@ export class BaseDetectionService {
     const tensor = new Float32Array(BaseDetectionService.NUM_CHANNELS * channelSize);
     const mean = this.options.mean ?? [0.485, 0.456, 0.406];
     const stdDeviation = this.options.stdDeviation ?? [0.229, 0.224, 0.225];
-    const meanR = mean[0] ?? 0.485,
-      meanG = mean[1] ?? 0.456,
-      meanB = mean[2] ?? 0.406;
-    const stdR = stdDeviation[0] ?? 0.229,
-      stdG = stdDeviation[1] ?? 0.224,
-      stdB = stdDeviation[2] ?? 0.225;
-    const invStdR = 1.0 / stdR,
-      invStdG = 1.0 / stdG,
-      invStdB = 1.0 / stdB;
-    const rOffset = 0;
+    const meanR = mean[0] ?? 0.485;
+    const meanG = mean[1] ?? 0.456;
+    const meanB = mean[2] ?? 0.406;
+    const stdR = stdDeviation[0] ?? 0.229;
+    const stdG = stdDeviation[1] ?? 0.224;
+    const stdB = stdDeviation[2] ?? 0.225;
+    // Pre-multiply the normalization constants so the per-pixel path is:
+    //   v = pixel * scale - shift
+    // saving a divide and a subtract on each of the 3 channels per pixel.
+    const scaleR = 1.0 / (255.0 * stdR);
+    const scaleG = 1.0 / (255.0 * stdG);
+    const scaleB = 1.0 / (255.0 * stdB);
+    const shiftR = meanR / stdR;
+    const shiftG = meanG / stdG;
+    const shiftB = meanB / stdB;
     const gOffset = channelSize;
     const bOffset = channelSize * 2;
 
-    for (let i = 0; i < channelSize; i++) {
-      const rgbaIdx = i * 4;
-      const r = (rgbaData[rgbaIdx] ?? 0) / 255.0;
-      const g = (rgbaData[rgbaIdx + 1] ?? 0) / 255.0;
-      const b = (rgbaData[rgbaIdx + 2] ?? 0) / 255.0;
-      tensor[rOffset + i] = (r - meanR) * invStdR;
-      tensor[gOffset + i] = (g - meanG) * invStdG;
-      tensor[bOffset + i] = (b - meanB) * invStdB;
+    for (let i = 0, rgbaIdx = 0; i < channelSize; i++, rgbaIdx += 4) {
+      const r = rgbaData[rgbaIdx];
+      const g = rgbaData[rgbaIdx + 1];
+      const b = rgbaData[rgbaIdx + 2];
+      tensor[i] = r * scaleR - shiftR;
+      tensor[gOffset + i] = g * scaleG - shiftG;
+      tensor[bOffset + i] = b * scaleB - shiftB;
     }
 
     return tensor;

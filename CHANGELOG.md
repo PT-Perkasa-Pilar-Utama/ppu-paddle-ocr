@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.2.1] - 2026-05-09
+
+### Performance
+
+- **Detection preprocessing**: Replaced the OpenCV resize + separate padded-canvas step with a single `drawImage` that scales and places the image into the padded target in one call. Eliminates a `Mat ↔ Canvas` round trip for the OpenCV engine; neutral for canvas-native.
+- **Detection normalization hot loop**: Pre-computed `scale = 1/(255·std)` and `shift = mean/std` so each pixel costs one multiply + one subtract per channel instead of divide → subtract → multiply.
+- **Recognition tensor creation**: `createImageTensorFromCanvas` now fills channel 0 once from the grayscale input and uses `Float32Array.copyWithin` to memcpy the block into channels 1 and 2, instead of writing each pixel three times.
+- **CTC decoding**: Inlined the per-timestep argmax and character-append helpers, and replaced the per-character confidence array + final `reduce` with a running sum + count. Largest measurable gain in `cross-line` (longer CTC output sequences).
+
+Net result on the M1 receipt benchmark (vs. v5.2.0, clean machine): 1–3.5% faster across all six (strategy × engine) variants, with identical recognition accuracy on every variant.
+
+## [5.2.0] - 2026-05-09
+
+### Added
+
+- **Recognition strategies** (`recognition.strategy` option and per-call `recognize(..., { strategy })` override): Choose how detected boxes are fed into the recognition model. Each strategy works by cropping detected regions from the canvas and stitching them side-by-side before running inference, so the number of recognition inferences can be reduced.
+  - `"per-box"` — each detected box produces one separate inference (previous behavior, most accurate).
+  - `"per-line"` (default) — boxes on the same line are merged into a single crop and a single inference.
+  - `"cross-line"` — short lines are bin-packed across batches to minimise total inference calls, improving throughput on images with many text regions.
+- `RecognitionStrategy` type, `RecognitionOptions.strategy`, `RecognitionOptions.crossLineWidthFactor`, and `RecognizeOptions.strategy` in the public API.
+- `PaddleOcrService.downloadModels()` static method to pre-download and cache the default model files (useful for CI/CD and warm-up).
+- Multi-engine × multi-strategy benchmark suite under `bench/` and a v4 vs. v5 Node-compatible benchmark under `perf-compare/`.
+
+### Changed
+
+- **Default recognition strategy is `"per-line"`**: ~10% throughput improvement over `"per-box"` on typical receipts while keeping accuracy within 1 edit-distance. Users who need strict per-box behavior can pass `{ strategy: "per-box" }` per call or configure it at service creation.
+- Migrated linting toolchain from Prettier/ESLint to [oxlint](https://oxc.rs/docs/guide/usage/linter) + [oxfmt](https://oxc.rs/).
+- Updated internal documentation and README to describe the recognition strategies, including the strategy diagram.
+
+### Fixed
+
+- Benchmark memory accounting and output formatting.
+- Several `oxlint` findings across `src/` and `examples/` (no behavior changes).
+
+### Build / CI
+
+- Added a GitHub Actions CI workflow and wired npm + jsr publishing to GitHub releases.
+- Added husky pre-commit + lint-staged hooks for commit-message validation and automatic formatting.
+
 ## [5.1.1] - 2026-04-12
 
 ### Fixed

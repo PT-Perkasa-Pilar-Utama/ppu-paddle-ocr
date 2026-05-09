@@ -776,7 +776,11 @@ export class BaseRecognitionService {
   }
 
   /**
-   * Creates a normalized image tensor from a canvas (shared by both engines)
+   * Creates a normalized image tensor from a canvas (shared by both engines).
+   *
+   * The model expects three identical channels (grayscale replicated to RGB).
+   * We fill channel 0 once, then use `Float32Array.copyWithin` to memcpy
+   * the block into channels 1 and 2 in a single operation.
    */
   private createImageTensorFromCanvas(
     canvas: CoreCanvas,
@@ -787,19 +791,19 @@ export class BaseRecognitionService {
     const imageData = ctx.getImageData(0, 0, width, height);
     const pixelData = imageData.data;
 
-    const numChannels = 3;
     const channelSize = height * width;
-    const imageTensor = new Float32Array(numChannels * channelSize);
+    const imageTensor = new Float32Array(3 * channelSize);
 
-    for (let i = 0; i < channelSize; i++) {
-      const normalizedValue = (pixelData[i * 4] ?? 0) / 127.5 - 1.0;
-      const offset0 = i;
-      const offset1 = channelSize + i;
-      const offset2 = channelSize + channelSize + i;
-      imageTensor[offset0] = normalizedValue;
-      imageTensor[offset1] = normalizedValue;
-      imageTensor[offset2] = normalizedValue;
+    // Fill channel 0 with normalized R (input is grayscale so R==G==B).
+    // Normalization: pixel / 127.5 - 1.0 => [-1, 1].
+    const INV_127_5 = 1 / 127.5;
+    for (let i = 0, p = 0; i < channelSize; i++, p += 4) {
+      imageTensor[i] = (pixelData[p] ?? 0) * INV_127_5 - 1.0;
     }
+
+    // Replicate channel 0 into channels 1 and 2 via a block memcpy.
+    imageTensor.copyWithin(channelSize, 0, channelSize);
+    imageTensor.copyWithin(channelSize * 2, 0, channelSize);
 
     return imageTensor;
   }
@@ -857,7 +861,10 @@ export class BaseRecognitionService {
   }
 
   /**
-   * Performs greedy decoding on CTC model output logits
+   * Performs greedy decoding on CTC model output logits.
+   *
+   * Hot loop: argmax and character handling are inlined, and per-character
+   * confidence is accumulated as a running sum instead of a backing array.
    */
   private ctcGreedyDecode(
     logits: Float32Array,
@@ -865,96 +872,59 @@ export class BaseRecognitionService {
     numClasses: number,
     charDict: string[]
   ): { text: string; confidence: number } {
+    const dictLen = charDict.length;
+    const lastDictIndex = dictLen - 1;
+    const BLANK = BaseRecognitionService.BLANK_INDEX;
+    const UNK = BaseRecognitionService.UNK_TOKEN;
+
     let decodedText = "";
     let lastCharIndex = -1;
-    const charConfidences: number[] = [];
+    let confidenceSum = 0;
+    let confidenceCount = 0;
 
     for (let t = 0; t < sequenceLength; t++) {
-      const { value: maxProb, index: predictedClassIndex } = this.findMaxProbabilityClass(
-        logits,
-        t,
-        numClasses
-      );
+      // Inline argmax over the `numClasses` logits at timestep `t`.
+      const base = t * numClasses;
+      let maxProb = logits[base] ?? -Infinity;
+      let maxIndex = 0;
+      for (let c = 1; c < numClasses; c++) {
+        const prob = logits[base + c] ?? -Infinity;
+        if (prob > maxProb) {
+          maxProb = prob;
+          maxIndex = c;
+        }
+      }
 
-      if (
-        predictedClassIndex === BaseRecognitionService.BLANK_INDEX ||
-        predictedClassIndex === lastCharIndex
-      ) {
-        lastCharIndex = predictedClassIndex;
+      if (maxIndex === BLANK || maxIndex === lastCharIndex) {
+        lastCharIndex = maxIndex;
         continue;
       }
 
-      if (this.isValidDictionaryIndex(predictedClassIndex, charDict)) {
-        this.appendCharacterToText(predictedClassIndex, charDict, (char) => {
+      if (maxIndex >= 0 && maxIndex < dictLen) {
+        const char = charDict[maxIndex] ?? "";
+        if (maxIndex === lastDictIndex) {
+          // The last dictionary entry is either the unknown-token marker
+          // (skip) or the trailing blank/space (emit a space).
+          if (char !== UNK) {
+            decodedText += " ";
+            confidenceSum += maxProb;
+            confidenceCount++;
+          }
+        } else {
           decodedText += char;
-          charConfidences.push(maxProb);
-        });
+          confidenceSum += maxProb;
+          confidenceCount++;
+        }
       } else {
         console.warn(
-          `Decoded index ${predictedClassIndex} out of bounds for charDict (length ${charDict.length}) at t=${t}`
+          `Decoded index ${maxIndex} out of bounds for charDict (length ${dictLen}) at t=${t}`
         );
       }
 
-      lastCharIndex = predictedClassIndex;
+      lastCharIndex = maxIndex;
     }
 
-    const confidence =
-      charConfidences.length > 0
-        ? charConfidences.reduce((a, b) => a + b, 0) / charConfidences.length
-        : 0;
-
+    const confidence = confidenceCount > 0 ? confidenceSum / confidenceCount : 0;
     return { text: decodedText, confidence };
-  }
-
-  /**
-   * Appends the appropriate character to the decoded text
-   */
-  private appendCharacterToText(
-    index: number,
-    charDict: string[],
-    appendFn: (char: string) => void
-  ): void {
-    const char = charDict[index] ?? "";
-
-    if (index === charDict.length - 1) {
-      if (char === BaseRecognitionService.UNK_TOKEN) {
-        // Skip unknown token
-        return;
-      } else {
-        appendFn(" ");
-        return;
-      }
-    }
-
-    appendFn(char);
-  }
-
-  /**
-   * Finds the class with maximum probability for a given timestep
-   */
-  private findMaxProbabilityClass(
-    logits: Float32Array,
-    timestep: number,
-    numClasses: number
-  ): { value: number; index: number } {
-    let maxProb = -Infinity;
-    let maxIndex = 0;
-
-    for (let c = 0; c < numClasses; c++) {
-      const prob = logits[timestep * numClasses + c] ?? 0;
-      if (prob > maxProb) {
-        maxProb = prob;
-        maxIndex = c;
-      }
-    }
-
-    return { value: maxProb, index: maxIndex };
-  }
-
-  /**
-   * Checks if the predicted class index is valid for the character dictionary
-   */
-  private isValidDictionaryIndex(index: number, charDict: string[]): boolean {
-    return index >= 0 && index < charDict.length;
   }
 }
