@@ -20,9 +20,16 @@ await service.destroy();
 
 You can combine it further by using open-cv https://github.com/PT-Perkasa-Pilar-Utama/ppu-ocv for more improved accuracy.
 
-> **Upgrading from v4.x?** See the [Migration Guide](/docs/MIGRATION-V4-V5.md) below for step-by-step instructions.
+> **New in v5.2.0**: Recognition strategies `per-box` (default), `per-line`, and `cross-line`
 
-> **New in v5.1.0**: The default image processing engine is now **OpenCV** (restored from v4 behavior). You can still opt into the lighter canvas-native engine via `processing: { engine: "canvas-native" }`. See [Processing Engine](#processing-engine) for details.
+Control how detected boxes are fed into the recognition model. Each strategy works by cropping detected regions from the canvas and stitching them side-by-side before running inference. 
+
+The goal is to reduce the number of recognition inferences: 
+- with the default `per-box` strategy, *n* detected boxes produce *n* separate inferences. 
+- `per-line` merges boxes on the same line into a single crop, and
+- `cross-line` bin-packs crops across lines to minimize total inference calls, improving throughput on images with many text regions.
+
+![recognition strategies](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/refs/heads/main/assets/recognition-strategies.jpg)
 
 #### Paddle works best with grayscale/thresholded image
 
@@ -55,6 +62,9 @@ Built on top of `onnxruntime-node` and `onnxruntime-web`, ppu-paddle-ocr handles
 5.  **Pre-packed Models**: Defaults to optimized PP-OCRv5 mobile models (English) ready for immediate use, with automatic fetching and caching on the first run. Supports 40+ languages via [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models).
 6.  **TypeScript Support**: Full TypeScript definitions for enhanced developer experience
 7.  **Web Support**: Supports running directly in the browser
+
+- **Upgrading from v4.x?** See the [Migration Guide](/docs/MIGRATION-V4-V5.md) below for step-by-step instructions.
+- **New in v5.1.0**: The default image processing engine is now **OpenCV** (restored from v4 behavior). You can still opt into the lighter canvas-native engine via `processing: { engine: "canvas-native" }`. See [Processing Engine](#processing-engine) for details.
 
 ## Benchmark
 

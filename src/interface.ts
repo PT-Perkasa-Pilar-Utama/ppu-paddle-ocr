@@ -11,7 +11,7 @@ export type ProcessingEngine = "opencv" | "canvas-native";
 /**
  * Paths to the OCR model and dictionary files.
  */
-export interface ModelPathOptions {
+export type ModelPathOptions = {
   /**
    * Onnx file buffer or path for the text detection model.
    * Required if not using the library's built‑in default model.
@@ -29,12 +29,12 @@ export interface ModelPathOptions {
    * Required if not using the library's built‑in default dictionary (en_dict.txt).
    */
   charactersDictionary?: ArrayBuffer | string;
-}
+};
 
 /**
  * Controls verbose output and image dumps for debugging OCR.
  */
-export interface DebuggingOptions {
+export type DebuggingOptions = {
   /**
    * Enable detailed logging of each processing step.
    * @default false
@@ -53,12 +53,12 @@ export interface DebuggingOptions {
    * @default "out"
    */
   debugFolder?: string;
-}
+};
 
 /**
  * Parameters for the text detection preprocessing and filtering stage.
  */
-export interface DetectionOptions {
+export type DetectionOptions = {
   /**
    * Per-channel mean values used to normalize input pixels [R, G, B].
    * @default [0.485, 0.456, 0.406]
@@ -74,7 +74,7 @@ export interface DetectionOptions {
   /**
    * Maximum dimension (longest side) for input images, in pixels.
    * Images above this size will be scaled down, maintaining aspect ratio.
-   * @default 960
+   * @default 640
    */
   maxSideLength?: number;
 
@@ -92,15 +92,26 @@ export interface DetectionOptions {
 
   /**
    * Remove detected boxes with area below this threshold, in pixels.
-   * @default 20
+   * @default 50
    */
   minimumAreaThreshold?: number;
-}
+};
+
+/**
+ * Strategy for recognizing text in detected regions.
+ *
+ * - `"per-box"` – Each detected box is recognized individually (most accurate, n inferences).
+ * - `"per-line"` – Boxes on the same line are merged and recognized together (fewer inferences, good accuracy).
+ * - `"cross-line"` – Crops are packed into uniform-width batches across lines to minimize inference count.
+ *
+ * @default "per-line"
+ */
+export type RecognitionStrategy = "per-box" | "per-line" | "cross-line";
 
 /**
  * Parameters for the text recognition preprocessing stage.
  */
-export interface RecognitionOptions {
+export type RecognitionOptions = {
   /**
    * Fixed height for input images, in pixels.
    * Models will resize width proportionally.
@@ -109,16 +120,36 @@ export interface RecognitionOptions {
   imageHeight?: number;
 
   /**
+   * Recognition strategy for processing detected text regions.
+   * - `"per-box"` – Each box recognized individually (most accurate, n inferences)
+   * - `"per-line"` – Same-line boxes merged per line (fewer inferences, good accuracy)
+   * - `"cross-line"` – Crops packed into uniform-width batches across lines (fewest inferences)
+   * @default "per-line"
+   */
+  strategy?: RecognitionStrategy;
+
+  /**
+   * Width multiplier for the cross-line strategy's bin-packing target.
+   * The batch target width is computed as `maxLineWidth × factor`.
+   * Larger values pack more lines per batch (fewer inferences, potentially
+   * lower accuracy); smaller values keep lines isolated (more inferences).
+   *
+   * Only used when `strategy` is `"cross-line"`.
+   * @default 1.0
+   */
+  crossLineWidthFactor?: number;
+
+  /**
    * A list of loaded character dictionary (string) for
    * recognition result decoding.
    */
   charactersDictionary: string[];
-}
+};
 
 /**
  * Options for individual recognize() calls.
  */
-export interface RecognizeOptions {
+export type RecognizeOptions = {
   /**
    * Return flattened results instead of grouped by lines.
    * @default false
@@ -136,12 +167,12 @@ export interface RecognizeOptions {
    * @default false
    */
   noCache?: boolean;
-}
+};
 
 /**
- * Controls the image processing backend used for detection and recognition.
+ * Controls the image processing backend.
  */
-export interface ProcessingOptions {
+export type ProcessingOptions = {
   /**
    * The image processing engine used for detection preprocessing and
    * recognition resizing.
@@ -152,13 +183,13 @@ export interface ProcessingOptions {
    * @default "opencv"
    */
   engine?: ProcessingEngine;
-}
+};
 
 /**
  * Full configuration for the PaddleOCR service.
  * Combines model file paths with detection, recognition, and debugging parameters.
  */
-export interface PaddleOptions {
+export type PaddleOptions = {
   /**
    * File paths to the required OCR model components.
    */
@@ -188,12 +219,12 @@ export interface PaddleOptions {
    * Controls the image processing backend.
    */
   processing?: ProcessingOptions;
-}
+};
 
 /**
  * ONNX Runtime session configuration options.
  */
-export interface SessionOptions {
+export type SessionOptions = {
   /**
    * Execution providers to use for inference (e.g., 'cpu', 'cuda').
    * @default ['cpu']
@@ -235,12 +266,12 @@ export interface SessionOptions {
    * @default 0
    */
   intraOpNumThreads?: number;
-}
+};
 
 /**
  * Simple rectangle representation.
  */
-export interface Box {
+export type Box = {
   /** X-coordinate of the top-left corner. */
   x: number;
   /** Y-coordinate of the top-left corner. */
@@ -249,4 +280,4 @@ export interface Box {
   width: number;
   /** Height of the box in pixels. */
   height: number;
-}
+};
