@@ -1,11 +1,5 @@
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  test,
-} from "bun:test";
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import type { Canvas } from "ppu-ocv";
 import { ImageProcessor } from "ppu-ocv";
 
 import { globalImageCache } from "../src/core/image-cache.js";
@@ -44,33 +38,22 @@ function createServiceWithMocks() {
     recognitor: 0,
   };
 
-  (service as any).detectionSession = {
-    release: async () => {},
-  };
-  (service as any).recognitionSession = {
-    release: async () => {},
-  };
-
-  (service as any).detector = {
-    run: async () => {
-      calls.detector += 1;
-      return [
-        {
-          x: 0,
-          y: 0,
-          width: 10,
-          height: 10,
-        },
-      ] as Detection[];
+  Object.assign(service, {
+    detectionSession: { release: async () => {} },
+    recognitionSession: { release: async () => {} },
+    detector: {
+      run: async () => {
+        calls.detector += 1;
+        return [{ x: 0, y: 0, width: 10, height: 10 }] as Detection[];
+      },
     },
-  };
-
-  (service as any).recognitor = {
-    run: async () => {
-      calls.recognitor += 1;
-      return baseRecognition;
+    recognitor: {
+      run: async () => {
+        calls.recognitor += 1;
+        return baseRecognition;
+      },
     },
-  };
+  });
 
   return { service, calls };
 }
@@ -109,7 +92,7 @@ describe("PaddleOcrService canvas compatibility", () => {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, 8, 8);
 
-    const result = await service.recognize(canvas as any, { noCache: true });
+    const result = await service.recognize(canvas as unknown as Canvas, { noCache: true });
 
     expect(result.text).not.toBeEmpty();
     expect(result.confidence).toBeGreaterThan(0);
@@ -132,7 +115,7 @@ describe("PaddleOcrService canvas compatibility", () => {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, 8, 8);
 
-    const result = await service.recognize(canvas as any, { noCache: true });
+    const result = await service.recognize(canvas as unknown as Canvas, { noCache: true });
 
     expect(result.text).not.toBeEmpty();
     expect(result.confidence).toBeGreaterThan(0);
@@ -162,8 +145,8 @@ describe("PaddleOcrService canvas compatibility", () => {
       },
     };
 
-    const first = await service.recognize(canvasLikeA as any);
-    const second = await service.recognize(canvasLikeB as any);
+    const first = await service.recognize(canvasLikeA as unknown as Canvas);
+    const second = await service.recognize(canvasLikeB as unknown as Canvas);
 
     expect(first.text).not.toBeEmpty();
     expect(second.text).toBe(first.text);
@@ -182,8 +165,8 @@ describe("PaddleOcrService canvas compatibility", () => {
       toBuffer: () => Buffer.from([1, 2, 3, 4]),
     };
 
-    await service.recognize(canvasLike as any, { noCache: true });
-    await service.recognize(canvasLike as any, { noCache: true });
+    await service.recognize(canvasLike as unknown as Canvas, { noCache: true });
+    await service.recognize(canvasLike as unknown as Canvas, { noCache: true });
 
     expect(calls.detector).toBe(2);
     expect(calls.recognitor).toBe(2);
@@ -200,8 +183,8 @@ describe("PaddleOcrService canvas compatibility", () => {
       toBuffer: () => Buffer.from([9, 8, 7, 6]),
     };
 
-    await service.recognize(canvasLike as any, { dictionary });
-    await service.recognize(canvasLike as any, { dictionary });
+    await service.recognize(canvasLike as unknown as Canvas, { dictionary });
+    await service.recognize(canvasLike as unknown as Canvas, { dictionary });
 
     expect(calls.detector).toBe(2);
     expect(calls.recognitor).toBe(2);
@@ -223,8 +206,8 @@ describe("PaddleOcrService canvas compatibility", () => {
       }),
     });
 
-    const first = await service.recognize(makeCanvasLike(111) as any);
-    const second = await service.recognize(makeCanvasLike(222) as any);
+    const first = await service.recognize(makeCanvasLike(111) as unknown as Canvas);
+    const second = await service.recognize(makeCanvasLike(222) as unknown as Canvas);
 
     expect(first.text).not.toBeEmpty();
     expect(second.text).toBe(first.text);
@@ -236,8 +219,8 @@ describe("PaddleOcrService canvas compatibility", () => {
   test("should throw if service is not initialized", async () => {
     const service = new PaddleOcrService();
 
-    await expect(
-      service.recognize(new ArrayBuffer(4), { noCache: true }),
-    ).rejects.toThrow("PaddleOcrService is not initialized");
+    await expect(service.recognize(new ArrayBuffer(4), { noCache: true })).rejects.toThrow(
+      "PaddleOcrService is not initialized"
+    );
   });
 });
