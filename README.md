@@ -371,6 +371,27 @@ By default, ppu-paddle-ocr uses **PP-OCRv5 mobile** models optimized for English
 
 These models are automatically downloaded and cached on the first run. PP-OCRv5 provides excellent accuracy for general text recognition while maintaining fast inference speeds.
 
+#### Cache location (Node / Bun)
+
+Downloaded models are stored under the user's home directory, in a fixed
+`.cache/ppu-paddle-ocr` subfolder (resolved via `os.homedir()`):
+
+| OS      | Resolved path                                 |
+| :------ | :-------------------------------------------- |
+| macOS   | `~/.cache/ppu-paddle-ocr`                     |
+| Linux   | `~/.cache/ppu-paddle-ocr`                     |
+| Windows | `C:\Users\<username>\.cache\ppu-paddle-ocr`   |
+
+The path is the same per-user across runs, so the first `initialize()` is slow (network download) and every subsequent run re-uses the cached `.onnx` files.
+
+Two ways to inspect / manage the cache:
+
+- `PaddleOcrService.downloadModels()` — pre-populates the cache with the default model set. Useful to warm the cache in CI, Docker image builds, or to avoid a cold-start download on the first user request.
+- `service.clearModelCache()` — removes the entire `ppu-paddle-ocr` cache folder. Use this when upgrading to a new release that changes model files, or to free disk space.
+
+> [!NOTE]
+> The web build (`ppu-paddle-ocr/web`) does not use this filesystem cache. In the browser, model files are fetched via `fetch()` on every page load and rely on the browser's own HTTP cache. If you want persistent offline caching, wire up a Service Worker or store the `ArrayBuffer` in IndexedDB and pass it via the `model:` option.
+
 ### Available Model Versions
 
 The library supports multiple PaddleOCR model versions from the [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models) repository:
