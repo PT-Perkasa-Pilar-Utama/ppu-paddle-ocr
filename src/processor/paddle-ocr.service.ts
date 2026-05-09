@@ -6,10 +6,7 @@ import type { Canvas } from "ppu-ocv";
 import { ImageProcessor } from "ppu-ocv";
 import { CanvasProcessor } from "ppu-ocv/canvas";
 
-import {
-  BasePaddleOcrService,
-  DEFAULT_MODEL_URLS,
-} from "../core/base-paddle-ocr.service.js";
+import { BasePaddleOcrService, DEFAULT_MODEL_URLS } from "../core/base-paddle-ocr.service.js";
 import { globalImageCache, ImageCache } from "../core/image-cache.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
 import type { FlattenedPaddleOcrResult, PaddleOcrResult } from "../web/paddle-ocr.service.web.js";
@@ -239,10 +236,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
    */
   public async changeDetectionModel(model: ArrayBuffer | string): Promise<void> {
     this.log("Changing detection model...");
-    const modelBuffer = await this._loadResource(
-      model,
-      DEFAULT_MODEL_URLS.detection
-    );
+    const modelBuffer = await this._loadResource(model, DEFAULT_MODEL_URLS.detection);
 
     await this.detectionSession?.release();
     this.detectionSession = await ort.InferenceSession.create(
@@ -259,10 +253,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
    */
   public async changeRecognitionModel(model: ArrayBuffer | string): Promise<void> {
     this.log("Changing recognition model...");
-    const modelBuffer = await this._loadResource(
-      model,
-      DEFAULT_MODEL_URLS.recognition
-    );
+    const modelBuffer = await this._loadResource(model, DEFAULT_MODEL_URLS.recognition);
 
     await this.recognitionSession?.release();
     this.recognitionSession = await ort.InferenceSession.create(
