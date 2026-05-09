@@ -28,18 +28,13 @@ const dict = resolve(rootDir, "models/en_dict.txt");
 const receiptBuf = readFileSync(resolve(rootDir, "assets/receipt.jpg"));
 const imageBuffer = receiptBuf.buffer.slice(
   receiptBuf.byteOffset,
-  receiptBuf.byteOffset + receiptBuf.byteLength,
+  receiptBuf.byteOffset + receiptBuf.byteLength
 );
 
 let privateBuf = null;
 try {
-  const raw = readFileSync(
-    resolve(rootDir, "private-tests/private-test-1.png"),
-  );
-  privateBuf = raw.buffer.slice(
-    raw.byteOffset,
-    raw.byteOffset + raw.byteLength,
-  );
+  const raw = readFileSync(resolve(rootDir, "private-tests/private-test-1.png"));
+  privateBuf = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength);
 } catch {}
 
 const images = [imageBuffer];
@@ -72,12 +67,8 @@ console.log(`initialize(): ${initMs.toFixed(1)} ms`);
 const t1 = performance.now();
 const firstResult = await service.recognize(images[0], { noCache: true });
 const firstMs = performance.now() - t1;
-const itemCount = firstResult.lines
-  ? firstResult.lines.flat().length
-  : "?";
-console.log(
-  `first recognize(): ${firstMs.toFixed(1)} ms (detected ${itemCount} items)`,
-);
+const itemCount = firstResult.lines ? firstResult.lines.flat().length : "?";
+console.log(`first recognize(): ${firstMs.toFixed(1)} ms (detected ${itemCount} items)`);
 
 // --- Phase 3: warm recognize ---
 const WARM_ROUNDS = 5;
@@ -98,13 +89,11 @@ const p95 = sorted[Math.floor(sorted.length * 0.95)];
 const max = sorted[sorted.length - 1];
 
 console.log(
-  `warm recognize() (${warmRuns.length} runs): min=${min.toFixed(1)} avg=${avg.toFixed(1)} median=${median.toFixed(1)} p95=${p95.toFixed(1)} max=${max.toFixed(1)} ms`,
+  `warm recognize() (${warmRuns.length} runs): min=${min.toFixed(1)} avg=${avg.toFixed(1)} median=${median.toFixed(1)} p95=${p95.toFixed(1)} max=${max.toFixed(1)} ms`
 );
 
 const totalMs = initMs + firstMs + warmRuns.reduce((a, b) => a + b, 0);
 console.log(`total wall-clock: ${totalMs.toFixed(1)} ms`);
-console.log(
-  `individual runs: [${warmRuns.map((r) => r.toFixed(1)).join(", ")}]`,
-);
+console.log(`individual runs: [${warmRuns.map((r) => r.toFixed(1)).join(", ")}]`);
 
 await service.destroy();
