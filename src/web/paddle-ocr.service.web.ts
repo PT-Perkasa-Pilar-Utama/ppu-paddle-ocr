@@ -66,16 +66,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
     return response.arrayBuffer();
   }
 
-  /**
-   * Resolve the execution-provider list for this session.
-   *
-   * If the user supplied explicit providers via `options.session.executionProviders`
-   * we honour them as-is. Otherwise we probe the browser and prefer WebGPU when
-   * it is available, falling back to WebAssembly.
-   *
-   * Runs once during `initialize()`; subsequent session creations reuse the
-   * resolved options.
-   */
+  /** Resolve execution providers, preferring WebGPU when the browser supports it. */
   private async _resolveSessionExecutionProviders(): Promise<void> {
     const current = this.options.session ?? {};
     if (current.executionProviders && current.executionProviders.length > 0) {
@@ -90,13 +81,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
     this.log(`Resolved executionProviders: ${JSON.stringify(providers)}`);
   }
 
-  /**
-   * Create an ONNX Runtime session, retrying without WebGPU if the preferred
-   * provider chain fails (e.g. a model uses an op WebGPU does not support).
-   *
-   * The fallback is silent by design: a real user running WebGPU-capable
-   * hardware should not see the library break if a model only runs on WASM.
-   */
+  /** Create an ORT session, silently falling back to WASM if WebGPU fails. */
   private async _createSession(modelData: Uint8Array): Promise<ort.InferenceSession> {
     const sessionOpts = this.options.session ?? {};
     try {
@@ -135,9 +120,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
 
       await this._resolveSessionExecutionProviders();
 
-      // Phase 1 (network-bound): fetch all three resources concurrently.
-      // On a cold first load each request is a separate HTTP fetch; on
-      // warm loads they're served from the browser's HTTP cache in parallel.
       const [detModelBuffer, recModelBuffer, dictBuffer] = await Promise.all([
         this._loadResource(this.options.model?.detection, DEFAULT_MODEL_URLS.detection),
         this._loadResource(this.options.model?.recognition, DEFAULT_MODEL_URLS.recognition),
@@ -147,12 +129,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
         ),
       ]);
 
-      // Phase 2 (WebGPU/WASM compile-bound): create both ORT sessions in
-      // parallel. `ort.InferenceSession.create` on the webgpu backend does
-      // shader compilation which is comparatively expensive; running it for
-      // detection and recognition concurrently halves the wall-clock time.
-      // Both calls pass through _createSession so a WebGPU failure still
-      // falls back cleanly to WASM for that session.
       const [detectionSession, recognitionSession] = await Promise.all([
         this._createSession(new Uint8Array(detModelBuffer)),
         this._createSession(new Uint8Array(recModelBuffer)),
