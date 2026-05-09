@@ -1,28 +1,26 @@
 import type { InferenceSession, Tensor } from "onnxruntime-common";
 import { CanvasProcessor, CanvasToolkit } from "ppu-ocv/canvas";
-import {
-  DEFAULT_DEBUGGING_OPTIONS,
-  DEFAULT_RECOGNITION_OPTIONS,
-} from "../constants.js";
+import { DEFAULT_DEBUGGING_OPTIONS, DEFAULT_RECOGNITION_OPTIONS } from "../constants.js";
 import type {
   Box,
   DebuggingOptions,
   ProcessingEngine,
   RecognitionOptions,
+  RecognitionStrategy,
 } from "../interface.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
 
 /**
  * A single recognized text item with its bounding box and confidence.
  */
-export interface RecognitionResult {
+export type RecognitionResult = {
   /** The recognized text string. */
   text: string;
   /** Bounding box of the text region in the original image coordinates. */
   box: Box;
   /** Recognition confidence score (0–1). */
   confidence: number;
-}
+};
 
 /**
  * Service for detecting and recognizing text in images
@@ -43,7 +41,7 @@ export class BaseRecognitionService {
     session: InferenceSession,
     options: Partial<RecognitionOptions> = {},
     debugging: Partial<DebuggingOptions> = {},
-    engine: ProcessingEngine = "opencv",
+    engine: ProcessingEngine = "opencv"
   ) {
     this.platform = platform;
     this.session = session;
@@ -86,31 +84,347 @@ export class BaseRecognitionService {
     image: ArrayBuffer | CoreCanvas,
     detection: Box[],
     charactersDictionary?: string[],
+    strategy: RecognitionStrategy = "per-line"
   ): Promise<RecognitionResult[]> {
     this.log("Starting text recognition process");
 
     try {
-      const sourceCanvasForCrop = this.platform.isCanvas(image)
-        ? image
-        : this.engine === "opencv" && this.platform.imageProcessor
-          ? await this.platform.imageProcessor.prepareCanvas(image)
-          : await CanvasProcessor.prepareCanvas(image);
+      let sourceCanvasForCrop: CoreCanvas;
+      if (this.platform.isCanvas(image)) {
+        sourceCanvasForCrop = image;
+      } else if (this.engine === "opencv" && this.platform.imageProcessor) {
+        sourceCanvasForCrop = await this.platform.imageProcessor.prepareCanvas(image);
+      } else {
+        sourceCanvasForCrop = await CanvasProcessor.prepareCanvas(image);
+      }
 
       const validBoxes = this.filterValidBoxes(detection);
-      const results = await this.processBoxesInParallel(
-        sourceCanvasForCrop,
-        validBoxes,
-        charactersDictionary,
-      );
 
-      return this.sortResultsByReadingOrder(results);
+      if (validBoxes.length === 0) {
+        return [];
+      }
+
+      switch (strategy) {
+        case "cross-line":
+          return this.runCrossLineStrategy(sourceCanvasForCrop, validBoxes, charactersDictionary);
+        case "per-line":
+          return this.runLineStrategy(sourceCanvasForCrop, validBoxes, charactersDictionary);
+        case "per-box":
+        default:
+          return this.runPerBoxStrategy(sourceCanvasForCrop, validBoxes, charactersDictionary);
+      }
     } catch (error) {
       console.error(
         "Error during text recognition:",
-        error instanceof Error ? error.message : String(error),
+        error instanceof Error ? error.message : String(error)
       );
       return [];
     }
+  }
+
+  /**
+   * Per-box strategy: recognize each box individually (most accurate, n inferences).
+   */
+  private async runPerBoxStrategy(
+    sourceCanvas: CoreCanvas,
+    validBoxes: Array<{ box: Box; index: number }>,
+    charactersDictionary?: string[]
+  ): Promise<RecognitionResult[]> {
+    const cropsDebugPath = this.debugging.debugFolder
+      ? `${this.debugging.debugFolder}${this.platform.pathSeparator}crops`
+      : "";
+    if (this.debugging.debug && cropsDebugPath) {
+      const toolkit = CanvasToolkit.getInstance();
+      if ("clearOutput" in toolkit && typeof toolkit.clearOutput === "function") {
+        toolkit.clearOutput(cropsDebugPath);
+      }
+    }
+
+    const results: RecognitionResult[] = [];
+    for (const { box, index } of validBoxes) {
+      const result = await this.processBox(
+        sourceCanvas,
+        box,
+        index,
+        validBoxes.length,
+        cropsDebugPath,
+        charactersDictionary
+      );
+      if (result !== null) {
+        results.push(result);
+      }
+    }
+
+    return this.sortResultsByReadingOrder(results);
+  }
+
+  /**
+   * Per-line strategy: group boxes into lines, merge same-line boxes,
+   * and recognize per line (fewer inferences, good accuracy).
+   */
+  private async runLineStrategy(
+    sourceCanvas: CoreCanvas,
+    validBoxes: Array<{ box: Box; index: number }>,
+    charactersDictionary?: string[]
+  ): Promise<RecognitionResult[]> {
+    const lines = this.groupBoxesIntoLines(validBoxes);
+    const results: RecognitionResult[] = [];
+
+    for (const lineBoxes of lines) {
+      if (lineBoxes.length === 1) {
+        const lineBox = lineBoxes[0];
+        if (!lineBox) continue;
+        const { box } = lineBox;
+        const cropCanvas = this.cropRegion(sourceCanvas, box);
+        const { text, confidence } = await this.recognizeText(cropCanvas, charactersDictionary);
+        results.push({ text, box, confidence });
+      } else {
+        const { mergedCanvas } = this.mergeLineCrop(sourceCanvas, lineBoxes);
+        const { text: lineText, confidence: lineConf } = await this.recognizeText(
+          mergedCanvas,
+          charactersDictionary
+        );
+
+        const totalWidth = lineBoxes.reduce((sum, b) => sum + b.box.width, 0);
+        const words = lineText
+          .trim()
+          .split(/\s+/)
+          .filter((w) => w.length > 0);
+
+        if (words.length === 0 || lineBoxes.length === 0) {
+          for (const { box } of lineBoxes) {
+            results.push({ text: lineText, box, confidence: lineConf });
+          }
+        } else if (words.length >= lineBoxes.length) {
+          let wordIdx = 0;
+          for (let i = 0; i < lineBoxes.length; i++) {
+            const lb = lineBoxes[i];
+            if (!lb) continue;
+            const proportion = lb.box.width / totalWidth;
+            const wordsForBox = Math.max(1, Math.round(words.length * proportion));
+            const end = Math.min(wordIdx + wordsForBox, words.length);
+            results.push({
+              text: words.slice(wordIdx, end).join(" "),
+              box: lb.box,
+              confidence: lineConf,
+            });
+            wordIdx = end;
+          }
+          if (wordIdx < words.length) {
+            const lastResult = results[results.length - 1];
+            if (lastResult) lastResult.text += ` ${words.slice(wordIdx).join(" ")}`;
+          }
+        } else {
+          for (const { box } of lineBoxes.slice(0, words.length)) {
+            results.push({
+              text: words.shift() ?? "",
+              box,
+              confidence: lineConf,
+            });
+          }
+          for (const { box } of lineBoxes.slice(words.length)) {
+            results.push({ text: "", box, confidence: lineConf });
+          }
+        }
+      }
+    }
+
+    return this.sortResultsByReadingOrder(results);
+  }
+
+  /**
+   * Cross-line strategy: pack line crops into uniform-width batches
+   * across lines to minimize inference count while balancing accuracy.
+   * Uses first-fit-decreasing bin packing to combine short lines
+   * with other lines into batches of similar total width.
+   * Within each batch, all crops are stretched to the same height so
+   * character sizes are uniform across the stitched canvas.
+   */
+  private async runCrossLineStrategy(
+    sourceCanvas: CoreCanvas,
+    validBoxes: Array<{ box: Box; index: number }>,
+    charactersDictionary?: string[]
+  ): Promise<RecognitionResult[]> {
+    const lines = this.groupBoxesIntoLines(validBoxes);
+    const targetHeight = this.options.imageHeight ?? 48;
+    const SEPARATOR_GAP = 20;
+
+    const lineCrops: Array<{
+      canvas: CoreCanvas;
+      boxes: Array<{ box: Box; index: number }>;
+    }> = [];
+
+    for (const lineBoxes of lines) {
+      if (lineBoxes.length === 1) {
+        const firstLineBox = lineBoxes[0];
+        if (!firstLineBox) continue;
+        const canvas = this.cropRegion(sourceCanvas, firstLineBox.box);
+        lineCrops.push({ canvas, boxes: lineBoxes });
+      } else {
+        const { mergedCanvas } = this.mergeLineCrop(sourceCanvas, lineBoxes);
+        lineCrops.push({ canvas: mergedCanvas, boxes: lineBoxes });
+      }
+    }
+
+    const resized = lineCrops.map(({ canvas, boxes }, i) => {
+      const ar = canvas.width / canvas.height;
+      const resizedWidth = Math.max(
+        BaseRecognitionService.MIN_CROP_WIDTH,
+        Math.round(targetHeight * ar)
+      );
+      return { canvas, boxes, resizedWidth, originalHeight: canvas.height, index: i };
+    });
+
+    const maxWidth = Math.max(...resized.map((r) => r.resizedWidth));
+    const widthFactor = this.options.crossLineWidthFactor ?? 1.5;
+    const batchTargetWidth = Math.round(maxWidth * widthFactor);
+
+    const sortedDesc = [...resized].sort((a, b) => b.resizedWidth - a.resizedWidth);
+
+    const batches: Array<Array<(typeof resized)[number]>> = [];
+    const batchWidths: number[] = [];
+
+    for (const item of sortedDesc) {
+      let placed = false;
+      for (let b = 0; b < batches.length; b++) {
+        const currentBatch = batches[b];
+        const currentBatchWidth = batchWidths[b];
+        if (currentBatch === undefined || currentBatchWidth === undefined) continue;
+        const gapAllowance = SEPARATOR_GAP * currentBatch.length;
+        if (currentBatchWidth + gapAllowance + item.resizedWidth <= batchTargetWidth) {
+          currentBatch.push(item);
+          batchWidths[b] = currentBatchWidth + item.resizedWidth;
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        batches.push([item]);
+        batchWidths.push(item.resizedWidth);
+      }
+    }
+
+    const results: RecognitionResult[] = [];
+
+    for (const batch of batches) {
+      const batchSorted = [...batch].sort((a, b) => a.index - b.index);
+      const maxOriginalHeight = Math.max(...batchSorted.map((item) => item.originalHeight));
+
+      const stretchedWidths = batchSorted.map((item) => {
+        if (item.originalHeight >= maxOriginalHeight) return item.resizedWidth;
+        const heightScale = maxOriginalHeight / item.originalHeight;
+        return Math.max(
+          BaseRecognitionService.MIN_CROP_WIDTH,
+          Math.round(item.resizedWidth * heightScale)
+        );
+      });
+
+      const totalCropWidth = stretchedWidths.reduce((sum, w) => sum + w, 0);
+      const totalWidth = totalCropWidth + SEPARATOR_GAP * (batchSorted.length - 1);
+      const batchCanvas = this.platform.createCanvas(totalWidth, targetHeight);
+      const ctx = batchCanvas.getContext("2d");
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, totalWidth, targetHeight);
+
+      let offsetX = 0;
+      for (let i = 0; i < batchSorted.length; i++) {
+        const item = batchSorted[i];
+        const drawWidth = stretchedWidths[i];
+        if (item === undefined || drawWidth === undefined) continue;
+        ctx.drawImage(
+          item.canvas,
+          0,
+          0,
+          item.canvas.width,
+          item.canvas.height,
+          offsetX,
+          0,
+          drawWidth,
+          targetHeight
+        );
+        offsetX += drawWidth;
+        if (i < batchSorted.length - 1) {
+          offsetX += SEPARATOR_GAP;
+        }
+      }
+
+      const { text: batchText, confidence: batchConf } = await this.recognizeText(
+        batchCanvas,
+        charactersDictionary
+      );
+
+      const lineTexts = this.splitBatchTextByWidths(batchText, stretchedWidths);
+
+      for (let i = 0; i < batchSorted.length; i++) {
+        const item = batchSorted[i];
+        if (!item) continue;
+        const lineText = lineTexts[i] ?? "";
+
+        if (item.boxes.length === 1) {
+          const firstBox = item.boxes[0];
+          results.push({
+            text: lineText.trim(),
+            box: firstBox?.box ?? { x: 0, y: 0, width: 0, height: 0 },
+            confidence: batchConf,
+          });
+        } else {
+          const words = lineText
+            .trim()
+            .split(/\s+/)
+            .filter((w) => w.length > 0);
+          const totalBoxWidth = item.boxes.reduce((sum, b) => sum + b.box.width, 0);
+          let wordIdx = 0;
+          for (const { box } of item.boxes) {
+            if (wordIdx >= words.length) {
+              results.push({ text: "", box, confidence: batchConf });
+            } else {
+              const proportion = box.width / totalBoxWidth;
+              const wordsForBox = Math.max(1, Math.round(words.length * proportion));
+              const end = Math.min(wordIdx + wordsForBox, words.length);
+              results.push({
+                text: words.slice(wordIdx, end).join(" "),
+                box,
+                confidence: batchConf,
+              });
+              wordIdx = end;
+            }
+          }
+        }
+      }
+    }
+
+    return this.sortResultsByReadingOrder(results);
+  }
+
+  /**
+   * Split recognized text proportionally across stitched line crops
+   * based on their pixel widths. The model produces text left-to-right,
+   * so we assign characters proportionally to each crop's width.
+   */
+  private splitBatchTextByWidths(text: string, cropWidths: number[]): string[] {
+    if (cropWidths.length === 1) {
+      return [text];
+    }
+
+    const totalWidth = cropWidths.reduce((a, b) => a + b, 0);
+    const chars = [...text];
+    const charWidth = chars.length > 0 ? totalWidth / chars.length : 0;
+
+    const result: string[] = [];
+    let charIdx = 0;
+
+    for (let i = 0; i < cropWidths.length; i++) {
+      const proportionalChars =
+        i < cropWidths.length - 1
+          ? Math.round((cropWidths[i] ?? 0) / charWidth)
+          : chars.length - charIdx;
+
+      const end = Math.min(charIdx + proportionalChars, chars.length);
+      result.push(chars.slice(charIdx, end).join(""));
+      charIdx = end;
+    }
+
+    return result;
   }
 
   /**
@@ -128,7 +442,7 @@ export class BaseRecognitionService {
   private async processBoxesInParallel(
     sourceCanvas: CoreCanvas,
     boxData: Array<{ box: Box; index: number }>,
-    charactersDictionary?: string[],
+    charactersDictionary?: string[]
   ): Promise<RecognitionResult[]> {
     const cropsDebugPath = this.debugging.debugFolder
       ? `${this.debugging.debugFolder}${this.platform.pathSeparator}crops`
@@ -136,10 +450,7 @@ export class BaseRecognitionService {
     if (this.debugging.debug && cropsDebugPath) {
       const toolkit = CanvasToolkit.getInstance();
       // clearOutput is only available in Node environment
-      if (
-        "clearOutput" in toolkit &&
-        typeof toolkit.clearOutput === "function"
-      ) {
+      if ("clearOutput" in toolkit && typeof toolkit.clearOutput === "function") {
         toolkit.clearOutput(cropsDebugPath);
       }
     }
@@ -152,7 +463,7 @@ export class BaseRecognitionService {
         index,
         boxData.length,
         cropsDebugPath,
-        charactersDictionary,
+        charactersDictionary
       );
       if (result !== null) {
         results.push(result);
@@ -160,6 +471,101 @@ export class BaseRecognitionService {
     }
 
     return results;
+  }
+
+  /**
+   * Group boxes into lines based on vertical proximity,
+   * then merge each line's boxes into a single recognition call.
+   */
+  private groupBoxesIntoLines(
+    boxes: Array<{ box: Box; index: number }>
+  ): Array<Array<{ box: Box; index: number }>> {
+    if (boxes.length === 0) return [];
+
+    const sorted = [...boxes].sort((a, b) => a.box.y - b.box.y || a.box.x - b.box.x);
+
+    const lines: Array<Array<{ box: Box; index: number }>> = [];
+    const firstSorted = sorted[0];
+    if (!firstSorted) return [];
+    let currentLine = [firstSorted];
+    let avgHeight = firstSorted.box.height;
+
+    for (let i = 1; i < sorted.length; i++) {
+      const current = sorted[i];
+      const previous = sorted[i - 1];
+      if (!current || !previous) continue;
+      const verticalGap = Math.abs(current.box.y - previous.box.y);
+      const threshold = avgHeight * 0.5;
+
+      if (verticalGap <= threshold) {
+        currentLine.push(current);
+        avgHeight =
+          currentLine.reduce((sum, item) => sum + item.box.height, 0) / currentLine.length;
+      } else {
+        currentLine.sort((a, b) => a.box.x - b.box.x);
+        lines.push(currentLine);
+        currentLine = [current];
+        avgHeight = current.box.height;
+      }
+    }
+
+    if (currentLine.length > 0) {
+      currentLine.sort((a, b) => a.box.x - b.box.x);
+      lines.push(currentLine);
+    }
+
+    return lines;
+  }
+
+  /**
+   * Merge multiple boxes on the same line by cropping each box
+   * individually and stitching them side by side into a single canvas.
+   * All crops are stretched to the same height so character sizes are
+   * uniform across the merged line.
+   */
+  private mergeLineCrop(
+    sourceCanvas: CoreCanvas,
+    lineBoxes: Array<{ box: Box; index: number }>
+  ): { mergedCanvas: CoreCanvas; mergedBox: Box } {
+    const minX = Math.min(...lineBoxes.map((b) => b.box.x));
+    const minY = Math.min(...lineBoxes.map((b) => b.box.y));
+    const maxRight = Math.max(...lineBoxes.map((b) => b.box.x + b.box.width));
+    const maxBottom = Math.max(...lineBoxes.map((b) => b.box.y + b.box.height));
+
+    const mergedBox: Box = {
+      x: minX,
+      y: minY,
+      width: maxRight - minX,
+      height: maxBottom - minY,
+    };
+
+    const commonHeight = maxBottom - minY;
+    const commonWidth = lineBoxes.reduce(
+      (sum, b) => sum + Math.round(b.box.width * (commonHeight / b.box.height)),
+      0
+    );
+
+    const mergedCanvas = this.platform.createCanvas(commonWidth, commonHeight);
+    const ctx = mergedCanvas.getContext("2d");
+
+    let offsetX = 0;
+    for (const { box } of lineBoxes) {
+      const cropped = CanvasToolkit.getInstance().crop({
+        bbox: {
+          x0: box.x,
+          y0: box.y,
+          x1: box.x + box.width,
+          y1: box.y + box.height,
+        },
+        canvas: sourceCanvas,
+      });
+      const scaleX = commonHeight / box.height;
+      const stretchedWidth = Math.round(box.width * scaleX);
+      ctx.drawImage(cropped, 0, 0, box.width, box.height, offsetX, 0, stretchedWidth, commonHeight);
+      offsetX += stretchedWidth;
+    }
+
+    return { mergedCanvas, mergedBox };
   }
 
   /**
@@ -171,7 +577,7 @@ export class BaseRecognitionService {
     index: number,
     totalBoxes: number,
     debugPath: string,
-    charactersDictionary?: string[],
+    charactersDictionary?: string[]
   ): Promise<RecognitionResult | null> {
     const start = Date.now();
 
@@ -179,27 +585,18 @@ export class BaseRecognitionService {
       const cropCanvas = this.cropRegion(sourceCanvas, box);
       const { text: recognizedText, confidence } = await this.recognizeText(
         cropCanvas,
-        charactersDictionary,
+        charactersDictionary
       );
 
       if (this.debugging.debug && debugPath) {
         await this.saveDebugCrop(cropCanvas, index, debugPath);
-        this.logProcessingDetails(
-          box,
-          index,
-          totalBoxes,
-          recognizedText,
-          start,
-        );
+        this.logProcessingDetails(box, index, totalBoxes, recognizedText, start);
       }
 
       return { text: recognizedText, box, confidence };
     } catch (e: unknown) {
       const err = e instanceof Error ? e : new Error(String(e));
-      console.error(
-        `Error processing box ${index + 1}: ${err.message}`,
-        err.stack,
-      );
+      console.error(`Error processing box ${index + 1}: ${err.message}`, err.stack);
       return null;
     }
   }
@@ -207,9 +604,7 @@ export class BaseRecognitionService {
   /**
    * Sort recognition results by reading order (top to bottom, left to right)
    */
-  private sortResultsByReadingOrder(
-    results: RecognitionResult[],
-  ): RecognitionResult[] {
+  private sortResultsByReadingOrder(results: RecognitionResult[]): RecognitionResult[] {
     return [...results].sort((a, b) => {
       const boxA = a.box;
       const boxB = b.box;
@@ -227,9 +622,7 @@ export class BaseRecognitionService {
    */
   private isValidBox(box: Box, index: number): boolean {
     if (box.width <= 0 || box.height <= 0) {
-      console.warn(
-        `Skipping invalid box ${index + 1}: w=${box.width}, h=${box.height}`,
-      );
+      console.warn(`Skipping invalid box ${index + 1}: w=${box.width}, h=${box.height}`);
       return false;
     }
     return true;
@@ -256,12 +649,12 @@ export class BaseRecognitionService {
   private async saveDebugCrop(
     cropCanvas: CoreCanvas,
     index: number,
-    outputPath: string,
+    outputPath: string
   ): Promise<void> {
     await this.platform.saveDebugImage(
       cropCanvas,
       `crop_${String(index).padStart(3, "0")}.png`,
-      outputPath,
+      outputPath
     );
   }
 
@@ -273,14 +666,12 @@ export class BaseRecognitionService {
     index: number,
     totalBoxes: number,
     text: string,
-    startTime: number,
+    startTime: number
   ): void {
     const processingTime = Date.now() - startTime;
     this.log(
-      `Box ${index + 1}/${totalBoxes}: [x:${box.x}, y:${box.y}, w:${
-        box.width
-      }, h:${box.height}]` +
-        `\n\t → "${text}" (processed in ${processingTime}ms)\n`,
+      `Box ${index + 1}/${totalBoxes}: [x:${box.x}, y:${box.y}, w:${box.width}, h:${box.height}]` +
+        `\n\t → "${text}" (processed in ${processingTime}ms)\n`
     );
   }
 
@@ -289,10 +680,9 @@ export class BaseRecognitionService {
    */
   private async recognizeText(
     cropCanvas: CoreCanvas,
-    charactersDictionary?: string[],
+    charactersDictionary?: string[]
   ): Promise<{ text: string; confidence: number }> {
-    const { imageTensor, tensorWidth, tensorHeight } =
-      await this.preprocessImage(cropCanvas);
+    const { imageTensor, tensorWidth, tensorHeight } = await this.preprocessImage(cropCanvas);
 
     let inputTensor: Tensor | undefined;
     try {
@@ -318,28 +708,24 @@ export class BaseRecognitionService {
     tensorWidth: number;
     tensorHeight: number;
   }> {
-    const targetHeight = this.options.imageHeight!;
+    const targetHeight = this.options.imageHeight ?? 48;
 
     const originalWidth = cropCanvas.width;
     const originalHeight = cropCanvas.height;
 
     if (originalHeight === 0 || originalWidth === 0) {
-      throw new Error(
-        `Crop dimensions are zero: ${originalWidth}x${originalHeight}`,
-      );
+      throw new Error(`Crop dimensions are zero: ${originalWidth}x${originalHeight}`);
     }
 
     const aspectRatio = originalWidth / originalHeight;
     const resizedWidth = Math.max(
       BaseRecognitionService.MIN_CROP_WIDTH,
-      Math.round(targetHeight * aspectRatio),
+      Math.round(targetHeight * aspectRatio)
     );
 
     if (this.engine === "opencv" && this.platform.imageProcessor) {
       // OpenCV-based resize
-      const imgProcessor = new this.platform.imageProcessor.ImageProcessor(
-        cropCanvas,
-      );
+      const imgProcessor = new this.platform.imageProcessor.ImageProcessor(cropCanvas);
       try {
         imgProcessor.resize({
           width: resizedWidth,
@@ -349,7 +735,7 @@ export class BaseRecognitionService {
         const imageTensor = this.createImageTensorFromCanvas(
           imgProcessor.toCanvas(),
           resizedWidth,
-          targetHeight,
+          targetHeight
         );
 
         return {
@@ -367,11 +753,7 @@ export class BaseRecognitionService {
         height: targetHeight,
       });
 
-      const imageTensor = this.createImageTensor(
-        processor,
-        resizedWidth,
-        targetHeight,
-      );
+      const imageTensor = this.createImageTensor(processor, resizedWidth, targetHeight);
 
       return {
         imageTensor,
@@ -387,7 +769,7 @@ export class BaseRecognitionService {
   private createImageTensor(
     processor: CanvasProcessor,
     width: number,
-    height: number,
+    height: number
   ): Float32Array {
     const canvas = processor.toCanvas();
     return this.createImageTensorFromCanvas(canvas, width, height);
@@ -399,27 +781,24 @@ export class BaseRecognitionService {
   private createImageTensorFromCanvas(
     canvas: CoreCanvas,
     width: number,
-    height: number,
+    height: number
   ): Float32Array {
     const ctx = canvas.getContext("2d");
     const imageData = ctx.getImageData(0, 0, width, height);
-    const pixelData = imageData.data; // RGBA format
+    const pixelData = imageData.data;
 
     const numChannels = 3;
-    const imageTensor = new Float32Array(numChannels * height * width);
+    const channelSize = height * width;
+    const imageTensor = new Float32Array(numChannels * channelSize);
 
-    for (let h = 0; h < height; h++) {
-      for (let w = 0; w < width; w++) {
-        const pixelIndex = (h * width + w) * 4;
-        const grayValue = pixelData[pixelIndex]!;
-        const normalizedValue = (grayValue / 255.0 - 0.5) / 0.5;
-
-        // Fill all three channels (R,G,B) with the same normalized value
-        for (let c = 0; c < numChannels; c++) {
-          const tensorIndex = c * height * width + h * width + w;
-          imageTensor[tensorIndex] = normalizedValue;
-        }
-      }
+    for (let i = 0; i < channelSize; i++) {
+      const normalizedValue = (pixelData[i * 4] ?? 0) / 127.5 - 1.0;
+      const offset0 = i;
+      const offset1 = channelSize + i;
+      const offset2 = channelSize + channelSize + i;
+      imageTensor[offset0] = normalizedValue;
+      imageTensor[offset1] = normalizedValue;
+      imageTensor[offset2] = normalizedValue;
     }
 
     return imageTensor;
@@ -433,13 +812,13 @@ export class BaseRecognitionService {
     const results = await this.session.run(feeds);
 
     const outputNodeName = Object.keys(results)[0];
-    const outputTensor = results[outputNodeName!];
+    const outputTensor = outputNodeName ? results[outputNodeName] : undefined;
 
     if (!outputTensor) {
       throw new Error(
         `Recognition output tensor '${outputNodeName}' not found. Available keys: ${Object.keys(
-          results,
-        )}`,
+          results
+        )}`
       );
     }
 
@@ -451,7 +830,7 @@ export class BaseRecognitionService {
    */
   private decodeResults(
     outputTensor: Tensor,
-    charactersDictionary?: string[],
+    charactersDictionary?: string[]
   ): {
     text: string;
     confidence: number;
@@ -464,13 +843,17 @@ export class BaseRecognitionService {
 
     const dict = charactersDictionary || this.options.charactersDictionary;
 
-    if (numClasses !== dict!.length) {
+    if (!dict) {
+      return { text: "", confidence: 0 };
+    }
+
+    if (numClasses !== dict.length) {
       console.warn(
-        `Warning: Model output classes (${numClasses}) does not match dictionary length (${dict!.length})`,
+        `Warning: Model output classes (${numClasses}) does not match dictionary length (${dict.length})`
       );
     }
 
-    return this.ctcGreedyDecode(outputData, sequenceLength, numClasses, dict!);
+    return this.ctcGreedyDecode(outputData, sequenceLength, numClasses, dict);
   }
 
   /**
@@ -480,15 +863,18 @@ export class BaseRecognitionService {
     logits: Float32Array,
     sequenceLength: number,
     numClasses: number,
-    charDict: string[],
+    charDict: string[]
   ): { text: string; confidence: number } {
     let decodedText = "";
     let lastCharIndex = -1;
     const charConfidences: number[] = [];
 
     for (let t = 0; t < sequenceLength; t++) {
-      const { value: maxProb, index: predictedClassIndex } =
-        this.findMaxProbabilityClass(logits, t, numClasses);
+      const { value: maxProb, index: predictedClassIndex } = this.findMaxProbabilityClass(
+        logits,
+        t,
+        numClasses
+      );
 
       if (
         predictedClassIndex === BaseRecognitionService.BLANK_INDEX ||
@@ -505,7 +891,7 @@ export class BaseRecognitionService {
         });
       } else {
         console.warn(
-          `Decoded index ${predictedClassIndex} out of bounds for charDict (length ${charDict.length}) at t=${t}`,
+          `Decoded index ${predictedClassIndex} out of bounds for charDict (length ${charDict.length}) at t=${t}`
         );
       }
 
@@ -526,9 +912,9 @@ export class BaseRecognitionService {
   private appendCharacterToText(
     index: number,
     charDict: string[],
-    appendFn: (char: string) => void,
+    appendFn: (char: string) => void
   ): void {
-    const char = charDict[index]!;
+    const char = charDict[index] ?? "";
 
     if (index === charDict.length - 1) {
       if (char === BaseRecognitionService.UNK_TOKEN) {
@@ -549,13 +935,13 @@ export class BaseRecognitionService {
   private findMaxProbabilityClass(
     logits: Float32Array,
     timestep: number,
-    numClasses: number,
+    numClasses: number
   ): { value: number; index: number } {
     let maxProb = -Infinity;
     let maxIndex = 0;
 
     for (let c = 0; c < numClasses; c++) {
-      const prob = logits[timestep * numClasses + c]!;
+      const prob = logits[timestep * numClasses + c] ?? 0;
       if (prob > maxProb) {
         maxProb = prob;
         maxIndex = c;

@@ -1,8 +1,6 @@
-import * as ort from "onnxruntime-web";
-import {
-  BaseRecognitionService,
-  type RecognitionResult,
-} from "../core/base-recognition.service.js";
+import type * as ort from "onnxruntime-web";
+import { BaseRecognitionService } from "../core/base-recognition.service.js";
+import type { RecognitionResult } from "../core/base-recognition.service.js";
 import type { DebuggingOptions, RecognitionOptions } from "../interface.js";
 import { WebPlatformProvider } from "./platform.web.js";
 
@@ -16,14 +14,8 @@ export class RecognitionService extends BaseRecognitionService {
   constructor(
     session: ort.InferenceSession,
     options: Partial<RecognitionOptions> = {},
-    debugging: Partial<DebuggingOptions> = {},
+    debugging: Partial<DebuggingOptions> = {}
   ) {
-    super(
-      new WebPlatformProvider(),
-      session,
-      options,
-      debugging,
-      "canvas-native",
-    );
+    super(new WebPlatformProvider(), session, options, debugging, "canvas-native");
   }
 }

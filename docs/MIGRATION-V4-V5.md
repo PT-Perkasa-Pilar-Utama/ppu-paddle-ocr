@@ -171,7 +171,7 @@ await ocrService.initialize();
 
 async function recognizeWithDeskew(
   imagePath: string | ArrayBuffer,
-  options?: { flatten?: boolean },
+  options?: { flatten?: boolean }
 ) {
   // Load image
   let buffer: ArrayBuffer;
