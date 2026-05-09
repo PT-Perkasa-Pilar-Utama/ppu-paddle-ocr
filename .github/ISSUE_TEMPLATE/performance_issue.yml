@@ -1,0 +1,114 @@
+name: 🐢 Performance issue
+description: OCR is slower than expected, or got slower after an upgrade.
+title: "perf: "
+labels: ["performance", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing a perf issue, try `bun run bench/index.bench.ts` on your own hardware and
+        compare against the [README benchmark numbers](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr#benchmark).
+        Machine-to-machine variance can be large, and comparing against *your own* prior numbers
+        is usually more informative than comparing against someone else's.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Describe the perf issue
+      description: What is slow? How slow is it? What did you expect?
+      placeholder: |
+        `recognize()` on a 720×1280 receipt takes ~600 ms on Node 20 on Linux x86-64
+        with 8 cores, but the README reports ~190 ms on an M1.
+    validations:
+      required: true
+
+  - type: textarea
+    id: measurements
+    attributes:
+      label: Measurements
+      description: |
+        Paste the output of `bun run bench/index.bench.ts` (or your own timing numbers).
+        If this is a regression, paste the "before" and "after" numbers side-by-side.
+      render: text
+    validations:
+      required: true
+
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime
+      options:
+        - Node.js
+        - Bun
+        - Browser (Chrome / Edge, WebGPU path)
+        - Browser (Chrome / Edge, WASM path)
+        - Browser (Firefox)
+        - Browser (Safari)
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Processing engine
+      options:
+        - opencv (default on Node/Bun)
+        - canvas-native
+        - not sure / default
+    validations:
+      required: true
+
+  - type: dropdown
+    id: strategy
+    attributes:
+      label: Recognition strategy
+      options:
+        - per-line (default)
+        - per-box
+        - cross-line
+        - mixed / not sure
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: ppu-paddle-ocr version
+      placeholder: "5.2.1"
+    validations:
+      required: true
+
+  - type: input
+    id: ort-version
+    attributes:
+      label: onnxruntime-node / onnxruntime-web version
+      placeholder: "onnxruntime-node 1.23.2"
+
+  - type: input
+    id: os
+    attributes:
+      label: OS, CPU, GPU
+      description: Chip model and arch matter a lot for ONNX perf.
+      placeholder: e.g. macOS 14.4 / Apple M1 / no dGPU, or Ubuntu 22.04 / Ryzen 7 5800X / RTX 3060
+    validations:
+      required: true
+
+  - type: input
+    id: input
+    attributes:
+      label: Input image size & number of detected boxes
+      placeholder: "720×1280, ~22 detected boxes"
+
+  - type: textarea
+    id: session-options
+    attributes:
+      label: Session options
+      description: Anything custom in `session.executionProviders`, `intraOpNumThreads`, `executionMode`, etc.?
+      render: ts
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Bundler, Web Worker, concurrent calls, cold-start vs. warm, etc.

@@ -1,0 +1,91 @@
+name: 🌐 Installation / build issue
+description: Errors installing, building, or bundling ppu-paddle-ocr.
+title: "install: "
+labels: ["install", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This template covers issues with:
+        - `npm install` / `yarn add` / `bun add ppu-paddle-ocr` failing
+        - Peer dependency warnings (`onnxruntime-node`, `onnxruntime-web`)
+        - Bundler errors (Vite / webpack / Next.js / Nuxt / Rollup / esbuild / Turbopack)
+        - Missing WASM files in the browser
+        - Native binding problems (`canvas`, `onnxruntime-node` prebuilt binaries)
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Error output
+      description: Full log from `install`, build, or runtime. Paste verbatim, including the command you ran.
+      render: text
+    validations:
+      required: true
+
+  - type: dropdown
+    id: stage
+    attributes:
+      label: When does it fail?
+      options:
+        - During install (`bun add` / `npm install`)
+        - During bundler build (`vite build`, `next build`, etc.)
+        - At runtime in dev mode (e.g. `vite dev` first page load)
+        - At runtime in production mode
+        - On CI only (local works)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: pkg
+    attributes:
+      label: Package manager
+      options:
+        - npm
+        - yarn (classic)
+        - yarn (berry / pnp)
+        - pnpm
+        - bun
+    validations:
+      required: true
+
+  - type: input
+    id: bundler
+    attributes:
+      label: Bundler (if applicable)
+      placeholder: e.g. Vite 5.4.0, Next.js 14.2 (App Router), webpack 5.89
+
+  - type: input
+    id: ort-version
+    attributes:
+      label: onnxruntime-node / onnxruntime-web version
+      placeholder: "onnxruntime-web 1.26.0 (resolved from peerDependencies)"
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js / Bun version
+      placeholder: "Node 20.11.0"
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system & architecture
+      placeholder: e.g. Ubuntu 22.04 (x86_64), macOS 14 (arm64), Windows 11
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: ppu-paddle-ocr version
+      placeholder: "5.2.1"
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: |
+        A StackBlitz / CodeSandbox link, or a small repo demonstrating the failing install or build.
+        If it's project-specific, paste your `package.json` and bundler config.
