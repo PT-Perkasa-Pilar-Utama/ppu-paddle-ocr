@@ -6,13 +6,20 @@ import { BasePaddleOcrService, DEFAULT_MODEL_URLS } from "../core/base-paddle-oc
 import type { CoreCanvas } from "../core/platform.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
 import { DetectionService } from "./detection.service.web.js";
-import { WebPlatformProvider } from "./platform.web.js";
+import { getDefaultWebExecutionProviders, WebPlatformProvider } from "./platform.web.js";
 import { RecognitionService } from "./recognition.service.web.js";
 
 export type { FlattenedPaddleOcrResult, PaddleOcrResult };
 
+/**
+ * Default session options for the web build.
+ *
+ * `executionProviders` is intentionally omitted here; it is resolved
+ * asynchronously during `initialize()` so we can probe for WebGPU before
+ * committing to a provider. If the user supplies their own `session` with
+ * explicit providers, we respect that and skip detection.
+ */
 const DEFAULT_WEB_SESSION_OPTIONS: ort.InferenceSession.SessionOptions = {
-  executionProviders: ["wasm"],
   graphOptimizationLevel: "all",
 };
 
@@ -60,6 +67,64 @@ export class PaddleOcrService extends BasePaddleOcrService {
   }
 
   /**
+   * Resolve the execution-provider list for this session.
+   *
+   * If the user supplied explicit providers via `options.session.executionProviders`
+   * we honour them as-is. Otherwise we probe the browser and prefer WebGPU when
+   * it is available, falling back to WebAssembly.
+   *
+   * Runs once during `initialize()`; subsequent session creations reuse the
+   * resolved options.
+   */
+  private async _resolveSessionExecutionProviders(): Promise<void> {
+    const current = this.options.session ?? {};
+    if (current.executionProviders && current.executionProviders.length > 0) {
+      this.log(
+        `Using user-provided executionProviders: ${JSON.stringify(current.executionProviders)}`
+      );
+      return;
+    }
+
+    const providers = await getDefaultWebExecutionProviders();
+    this.options.session = { ...current, executionProviders: providers };
+    this.log(`Resolved executionProviders: ${JSON.stringify(providers)}`);
+  }
+
+  /**
+   * Create an ONNX Runtime session, retrying without WebGPU if the preferred
+   * provider chain fails (e.g. a model uses an op WebGPU does not support).
+   *
+   * The fallback is silent by design: a real user running WebGPU-capable
+   * hardware should not see the library break if a model only runs on WASM.
+   */
+  private async _createSession(modelData: Uint8Array): Promise<ort.InferenceSession> {
+    const sessionOpts = this.options.session ?? {};
+    try {
+      return await ort.InferenceSession.create(modelData, sessionOpts);
+    } catch (err) {
+      const providers = sessionOpts.executionProviders ?? [];
+      const providerNames = providers.map((p) => (typeof p === "string" ? p : p.name));
+      const hasWebGpu = providerNames.includes("webgpu");
+
+      if (!hasWebGpu) {
+        throw err;
+      }
+
+      console.warn(
+        "[PaddleOcrService] WebGPU session creation failed; falling back to WASM.",
+        err instanceof Error ? err.message : String(err)
+      );
+
+      const fallbackOpts: ort.InferenceSession.SessionOptions = {
+        ...sessionOpts,
+        executionProviders: ["wasm"],
+      };
+      this.options.session = fallbackOpts;
+      return ort.InferenceSession.create(modelData, fallbackOpts);
+    }
+  }
+
+  /**
    * Initialize the OCR service by loading models, dictionary, and the OpenCV runtime.
    *
    * Must be called before `recognize()`.
@@ -68,15 +133,14 @@ export class PaddleOcrService extends BasePaddleOcrService {
     try {
       this.log("Initializing PaddleOcrService (Web)...");
 
+      await this._resolveSessionExecutionProviders();
+
       const detModelBuffer = await this._loadResource(
         this.options.model?.detection,
         DEFAULT_MODEL_URLS.detection
       );
 
-      this.detectionSession = await ort.InferenceSession.create(
-        new Uint8Array(detModelBuffer),
-        this.options.session ?? {}
-      );
+      this.detectionSession = await this._createSession(new Uint8Array(detModelBuffer));
       if (this.options.model) this.options.model.detection = detModelBuffer;
       this.log(
         `Detection ONNX model loaded successfully\n\tinput: ${this.detectionSession.inputNames}\n\toutput: ${this.detectionSession.outputNames}`
@@ -86,10 +150,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
         this.options.model?.recognition,
         DEFAULT_MODEL_URLS.recognition
       );
-      this.recognitionSession = await ort.InferenceSession.create(
-        new Uint8Array(recModelBuffer),
-        this.options.session ?? {}
-      );
+      this.recognitionSession = await this._createSession(new Uint8Array(recModelBuffer));
       if (this.options.model) this.options.model.recognition = recModelBuffer;
       this.log(
         `Recognition ONNX model loaded successfully\n\tinput: ${this.recognitionSession.inputNames}\n\toutput: ${this.recognitionSession.outputNames}`
@@ -139,10 +200,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
     const modelBuffer = await this._loadResource(model, DEFAULT_MODEL_URLS.detection);
 
     await this.detectionSession?.release();
-    this.detectionSession = await ort.InferenceSession.create(
-      new Uint8Array(modelBuffer),
-      this.options.session ?? {}
-    );
+    this.detectionSession = await this._createSession(new Uint8Array(modelBuffer));
     if (this.options.model) this.options.model.detection = modelBuffer;
     this.log("Detection model changed successfully.");
   }
@@ -152,10 +210,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
     const modelBuffer = await this._loadResource(model, DEFAULT_MODEL_URLS.recognition);
 
     await this.recognitionSession?.release();
-    this.recognitionSession = await ort.InferenceSession.create(
-      new Uint8Array(modelBuffer),
-      this.options.session ?? {}
-    );
+    this.recognitionSession = await this._createSession(new Uint8Array(modelBuffer));
     if (this.options.model) this.options.model.recognition = modelBuffer;
     this.log("Recognition model changed successfully.");
   }

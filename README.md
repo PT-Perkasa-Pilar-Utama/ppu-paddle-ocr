@@ -316,6 +316,49 @@ You can check out our live `index.html` demo to see how to include the dependenc
 
 See the interactive demo implementation here: [Web Demo](https://pt-perkasa-pilar-utama.github.io/ppu-paddle-ocr/)
 
+### WebGPU Acceleration
+
+Starting from `5.3.0`, the web build automatically detects WebGPU support and uses it for ONNX inference when available, falling back transparently to WebAssembly otherwise. On WebGPU-capable browsers (Chrome/Edge on Windows/Linux/macOS, and Firefox Nightly with the flag enabled) this typically gives **2–5× faster recognition** with no code changes.
+
+The detection runs once during `initialize()` and is completely transparent — no flags to set, no opt-in needed. If WebGPU session creation fails (for example because a particular model uses an operator WebGPU does not support), the library silently falls back to WASM.
+
+#### Overriding the provider preference
+
+If you want to force a specific provider (e.g. WASM-only for deterministic CPU behaviour, or to work around a WebGPU driver bug), pass explicit `executionProviders` via `session`:
+
+```ts
+import { PaddleOcrService } from "ppu-paddle-ocr/web";
+
+// Force WebAssembly (disables WebGPU even when available)
+const service = new PaddleOcrService({
+  session: {
+    executionProviders: ["wasm"],
+    graphOptimizationLevel: "all",
+  },
+});
+await service.initialize();
+```
+
+#### Probing for WebGPU
+
+Both helpers used internally are exported if you want to show a "GPU-accelerated" indicator or branch on provider support in your own UI:
+
+```ts
+import { isWebGpuAvailable, getDefaultWebExecutionProviders } from "ppu-paddle-ocr/web";
+
+if (await isWebGpuAvailable()) {
+  console.log("WebGPU detected — inference will run on the GPU");
+}
+
+// Resolved provider list ppu-paddle-ocr will use by default (if no override is set):
+console.log(await getDefaultWebExecutionProviders());
+// -> ["webgpu", "wasm"]   on WebGPU-capable browsers
+// -> ["wasm"]              on browsers without WebGPU (Safari today, older Firefox, etc.)
+```
+
+> [!NOTE]
+> `onnxruntime-web` still needs to load its WASM binaries even when WebGPU is selected as the primary provider (they are used for graph optimization and fallback ops). The library sets a sensible `ort.env.wasm.wasmPaths` default; override it via `ort.env.wasm.wasmPaths = "/path/to/"` before `initialize()` if you self-host the WASM files.
+
 ## Models and Language Support
 
 ### Default Models

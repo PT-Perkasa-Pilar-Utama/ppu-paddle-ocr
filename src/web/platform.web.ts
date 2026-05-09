@@ -4,7 +4,42 @@ import type { CoreCanvas, PlatformProvider } from "../core/platform.js";
 // Provide an intelligent default for ONNX WASM paths to avoid 404s on CDN or unbundled usage.
 // Users can override this by explicitly setting ort.env.wasm.wasmPaths before initialization.
 if (typeof window !== "undefined" && !ort.env.wasm.wasmPaths) {
-  ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.24.2/dist/";
+  ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/";
+}
+
+/**
+ * Detect whether WebGPU is usable in the current browser context.
+ *
+ * Returns `true` only when `navigator.gpu` exists and a real adapter can be
+ * obtained. The adapter probe is asynchronous but cheap (no device creation).
+ *
+ * Safe to call in SSR / non-browser contexts — returns `false` immediately.
+ */
+export async function isWebGpuAvailable(): Promise<boolean> {
+  if (typeof navigator === "undefined") return false;
+  const nav = navigator as Navigator & { gpu?: { requestAdapter: () => Promise<unknown | null> } };
+  if (!nav.gpu || typeof nav.gpu.requestAdapter !== "function") return false;
+  try {
+    const adapter = await nav.gpu.requestAdapter();
+    return adapter !== null && adapter !== undefined;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Return the default execution-provider preference list for the current
+ * browser. WebGPU is placed first when available; WebAssembly is always
+ * the final fallback so inference works on every browser the package
+ * supports.
+ */
+export async function getDefaultWebExecutionProviders(): Promise<
+  ort.InferenceSession.SessionOptions["executionProviders"]
+> {
+  if (await isWebGpuAvailable()) {
+    return ["webgpu", "wasm"];
+  }
+  return ["wasm"];
 }
 
 export class WebPlatformProvider implements PlatformProvider<CoreCanvas> {
