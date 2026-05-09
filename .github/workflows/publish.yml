@@ -12,10 +12,18 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Setup Node.js for npm auth
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install Bun
         uses: oven-sh/setup-bun@v1
@@ -26,8 +34,11 @@ jobs:
       - name: Publish package to jsr
         run: bunx jsr publish
 
-      - name: Configure npm auth
-        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
+      - name: Build
+        run: bun run build
 
-      - name: Build and publish to npm
-        run: bun run build:publish
+      - name: Copy package files
+        run: cp README.md package.json lib/
+
+      - name: Publish to npm
+        run: npm publish ./lib --access=public
