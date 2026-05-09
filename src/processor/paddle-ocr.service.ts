@@ -8,6 +8,7 @@ import { CanvasProcessor } from "ppu-ocv/canvas";
 
 import { BasePaddleOcrService, DEFAULT_MODEL_URLS } from "../core/base-paddle-ocr.service.js";
 import { globalImageCache, ImageCache } from "../core/image-cache.js";
+import { createSessionWithFallback } from "../core/session-factory.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
 import type { FlattenedPaddleOcrResult, PaddleOcrResult } from "../web/paddle-ocr.service.web.js";
 import { DetectionService } from "./detection.service.js";
@@ -156,8 +157,20 @@ export class PaddleOcrService extends BasePaddleOcrService {
       ]);
 
       const [detectionSession, recognitionSession] = await Promise.all([
-        ort.InferenceSession.create(new Uint8Array(detModelBuffer), this.options.session ?? {}),
-        ort.InferenceSession.create(new Uint8Array(recModelBuffer), this.options.session ?? {}),
+        createSessionWithFallback(
+          ort,
+          new Uint8Array(detModelBuffer),
+          this.options.session,
+          (msg) => this.log(msg),
+          (next) => (this.options.session = next)
+        ),
+        createSessionWithFallback(
+          ort,
+          new Uint8Array(recModelBuffer),
+          this.options.session,
+          (msg) => this.log(msg),
+          (next) => (this.options.session = next)
+        ),
         engine === "opencv" ? ImageProcessor.initRuntime() : Promise.resolve(),
       ]);
 
@@ -222,9 +235,12 @@ export class PaddleOcrService extends BasePaddleOcrService {
     const modelBuffer = await this._loadResource(model, DEFAULT_MODEL_URLS.detection);
 
     await this.detectionSession?.release();
-    this.detectionSession = await ort.InferenceSession.create(
+    this.detectionSession = await createSessionWithFallback(
+      ort,
       new Uint8Array(modelBuffer),
-      this.options.session ?? {}
+      this.options.session,
+      (msg) => this.log(msg),
+      (next) => (this.options.session = next)
     );
     if (this.options.model) this.options.model.detection = modelBuffer;
     this.log("Detection model changed successfully.");
@@ -239,9 +255,12 @@ export class PaddleOcrService extends BasePaddleOcrService {
     const modelBuffer = await this._loadResource(model, DEFAULT_MODEL_URLS.recognition);
 
     await this.recognitionSession?.release();
-    this.recognitionSession = await ort.InferenceSession.create(
+    this.recognitionSession = await createSessionWithFallback(
+      ort,
       new Uint8Array(modelBuffer),
-      this.options.session ?? {}
+      this.options.session,
+      (msg) => this.log(msg),
+      (next) => (this.options.session = next)
     );
     if (this.options.model) this.options.model.recognition = modelBuffer;
     this.log("Recognition model changed successfully.");

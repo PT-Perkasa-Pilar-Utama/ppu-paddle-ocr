@@ -4,6 +4,7 @@ import type { CanvasLike } from "ppu-ocv/web";
 import type { FlattenedPaddleOcrResult, PaddleOcrResult } from "../core/base-paddle-ocr.service.js";
 import { BasePaddleOcrService, DEFAULT_MODEL_URLS } from "../core/base-paddle-ocr.service.js";
 import type { CoreCanvas } from "../core/platform.js";
+import { createSessionWithFallback } from "../core/session-factory.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
 import { DetectionService } from "./detection.service.web.js";
 import { getDefaultWebExecutionProviders, WebPlatformProvider } from "./platform.web.js";
@@ -81,32 +82,15 @@ export class PaddleOcrService extends BasePaddleOcrService {
     this.log(`Resolved executionProviders: ${JSON.stringify(providers)}`);
   }
 
-  /** Create an ORT session, silently falling back to WASM if WebGPU fails. */
+  /** Create an ORT session, silently falling back to WASM if the preferred providers fail. */
   private async _createSession(modelData: Uint8Array): Promise<ort.InferenceSession> {
-    const sessionOpts = this.options.session ?? {};
-    try {
-      return await ort.InferenceSession.create(modelData, sessionOpts);
-    } catch (err) {
-      const providers = sessionOpts.executionProviders ?? [];
-      const providerNames = providers.map((p) => (typeof p === "string" ? p : p.name));
-      const hasWebGpu = providerNames.includes("webgpu");
-
-      if (!hasWebGpu) {
-        throw err;
-      }
-
-      console.warn(
-        "[PaddleOcrService] WebGPU session creation failed; falling back to WASM.",
-        err instanceof Error ? err.message : String(err)
-      );
-
-      const fallbackOpts: ort.InferenceSession.SessionOptions = {
-        ...sessionOpts,
-        executionProviders: ["wasm"],
-      };
-      this.options.session = fallbackOpts;
-      return ort.InferenceSession.create(modelData, fallbackOpts);
-    }
+    return createSessionWithFallback(
+      ort as unknown as { InferenceSession: typeof ort.InferenceSession },
+      modelData,
+      this.options.session,
+      (msg) => console.warn(`[PaddleOcrService] ${msg}`),
+      (next) => (this.options.session = next)
+    );
   }
 
   /**
