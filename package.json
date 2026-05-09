@@ -1,6 +1,6 @@
 {
   "name": "ppu-paddle-ocr",
-  "version": "5.3.0",
+  "version": "5.4.0",
   "description": "Blazing-fast and lightweight PaddleOCR library for Web, Node.js and Bun. Perform accurate text detection and recognition with a simple, modern, and type-safe API. Ideal for document processing, data extraction, and computer vision tasks.",
   "keywords": [
     "accurate-ocr",

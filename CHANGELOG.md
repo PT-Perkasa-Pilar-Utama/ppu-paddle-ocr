@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.4.0] - 2026-05-10
+
+### Performance
+
+- **Safe execution provider fallback for Node.js**: Session creation now gracefully handles failures from preferred providers (CUDA, DirectML, TensorRT) by falling back to CPU. Prevents initialization crashes on systems without GPU acceleration.
+- **Default to `.ort` models**: The library now defaults to using pre-optimized ONNX Runtime (`.ort`) models instead of standard ONNX files, providing **~5× faster cold start** time.
+- **Parallel model loading**: Model file download and session creation now run concurrently during `initialize()`, further reducing initialization latency.
+
+### Developer experience
+
+- Added `src/core/session-factory.ts` with `createSession()` that encapsulates EP selection and fallback logic, making it reusable across Node.js environments.
+- New tests in `tests/session-factory.test.ts` covering EP fallback scenarios.
+
 ## [5.3.0] - 2026-05-09
 
 ### Added
