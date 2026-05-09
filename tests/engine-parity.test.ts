@@ -6,7 +6,7 @@ import dict from "../models/en_dict.txt" with { type: "file" };
 import recModel from "../models/en_PP-OCRv4_mobile_rec_infer.onnx" with { type: "file" };
 import detModel from "../models/PP-OCRv5_mobile_det_infer.onnx" with { type: "file" };
 
-const imgFile = Bun.file(import.meta.dir + "/../assets/receipt.jpg");
+const imgFile = Bun.file(`${import.meta.dir}/../assets/receipt.jpg`);
 const imageBuffer = await imgFile.arrayBuffer();
 
 const modelOptions = {
@@ -125,16 +125,13 @@ describe("Processing engine parity (opencv vs canvas-native)", () => {
     // A large difference may indicate a regression in region detection.
     if (opencvResult.results.length > 0 && canvasResult.results.length > 0) {
       const avgOpencvWidth =
-        opencvResult.results.reduce((sum, r) => sum + r.box.width, 0) /
-        opencvResult.results.length;
+        opencvResult.results.reduce((sum, r) => sum + r.box.width, 0) / opencvResult.results.length;
       const avgCanvasWidth =
-        canvasResult.results.reduce((sum, r) => sum + r.box.width, 0) /
-        canvasResult.results.length;
+        canvasResult.results.reduce((sum, r) => sum + r.box.width, 0) / canvasResult.results.length;
 
       // Allow up to 20% difference in average box widths
       const widthRatio =
-        Math.min(avgOpencvWidth, avgCanvasWidth) /
-        Math.max(avgOpencvWidth, avgCanvasWidth);
+        Math.min(avgOpencvWidth, avgCanvasWidth) / Math.max(avgOpencvWidth, avgCanvasWidth);
       expect(widthRatio).toBeGreaterThan(0.8);
     }
   });

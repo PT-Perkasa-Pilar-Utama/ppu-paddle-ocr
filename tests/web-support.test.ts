@@ -74,9 +74,9 @@ describe("Web PaddleOcrService instantiation", () => {
 
     const service = new PaddleOcrService();
 
-    expect(
-      service.recognize(new ArrayBuffer(10) as any, { flatten: true }),
-    ).rejects.toThrow("Initialization is handled proactively");
+    expect(service.recognize(new ArrayBuffer(10), { flatten: true })).rejects.toThrow(
+      "Initialization is handled proactively"
+    );
   });
 
   test("destroy is safe to call without initialization", async () => {
@@ -98,9 +98,7 @@ describe("Web services do not import Node-specific modules", () => {
   });
 
   test("web recognition service file does not import fs, path, or os", async () => {
-    const content = await Bun.file(
-      "./src/web/recognition.service.web.ts",
-    ).text();
+    const content = await Bun.file("./src/web/recognition.service.web.ts").text();
     expect(content).not.toContain('from "fs"');
     expect(content).not.toContain('from "path"');
     expect(content).not.toContain('from "os"');
@@ -108,9 +106,7 @@ describe("Web services do not import Node-specific modules", () => {
   });
 
   test("web paddle-ocr service file does not import fs, path, or os", async () => {
-    const content = await Bun.file(
-      "./src/web/paddle-ocr.service.web.ts",
-    ).text();
+    const content = await Bun.file("./src/web/paddle-ocr.service.web.ts").text();
     expect(content).not.toContain('from "fs"');
     expect(content).not.toContain('from "path"');
     expect(content).not.toContain('from "os"');
@@ -142,9 +138,7 @@ describe("Shared modules are reused in web path", () => {
   });
 
   test("core base service uses shared image-cache", async () => {
-    const content = await Bun.file(
-      "./src/core/base-paddle-ocr.service.ts",
-    ).text();
+    const content = await Bun.file("./src/core/base-paddle-ocr.service.ts").text();
     expect(content).toContain("image-cache");
   });
 
@@ -152,17 +146,9 @@ describe("Shared modules are reused in web path", () => {
     const mainMod = await import("../src/constants.js");
     const webMod = await import("../src/web/index.js");
 
-    expect(webMod.DEFAULT_PADDLE_OPTIONS).toEqual(
-      mainMod.DEFAULT_PADDLE_OPTIONS,
-    );
-    expect(webMod.DEFAULT_DETECTION_OPTIONS).toEqual(
-      mainMod.DEFAULT_DETECTION_OPTIONS,
-    );
-    expect(webMod.DEFAULT_RECOGNITION_OPTIONS).toEqual(
-      mainMod.DEFAULT_RECOGNITION_OPTIONS,
-    );
-    expect(webMod.DEFAULT_DEBUGGING_OPTIONS).toEqual(
-      mainMod.DEFAULT_DEBUGGING_OPTIONS,
-    );
+    expect(webMod.DEFAULT_PADDLE_OPTIONS).toEqual(mainMod.DEFAULT_PADDLE_OPTIONS);
+    expect(webMod.DEFAULT_DETECTION_OPTIONS).toEqual(mainMod.DEFAULT_DETECTION_OPTIONS);
+    expect(webMod.DEFAULT_RECOGNITION_OPTIONS).toEqual(mainMod.DEFAULT_RECOGNITION_OPTIONS);
+    expect(webMod.DEFAULT_DEBUGGING_OPTIONS).toEqual(mainMod.DEFAULT_DEBUGGING_OPTIONS);
   });
 });

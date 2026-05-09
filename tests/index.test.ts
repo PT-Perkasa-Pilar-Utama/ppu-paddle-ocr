@@ -1,13 +1,17 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import type { Canvas } from "ppu-ocv";
 import { CanvasProcessor } from "ppu-ocv";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
+import { levenshteinDistance } from "../src/utils.js";
 
 import dict from "../models/en_dict.txt" with { type: "file" };
 import recModel from "../models/en_PP-OCRv4_mobile_rec_infer.onnx" with { type: "file" };
 import detModel from "../models/PP-OCRv5_mobile_det_infer.onnx" with { type: "file" };
 
-const imgFile = Bun.file(import.meta.dir + "/../assets/receipt.jpg");
+const imgFile = Bun.file(`${import.meta.dir}/../assets/receipt.jpg`);
+const gtFile = Bun.file(`${import.meta.dir}/../assets/receipt-ground-truth.txt`);
 const imageBuffer = await imgFile.arrayBuffer();
+const groundTruth = (await gtFile.text()).trim();
 
 describe("PaddleOcrService Initialization", () => {
   let service: PaddleOcrService | null = null;
@@ -108,16 +112,16 @@ describe("PaddleOcrService.recognize()", () => {
 
     const firstLine = result.lines[0];
     expect(firstLine).toBeArray();
-    expect(firstLine!.length).toBeGreaterThan(0);
+    expect(firstLine?.length).toBeGreaterThan(0);
 
-    const firstItem = firstLine![0];
+    const firstItem = firstLine?.[0];
     expect(firstItem).toBeObject();
     expect(firstItem).toHaveProperty("text");
     expect(firstItem).toHaveProperty("box");
 
     expect(firstItem).toHaveProperty("confidence");
-    expect(firstItem!.confidence).toBeNumber();
-    expect(firstItem!.box).toHaveProperty("x");
+    expect(firstItem?.confidence).toBeNumber();
+    expect(firstItem?.box).toHaveProperty("x");
   });
 
   test("should return flattened results when flatten option is true", async () => {
@@ -144,7 +148,7 @@ describe("PaddleOcrService.recognize()", () => {
     expect(firstItem).toHaveProperty("text");
     expect(firstItem).toHaveProperty("box");
     expect(firstItem).toHaveProperty("confidence");
-    expect(firstItem!.confidence).toBeNumber();
+    expect(firstItem?.confidence).toBeNumber();
   });
 
   test("should return consistent data between grouped and flattened modes", async () => {
@@ -162,7 +166,7 @@ describe("PaddleOcrService.recognize()", () => {
 
   test("should recognize from Canvas input (no base64 roundtrip)", async () => {
     const canvas = await CanvasProcessor.prepareCanvas(imageBuffer);
-    const result = await service.recognize(canvas as any, { noCache: true });
+    const result = await service.recognize(canvas as unknown as Canvas, { noCache: true });
 
     expect(result.text).not.toBeEmpty();
     expect(result.confidence).toBeGreaterThan(0.8);
@@ -220,5 +224,49 @@ describe("ImageProcessor try/finally safety", () => {
       expect(result.text).not.toBeEmpty();
       expect(result.confidence).toBeGreaterThan(0.5);
     }
+  });
+});
+
+describe("OCR accuracy (Levenshtein distance)", () => {
+  const modelOptions = {
+    model: {
+      detection: detModel,
+      recognition: recModel,
+      charactersDictionary: dict,
+    },
+  };
+
+  function accuracy(ocrText: string): number {
+    const normalized = ocrText.trim();
+    const dist = levenshteinDistance(normalized, groundTruth);
+    return ((groundTruth.length - dist) / groundTruth.length) * 100;
+  }
+
+  test("opencv engine should achieve >= 85% accuracy on receipt", async () => {
+    const service = new PaddleOcrService({
+      ...modelOptions,
+      processing: { engine: "opencv" },
+    });
+    await service.initialize();
+
+    const result = await service.recognize(imageBuffer, { noCache: true });
+    const acc = accuracy(result.text);
+    expect(acc).toBeGreaterThan(85);
+
+    await service.destroy();
+  });
+
+  test("canvas-native engine should achieve >= 85% accuracy on receipt", async () => {
+    const service = new PaddleOcrService({
+      ...modelOptions,
+      processing: { engine: "canvas-native" },
+    });
+    await service.initialize();
+
+    const result = await service.recognize(imageBuffer, { noCache: true });
+    const acc = accuracy(result.text);
+    expect(acc).toBeGreaterThan(85);
+
+    await service.destroy();
   });
 });
