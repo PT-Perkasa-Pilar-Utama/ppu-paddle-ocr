@@ -20,7 +20,7 @@ await service.destroy();
 
 You can combine it further by using open-cv https://github.com/PT-Perkasa-Pilar-Utama/ppu-ocv for more improved accuracy.
 
-> **New in v5.2.0**: Recognition strategies `per-box` (default), `per-line`, and `cross-line`
+> **New in v5.2.0**: Recognition strategies `per-box`, `per-line`, and `cross-line`
 
 Control how detected boxes are fed into the recognition model. Each strategy works by cropping detected regions from the canvas and stitching them side-by-side before running inference.
 
