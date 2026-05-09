@@ -109,7 +109,7 @@ export abstract class BasePaddleOcrService {
       } else if (image instanceof ArrayBuffer) {
         imageBuffer = image;
       } else {
-        if (typeof (image as Record<string, unknown>).toBuffer === "function") {
+        if (typeof (image as unknown as Record<string, unknown>).toBuffer === "function") {
           const canvasWithBuffer = image as { toBuffer: (format: string) => Buffer };
           const buffer = canvasWithBuffer.toBuffer("image/png");
           imageBuffer = buffer.buffer.slice(
@@ -187,7 +187,7 @@ export abstract class BasePaddleOcrService {
           .filter((line) => line.length > 0);
       }
 
-      const strategy = this.options.recognition?.strategy ?? "per-line";
+      const strategy = options?.strategy ?? this.options.recognition?.strategy ?? "per-line";
       const results = await (this.recognitor as BaseRecognitionService).run(
         canvas,
         boxes,
