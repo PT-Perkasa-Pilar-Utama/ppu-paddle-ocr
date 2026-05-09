@@ -72,6 +72,8 @@
     "@types/uglify-js": "latest",
     "@typescript/native-preview": "^7.0.0-dev.20260509.2",
     "canvas": "^3.2.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.3",
     "mitata": "latest",
     "onnxruntime-node": "^1.23.2",
     "onnxruntime-web": "^1.24.2",

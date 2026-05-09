@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+
+subject=$(head -1 "$1")
+
+if ! echo "$subject" | grep -qE "^(feat|fix|chore|refactor|test|docs|perf)!?: .+$"; then
+  echo "Error: Invalid commit format." >&2
+  echo "Expected: type: description" >&2
+  echo "Types: feat, fix, chore, refactor, test, docs, perf" >&2
+  exit 1
+fi
+
+len=${#subject}
+if [ "$len" -gt 80 ]; then
+  echo "Error: Commit subject is $len characters (max 80)." >&2
+  exit 1
+fi
