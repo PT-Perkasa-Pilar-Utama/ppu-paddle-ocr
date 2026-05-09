@@ -7,14 +7,7 @@ if (typeof window !== "undefined" && !ort.env.wasm.wasmPaths) {
   ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/";
 }
 
-/**
- * Detect whether WebGPU is usable in the current browser context.
- *
- * Returns `true` only when `navigator.gpu` exists and a real adapter can be
- * obtained. The adapter probe is asynchronous but cheap (no device creation).
- *
- * Safe to call in SSR / non-browser contexts — returns `false` immediately.
- */
+/** True when `navigator.gpu` is present and at least one adapter is available. */
 export async function isWebGpuAvailable(): Promise<boolean> {
   if (typeof navigator === "undefined") return false;
   const nav = navigator as Navigator & { gpu?: { requestAdapter: () => Promise<unknown | null> } };
@@ -27,12 +20,7 @@ export async function isWebGpuAvailable(): Promise<boolean> {
   }
 }
 
-/**
- * Return the default execution-provider preference list for the current
- * browser. WebGPU is placed first when available; WebAssembly is always
- * the final fallback so inference works on every browser the package
- * supports.
- */
+/** Returns `["webgpu", "wasm"]` when WebGPU is available, otherwise `["wasm"]`. */
 export async function getDefaultWebExecutionProviders(): Promise<
   ort.InferenceSession.SessionOptions["executionProviders"]
 > {

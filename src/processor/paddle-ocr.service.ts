@@ -146,9 +146,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
 
       const engine = this.options.processing?.engine || "opencv";
 
-      // Phase 1 (I/O-bound): fetch all three resources in parallel.
-      // On a cold first-run this overlaps up to three HTTP downloads; on
-      // warm runs the file-system reads are trivially parallel.
       const [detModelBuffer, recModelBuffer, dictBuffer] = await Promise.all([
         this._loadResource(this.options.model?.detection, DEFAULT_MODEL_URLS.detection),
         this._loadResource(this.options.model?.recognition, DEFAULT_MODEL_URLS.recognition),
@@ -158,16 +155,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
         ),
       ]);
 
-      // Phase 2 (CPU/WASM-bound): create both ORT sessions in parallel, and
-      // (when using the opencv engine) initialise the OpenCV WASM runtime at
-      // the same time. `ort.InferenceSession.create` for each model takes
-      // hundreds of ms due to the "all" graph optimisation pass, so running
-      // them concurrently roughly halves cold-start time in practice.
-      //
-      // The OpenCV runtime initialisation is mandatory on the opencv path:
-      // the first OpenCV call otherwise triggers a lazy synchronous WASM
-      // compilation that makes the first OCR recognize 3-6x slower. Doing
-      // it here, in parallel with session creation, hides that cost.
       const [detectionSession, recognitionSession] = await Promise.all([
         ort.InferenceSession.create(new Uint8Array(detModelBuffer), this.options.session ?? {}),
         ort.InferenceSession.create(new Uint8Array(recModelBuffer), this.options.session ?? {}),
@@ -186,7 +173,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
         `Recognition ONNX model loaded successfully\n\tinput: ${recognitionSession.inputNames}\n\toutput: ${recognitionSession.outputNames}`
       );
 
-      // Decode the dictionary (synchronous, tiny — ~10 KB).
       const dictionaryContent = Buffer.from(dictBuffer).toString("utf-8");
       const charactersDictionary = dictionaryContent.split("\n");
 
@@ -198,10 +184,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
       if (this.options.recognition)
         this.options.recognition.charactersDictionary = charactersDictionary;
       this.log(`Character dictionary loaded with ${charactersDictionary.length} entries.`);
-
-      if (engine === "opencv") {
-        this.log("OpenCV runtime initialized.");
-      }
 
       this.detector = new DetectionService(
         detectionSession,
