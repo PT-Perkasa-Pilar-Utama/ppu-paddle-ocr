@@ -365,11 +365,13 @@ console.log(await getDefaultWebExecutionProviders());
 
 ### Default Models
 
-By default, ppu-paddle-ocr uses **PP-OCRv5 mobile** models optimized for English text:
+By default, ppu-paddle-ocr uses **PP-OCRv5 mobile** models optimized for English text, served in the ONNX Runtime `.ort` FlatBuffers format:
 
-- **Detection Model**: `PP-OCRv5_mobile_det_infer.onnx`
-- **Recognition Model**: `en_PP-OCRv5_mobile_rec_infer.onnx`
+- **Detection Model**: `PP-OCRv5_mobile_det_infer.ort`
+- **Recognition Model**: `en_PP-OCRv5_mobile_rec_infer.ort`
 - **Dictionary**: `ppocrv5_en_dict.txt`
+
+`.ort` is ONNX Runtime's native pre-serialised format. Same weights, same output, but session creation is 3–5× faster than loading an equivalent `.onnx`, so `initialize()` cold-start drops meaningfully. If you need the portable `.onnx` variants (for example to run the model in a non-ORT runtime), the [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models) repository still hosts them and you can point `model.detection` / `model.recognition` at the `.onnx` URLs.
 
 These models are automatically downloaded and cached on the first run. PP-OCRv5 provides excellent accuracy for general text recognition while maintaining fast inference speeds.
 
@@ -520,6 +522,8 @@ const service = new PaddleOcrService({
 });
 await service.initialize();
 ```
+
+INT8 is also available as an `.ort` variant in the [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models) repo, which combines the quantization win with the `.ort` cold-start win.
 
 ## Processing Engine
 
