@@ -1,6 +1,6 @@
 # ppu-paddle-ocr
 
-[![Slack](https://img.shields.io/badge/Slack-Community-4A154B?logo=slack&logoColor=white)](https://join.slack.com/t/ppupaddleocrcommunity/shared_invite/zt-3uzp1uuma-lrkEq8OYBYhGdUtzRoVmUg)
+[![Slack](https://img.shields.io/badge/Slack-Community-4A154B?logo=slack&logoColor=white)](https://join.slack.com/t/ppupaddleocrcommunity/shared_invite/zt-3uzp1uuma-lrkEq8OYBYhGdUtzRoVmUg) [![NPM](https://img.shields.io/npm/dw/ppu-paddle-ocr)](https://www.npmjs.com/package/ppu-paddle-ocr)
 
 A lightweight, type-safe PaddleOCR implementation for Bun/Node.js and the browser.
 
