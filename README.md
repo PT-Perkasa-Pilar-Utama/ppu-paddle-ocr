@@ -18,6 +18,8 @@ console.log(result.text);
 await service.destroy();
 ```
 
+Compare it to the official sdk (@paddleocr/paddleocr-js): https://snowfluke.github.io/paddle-ocr-comparison/
+
 ## Table of Contents
 
 - [Quick Start](#quick-start)
