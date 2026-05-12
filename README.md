@@ -505,19 +505,7 @@ benchmark                           avg (min … max) p75 / p99    (min … top 
 
 ## Contributing
 
-1. Fork the repository.
-2. Create a feature branch.
-3. Make changes, add tests, ensure everything passes.
-4. Submit a pull request.
-
-```bash
-bun test
-bun build:test
-bun lint
-bun lint:fix
-bun fmt
-bun fmt:fix
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, code-quality requirements, and the pull request process.
 
 ## License
 
