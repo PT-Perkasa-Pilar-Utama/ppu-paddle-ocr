@@ -780,6 +780,58 @@
               />
             </div>
           </div>
+          <div class="input-group">
+            <label class="input-label">Mean (R, G, B)</label>
+            <div style="display: flex; gap: 0.5rem">
+              <input
+                type="number"
+                step="0.001"
+                id="cfg-det-mean-r"
+                class="input-field"
+                placeholder="0.485"
+              />
+              <input
+                type="number"
+                step="0.001"
+                id="cfg-det-mean-g"
+                class="input-field"
+                placeholder="0.456"
+              />
+              <input
+                type="number"
+                step="0.001"
+                id="cfg-det-mean-b"
+                class="input-field"
+                placeholder="0.406"
+              />
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Std Deviation (R, G, B)</label>
+            <div style="display: flex; gap: 0.5rem">
+              <input
+                type="number"
+                step="0.001"
+                id="cfg-det-std-r"
+                class="input-field"
+                placeholder="0.229"
+              />
+              <input
+                type="number"
+                step="0.001"
+                id="cfg-det-std-g"
+                class="input-field"
+                placeholder="0.224"
+              />
+              <input
+                type="number"
+                step="0.001"
+                id="cfg-det-std-b"
+                class="input-field"
+                placeholder="0.225"
+              />
+            </div>
+          </div>
 
           <div class="section-title" style="margin-top: 1.5rem">Recognition Options</div>
           <div class="input-group">
@@ -805,6 +857,16 @@
               class="input-field"
               placeholder="1.0"
             />
+          </div>
+
+          <div class="section-title" style="margin-top: 1.5rem">Session Options</div>
+          <div class="input-group">
+            <label class="input-label">Execution Provider</label>
+            <select id="cfg-session-ep" class="input-field">
+              <option value="">Auto (WebGPU → WASM)</option>
+              <option value="webgpu">WebGPU only</option>
+              <option value="wasm">WASM only</option>
+            </select>
           </div>
 
           <div class="section-title" style="margin-top: 1.5rem">Debugging Options</div>
@@ -934,9 +996,16 @@
       const cfgDetMinArea = document.getElementById("cfg-det-minarea");
       const cfgDetPadVert = document.getElementById("cfg-det-padvert");
       const cfgDetPadHoriz = document.getElementById("cfg-det-padhoriz");
+      const cfgDetMeanR = document.getElementById("cfg-det-mean-r");
+      const cfgDetMeanG = document.getElementById("cfg-det-mean-g");
+      const cfgDetMeanB = document.getElementById("cfg-det-mean-b");
+      const cfgDetStdR = document.getElementById("cfg-det-std-r");
+      const cfgDetStdG = document.getElementById("cfg-det-std-g");
+      const cfgDetStdB = document.getElementById("cfg-det-std-b");
       const cfgRecImgHeight = document.getElementById("cfg-rec-imgheight");
       const cfgRecStrategy = document.getElementById("cfg-rec-strategy");
       const cfgRecCrossLineFactor = document.getElementById("cfg-rec-crosslinefactor");
+      const cfgSessionEp = document.getElementById("cfg-session-ep");
       const cfgDbgVerbose = document.getElementById("cfg-dbg-verbose");
       const btnApplyConfig = document.getElementById("btn-apply-config");
 
@@ -1032,6 +1101,7 @@
           detection: {},
           recognition: {},
           debugging: {},
+          session: {},
         };
 
         if (cfgDetModel.value.trim()) options.model.detection = cfgDetModel.value.trim();
@@ -1047,11 +1117,22 @@
         if (cfgDetPadHoriz.value)
           options.detection.paddingHorizontal = parseFloat(cfgDetPadHoriz.value);
 
+        const meanTriple = [cfgDetMeanR.value, cfgDetMeanG.value, cfgDetMeanB.value];
+        if (meanTriple.every((v) => v !== "")) {
+          options.detection.mean = meanTriple.map((v) => parseFloat(v));
+        }
+        const stdTriple = [cfgDetStdR.value, cfgDetStdG.value, cfgDetStdB.value];
+        if (stdTriple.every((v) => v !== "")) {
+          options.detection.stdDeviation = stdTriple.map((v) => parseFloat(v));
+        }
+
         if (cfgRecImgHeight.value)
           options.recognition.imageHeight = parseInt(cfgRecImgHeight.value, 10);
         if (cfgRecStrategy.value) options.recognition.strategy = cfgRecStrategy.value;
         if (cfgRecCrossLineFactor.value)
           options.recognition.crossLineWidthFactor = parseFloat(cfgRecCrossLineFactor.value);
+
+        if (cfgSessionEp.value) options.session.executionProviders = [cfgSessionEp.value];
 
         if (cfgDbgVerbose.checked) options.debugging.verbose = true;
 
