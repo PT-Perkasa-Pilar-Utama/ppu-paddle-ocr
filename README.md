@@ -2,7 +2,7 @@
 
 [![Slack](https://img.shields.io/badge/Slack-Community-4A154B?logo=slack&logoColor=white)](https://join.slack.com/t/ppupaddleocrcommunity/shared_invite/zt-3uzp1uuma-lrkEq8OYBYhGdUtzRoVmUg) [![NPM](https://img.shields.io/npm/dw/ppu-paddle-ocr)](https://www.npmjs.com/package/ppu-paddle-ocr)
 
-Lightweight, probably the fastest PaddleOCR SDK in TypeScript. Runs anywhere JavaScript runs: Node.js, Bun, Deno, web browsers, and browser extensions. The official SDK is browser-only. [See for yourself](https://snowfluke.github.io/paddle-ocr-comparison/).
+Lightweight, probably the fastest PaddleOCR SDK in TypeScript. Runs anywhere JavaScript runs: Node.js, Bun, Deno, web browsers, and browser extensions. The official SDK is browser-only and significantly slower. [Compare it for yourself](https://snowfluke.github.io/paddle-ocr-comparison/).
 
 ![ppu-paddle-ocr demo](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/refs/heads/main/assets/ppu-paddle-ocr-demo.jpg)
 
@@ -22,6 +22,7 @@ await service.destroy();
 
 - [Quick Start](#quick-start)
 - [Why ppu-paddle-ocr?](#why-ppu-paddle-ocr)
+- [Runtime Support](#runtime-support)
 - [Installation](#installation)
 - [Core Usage](#core-usage)
   - [Basic Recognition](#basic-recognition)
@@ -63,9 +64,21 @@ await service.destroy();
 
 - **Lightweight** — minimal dependencies, optimized for performance.
 - **Pre-packed models** — PP-OCRv5 mobile models (English) are fetched and cached automatically on first run. Supports 40+ languages via [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models).
-- **Cross-platform** — Node.js, Bun, and browser (via `ppu-paddle-ocr/web`).
+- **Runs everywhere** — Node.js, Bun, Deno, web browsers, and browser extensions. The official SDK is browser-only.
 - **Customizable** — custom models, dictionaries, and per-call overrides.
 - **TypeScript** — full type definitions.
+
+## Runtime Support
+
+The same package, the same API, every JavaScript runtime:
+
+| Runtime               | How to install                                                          | Try it                                                                                       |
+| --------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **Node.js**           | `npm install ppu-paddle-ocr onnxruntime-node`                           | [npm package](https://www.npmjs.com/package/ppu-paddle-ocr)                                  |
+| **Bun**               | `bun add ppu-paddle-ocr onnxruntime-node`                               | [npm package](https://www.npmjs.com/package/ppu-paddle-ocr)                                  |
+| **Deno**              | `deno add jsr:@snowfluke/ppu-paddle-ocr`                                | [JSR package](https://jsr.io/@snowfluke/ppu-paddle-ocr)                                      |
+| **Web browser**       | `npm install ppu-paddle-ocr onnxruntime-web` (import `/web` subpath)    | [Live demo](https://pt-perkasa-pilar-utama.github.io/ppu-paddle-ocr/)                        |
+| **Browser extension** | Same as web; bundle `ppu-paddle-ocr/web` with your extension's bundler. | [Example extension repo](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-extension) |
 
 ## Installation
 
