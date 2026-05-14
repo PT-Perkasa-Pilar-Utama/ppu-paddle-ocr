@@ -76,7 +76,7 @@ Net result on the M1 receipt benchmark (vs. v5.2.0, clean machine): 1–3.5% fas
   - `"cross-line"` — short lines are bin-packed across batches to minimise total inference calls, improving throughput on images with many text regions.
 - `RecognitionStrategy` type, `RecognitionOptions.strategy`, `RecognitionOptions.crossLineWidthFactor`, and `RecognizeOptions.strategy` in the public API.
 - `PaddleOcrService.downloadModels()` static method to pre-download and cache the default model files (useful for CI/CD and warm-up).
-- Multi-engine × multi-strategy benchmark suite under `bench/` and a v4 vs. v5 Node-compatible benchmark under `perf-compare/`.
+- Multi-engine × multi-strategy benchmark suite under `bench/`.
 
 ### Changed
 
