@@ -60,7 +60,7 @@
     "build:publish": "bun task build && bun task report-size && bun task publish",
     "clear-cache": "bun scripts/clear-cache.ts",
     "type-check": "bunx tsgo --noEmit",
-    "test": "bun test",
+    "test": "bun test --parallel=$(find tests private-tests -name '*.test.ts' 2>/dev/null | wc -l | tr -d ' ')",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "fmt": "oxfmt --check",
@@ -89,7 +89,7 @@
     "url": "https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr.git"
   },
   "dependencies": {
-    "ppu-ocv": "^3.1.0"
+    "ppu-ocv": "^3.1.5"
   },
   "peerDependencies": {
     "onnxruntime-node": "^1.23.2",
