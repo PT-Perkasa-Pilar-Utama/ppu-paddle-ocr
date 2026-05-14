@@ -2,7 +2,7 @@
 
 [![Slack](https://img.shields.io/badge/Slack-Community-4A154B?logo=slack&logoColor=white)](https://join.slack.com/t/ppupaddleocrcommunity/shared_invite/zt-3uzp1uuma-lrkEq8OYBYhGdUtzRoVmUg) [![NPM](https://img.shields.io/npm/dw/ppu-paddle-ocr)](https://www.npmjs.com/package/ppu-paddle-ocr)
 
-A lightweight, type-safe PaddleOCR implementation for Bun/Node.js and the browser.
+Lightweight, probably the fastest PaddleOCR SDK in TypeScript. Runs anywhere JavaScript runs: Node.js, Bun, Deno, web browsers, and browser extensions. The official SDK is browser-only. [See for yourself](https://snowfluke.github.io/paddle-ocr-comparison/).
 
 ![ppu-paddle-ocr demo](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/refs/heads/main/assets/ppu-paddle-ocr-demo.jpg)
 
@@ -17,8 +17,6 @@ console.log(result.text);
 
 await service.destroy();
 ```
-
-Compare it to the official sdk (@paddleocr/paddleocr-js): https://snowfluke.github.io/paddle-ocr-comparison/
 
 ## Table of Contents
 
