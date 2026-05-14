@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420" role="img" aria-label="ppu-paddle-ocr: fast deterministic OCR for every JavaScript runtime">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1020"/>
+      <stop offset="100%" stop-color="#142b4d"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#5eead4"/>
+      <stop offset="100%" stop-color="#60a5fa"/>
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e3a8a" stroke-opacity="0.25" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1000" height="420" fill="url(#bg)"/>
+  <rect width="1000" height="420" fill="url(#grid)"/>
+
+  <g font-family="Inter, system-ui, sans-serif" fill="#e2e8f0">
+    <text x="60" y="110" font-size="26" font-weight="500" fill="#94a3b8">ppu-paddle-ocr</text>
+    <text x="60" y="180" font-size="56" font-weight="700">Deterministic OCR.</text>
+    <text x="60" y="240" font-size="56" font-weight="700" fill="url(#accent)">Every JS runtime.</text>
+    <text x="60" y="295" font-size="20" fill="#cbd5e1">PP-OCRv5 in TypeScript. Node, Bun, Deno, browser, extension.</text>
+    <text x="60" y="325" font-size="20" fill="#cbd5e1">WebGPU acceleration. 40+ languages. No API key. No hallucinations.</text>
+  </g>
+
+  <g transform="translate(720,90)">
+    <rect x="0" y="0" width="220" height="240" rx="14" fill="#0f172a" stroke="#1e293b"/>
+    <text x="20" y="40" font-family="JetBrains Mono, monospace" font-size="14" fill="#94a3b8">$ npm i ppu-paddle-ocr</text>
+    <text x="20" y="76" font-family="JetBrains Mono, monospace" font-size="14" fill="#5eead4">import { PaddleOcrService }</text>
+    <text x="20" y="96" font-family="JetBrains Mono, monospace" font-size="14" fill="#5eead4">  from "ppu-paddle-ocr";</text>
+    <text x="20" y="132" font-family="JetBrains Mono, monospace" font-size="14" fill="#e2e8f0">const ocr = new</text>
+    <text x="20" y="152" font-family="JetBrains Mono, monospace" font-size="14" fill="#e2e8f0">  PaddleOcrService();</text>
+    <text x="20" y="184" font-family="JetBrains Mono, monospace" font-size="14" fill="#e2e8f0">await ocr.initialize();</text>
+    <text x="20" y="216" font-family="JetBrains Mono, monospace" font-size="14" fill="#60a5fa">ocr.recognize("./img.jpg")</text>
+  </g>
+
+  <g transform="translate(60,360)" font-family="Inter, system-ui, sans-serif" font-size="13" fill="#94a3b8">
+    <text>ONNX Runtime  ·  PP-OCRv5  ·  INT8 quantization  ·  per-line / cross-line strategies</text>
+  </g>
+</svg>

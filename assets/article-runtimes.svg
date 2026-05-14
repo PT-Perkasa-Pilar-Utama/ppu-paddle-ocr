@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" role="img" aria-label="ppu-paddle-ocr runtime support: Node.js, Bun, Deno, browsers, extensions, React Native">
+  <defs>
+    <linearGradient id="hub" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5eead4"/>
+      <stop offset="100%" stop-color="#60a5fa"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="460" fill="#0b1020"/>
+
+  <!-- center hub -->
+  <g transform="translate(450,230)">
+    <circle r="92" fill="url(#hub)" opacity="0.15"/>
+    <circle r="68" fill="#0f172a" stroke="url(#hub)" stroke-width="2"/>
+    <text x="0" y="-6" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="700" fill="#e2e8f0">ppu-paddle-ocr</text>
+    <text x="0" y="14" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#94a3b8">one API</text>
+    <text x="0" y="30" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#94a3b8">one package</text>
+  </g>
+
+  <!-- spokes -->
+  <g stroke="#1e3a8a" stroke-width="1.5" fill="none">
+    <line x1="450" y1="230" x2="160" y2="100"/>
+    <line x1="450" y1="230" x2="160" y2="360"/>
+    <line x1="450" y1="230" x2="740" y2="100"/>
+    <line x1="450" y1="230" x2="740" y2="360"/>
+    <line x1="450" y1="230" x2="450" y2="60"/>
+    <line x1="450" y1="230" x2="450" y2="410" stroke-dasharray="6 6"/>
+  </g>
+
+  <!-- node cards -->
+  <g font-family="Inter, system-ui, sans-serif">
+    <g transform="translate(60,60)">
+      <rect width="200" height="80" rx="12" fill="#0f172a" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="20" y="34" font-size="18" font-weight="600" fill="#e2e8f0">Node.js</text>
+      <text x="20" y="58" font-size="12" fill="#94a3b8">onnxruntime-node</text>
+    </g>
+    <g transform="translate(60,320)">
+      <rect width="200" height="80" rx="12" fill="#0f172a" stroke="#a78bfa" stroke-width="1.5"/>
+      <text x="20" y="34" font-size="18" font-weight="600" fill="#e2e8f0">Bun</text>
+      <text x="20" y="58" font-size="12" fill="#94a3b8">native speed, same SDK</text>
+    </g>
+    <g transform="translate(640,60)">
+      <rect width="200" height="80" rx="12" fill="#0f172a" stroke="#f472b6" stroke-width="1.5"/>
+      <text x="20" y="34" font-size="18" font-weight="600" fill="#e2e8f0">Deno</text>
+      <text x="20" y="58" font-size="12" fill="#94a3b8">JSR-published</text>
+    </g>
+    <g transform="translate(640,320)">
+      <rect width="200" height="80" rx="12" fill="#0f172a" stroke="#facc15" stroke-width="1.5"/>
+      <text x="20" y="34" font-size="18" font-weight="600" fill="#e2e8f0">Browser extension</text>
+      <text x="20" y="58" font-size="12" fill="#94a3b8">MV3-ready bundle</text>
+    </g>
+    <g transform="translate(350,10)">
+      <rect width="200" height="80" rx="12" fill="#0f172a" stroke="#5eead4" stroke-width="1.5"/>
+      <text x="20" y="34" font-size="18" font-weight="600" fill="#e2e8f0">Web browser</text>
+      <text x="20" y="58" font-size="12" fill="#94a3b8">WebGPU + WASM fallback</text>
+    </g>
+    <g transform="translate(350,380)">
+      <rect width="200" height="60" rx="12" fill="#0f172a" stroke="#94a3b8" stroke-dasharray="6 6" stroke-width="1.5"/>
+      <text x="20" y="28" font-size="16" font-weight="600" fill="#94a3b8">React Native</text>
+      <text x="20" y="48" font-size="11" fill="#64748b">coming next</text>
+    </g>
+  </g>
+</svg>
