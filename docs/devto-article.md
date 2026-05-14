@@ -10,7 +10,7 @@ series: ppu-paddle-ocr
 
 ![ppu-paddle-ocr cover](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/main/assets/article-cover.png)
 
-LLMs read text from images now. So why ship a 30 MB OCR model?
+LLMs read text from images now. So why ship a Machine Learning OCR model?
 
 Because the receipt your reconciliation job processed last night will be processed again next quarter, and the totals had better match. A GPT-class vision model can hallucinate a `5` into an `8`, drop a decimal, or reorder line items the second time you ask. Cloud OCR also costs money per page, leaks the document outside your network, and breaks the moment the vendor deprecates a model id.
 
