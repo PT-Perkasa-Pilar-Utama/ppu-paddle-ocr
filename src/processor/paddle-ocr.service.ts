@@ -10,6 +10,7 @@ import { BasePaddleOcrService, DEFAULT_MODEL_URLS } from "../core/base-paddle-oc
 import { globalImageCache, ImageCache } from "../core/image-cache.js";
 import { createSessionWithFallback } from "../core/session-factory.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
+import { parseDictionary } from "../utils.js";
 import type { FlattenedPaddleOcrResult, PaddleOcrResult } from "../web/paddle-ocr.service.web.js";
 import { DetectionService } from "./detection.service.js";
 import { NodePlatformProvider } from "./platform.node.js";
@@ -186,8 +187,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
         `Recognition ONNX model loaded successfully\n\tinput: ${recognitionSession.inputNames}\n\toutput: ${recognitionSession.outputNames}`
       );
 
-      const dictionaryContent = Buffer.from(dictBuffer).toString("utf-8");
-      const charactersDictionary = dictionaryContent.split("\n");
+      const charactersDictionary = parseDictionary(dictBuffer);
 
       if (charactersDictionary.length === 0) {
         throw new Error("Character dictionary is empty or could not be loaded.");
@@ -277,8 +277,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
       DEFAULT_MODEL_URLS.charactersDictionary
     );
 
-    const dictionaryContent = Buffer.from(dictBuffer).toString("utf-8");
-    const charactersDictionary = dictionaryContent.split("\n");
+    const charactersDictionary = parseDictionary(dictBuffer);
 
     if (charactersDictionary.length === 0) {
       throw new Error("Character dictionary is empty or could not be loaded.");
@@ -368,8 +367,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
     let charactersDictionary: string[] | undefined;
     if (options?.dictionary) {
       const dictBuffer = await this._loadResource(options.dictionary, "");
-      const dictionaryContent = Buffer.from(dictBuffer).toString("utf-8");
-      charactersDictionary = dictionaryContent.split("\n");
+      charactersDictionary = parseDictionary(dictBuffer);
 
       if (charactersDictionary.length === 0) {
         throw new Error("Custom character dictionary is empty or could not be loaded.");

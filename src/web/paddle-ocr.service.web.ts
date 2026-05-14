@@ -6,6 +6,7 @@ import { BasePaddleOcrService, DEFAULT_MODEL_URLS } from "../core/base-paddle-oc
 import type { CoreCanvas } from "../core/platform.js";
 import { createSessionWithFallback } from "../core/session-factory.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
+import { parseDictionary } from "../utils.js";
 import { DetectionService } from "./detection.service.web.js";
 import { getDefaultWebExecutionProviders, WebPlatformProvider } from "./platform.web.js";
 import { RecognitionService } from "./recognition.service.web.js";
@@ -130,8 +131,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
         `Recognition ONNX model loaded successfully\n\tinput: ${recognitionSession.inputNames}\n\toutput: ${recognitionSession.outputNames}`
       );
 
-      const dictionaryContent = new TextDecoder("utf-8").decode(dictBuffer);
-      const charactersDictionary = dictionaryContent.split("\n");
+      const charactersDictionary = parseDictionary(dictBuffer);
 
       if (charactersDictionary.length === 0) {
         throw new Error("Character dictionary is empty or could not be loaded.");
@@ -192,8 +192,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
       DEFAULT_MODEL_URLS.charactersDictionary
     );
 
-    const dictionaryContent = new TextDecoder("utf-8").decode(dictBuffer);
-    const charactersDictionary = dictionaryContent.split("\n");
+    const charactersDictionary = parseDictionary(dictBuffer);
 
     if (charactersDictionary.length === 0) {
       throw new Error("Character dictionary is empty or could not be loaded.");

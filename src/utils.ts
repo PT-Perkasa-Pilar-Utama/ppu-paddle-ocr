@@ -59,6 +59,12 @@ export function levenshteinDistance(a: string, b: string): number {
   return prev[n] ?? 0;
 }
 
+/** Parse a PaddleOCR dictionary into an ordered array. Handles LF/CRLF; preserves blank entries. */
+export function parseDictionary(source: ArrayBuffer | Uint8Array | string): string[] {
+  const content = typeof source === "string" ? source : new TextDecoder("utf-8").decode(source);
+  return content.split(/\r?\n/);
+}
+
 /**
  * Checks if a value is a plain object.
  *

@@ -2,7 +2,7 @@ import type { InferenceSession } from "onnxruntime-common";
 import { CanvasProcessor } from "ppu-ocv/canvas";
 import { DEFAULT_PADDLE_OPTIONS } from "../constants.js";
 import type { Box, PaddleOptions, RecognizeOptions } from "../interface.js";
-import { deepMerge } from "../utils.js";
+import { deepMerge, parseDictionary } from "../utils.js";
 import type { BaseDetectionService } from "./base-detection.service.js";
 import type { BaseRecognitionService } from "./base-recognition.service.js";
 import type { RecognitionResult } from "./base-recognition.service.js";
@@ -192,10 +192,7 @@ export abstract class BasePaddleOcrService {
           dictionaryContent = new TextDecoder("utf-8").decode(options.dictionary);
         }
 
-        dict = dictionaryContent
-          .split("\n")
-          .map((line) => line.trim())
-          .filter((line) => line.length > 0);
+        dict = parseDictionary(dictionaryContent);
       }
 
       const strategy = options?.strategy ?? this.options.recognition?.strategy ?? "per-line";
