@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.4.3] - 2026-05-14
+
+### Fixed
+
+- **Browser bundlers no longer need to alias `ppu-ocv/canvas`** ([#18](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/issues/18)). Core services previously imported `ppu-ocv/canvas` (the Node variant) at module top level, which forced every browser consumer — including the `web` subpath — to alias or `pnpm patch` the specifier. Canvas access is now routed through `PlatformProvider.canvas` (`prepareCanvas` / `createProcessor` / `getToolkit`); `NodePlatformProvider` wires it to `ppu-ocv/canvas`, `WebPlatformProvider` wires it to `ppu-ocv/canvas-web`. Webpack / Vite / Next.js / esbuild consumers of `ppu-paddle-ocr/web` should now work out of the box.
+
+### Developer experience
+
+- New `CanvasOps<TCanvas>` type on `PlatformProvider` for platforms that want to plug in custom canvas backends.
+- `core/base-{detection,recognition,paddle-ocr}.service.ts` no longer import `ppu-ocv/canvas` at runtime (type-only imports remain).
+- Demo (`index.html`) refreshed: full config surface (recognition strategy, cross-line factor, mean/std-dev, execution provider) is now editable from the sidebar; sticky "Apply Configuration" button with dirty-state pulse; loading overlay during inference; paper-and-ink theme.
+
 ## [5.4.0] - 2026-05-10
 
 ### Performance
