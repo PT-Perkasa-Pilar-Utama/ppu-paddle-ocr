@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.4.4] - 2026-05-14
+
+### Security
+
+- **Prototype pollution fix in `deepMerge`** (`src/utils.ts`). The recursive merge used to walk every own-enumerable key of the source object without filtering, so a crafted input containing `__proto__`, `constructor`, or `prototype` could write through to `Object.prototype` and affect unrelated objects in the process. `deepMerge` now skips those three keys explicitly. Users who pass untrusted JSON into any options object should upgrade.
+
+### Developer experience
+
+- Added `.github/dependabot.yml` so npm dependencies and GitHub Actions are kept current automatically (weekly schedule).
+- Hardened CI: tightened `permissions:` on the quality-check workflow.
+- Bumped CI actions to current majors: `actions/checkout` v4 → v6, `actions/setup-node` v4 → v6, `oven-sh/setup-bun` v1 → v2.
+- Bumped `oxfmt` 0.48.0 → 0.49.0 (dev dependency, formatter).
+
 ## [5.4.3] - 2026-05-14
 
 ### Fixed
