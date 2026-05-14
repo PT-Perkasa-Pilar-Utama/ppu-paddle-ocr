@@ -16,6 +16,10 @@ export function deepMerge<T extends Record<string, unknown>>(
   if (isObject(target) && isObject(source)) {
     for (const key in source) {
       if (Object.prototype.hasOwnProperty.call(source, key)) {
+        if (key === "__proto__" || key === "constructor" || key === "prototype") {
+          continue;
+        }
+
         const sourceValue = source[key];
         const targetValue = target[key];
 
