@@ -845,15 +845,19 @@ export class BaseRecognitionService {
     const sequenceLength = outputShape[1];
     const numClasses = outputShape[2];
 
-    const dict = charactersDictionary || this.options.charactersDictionary;
+    const rawDict = charactersDictionary || this.options.charactersDictionary;
 
-    if (!dict) {
+    if (!rawDict) {
       return { text: "", confidence: 0 };
     }
 
-    if (numClasses !== dict.length) {
+    // PaddleOCR class 0 is the CTC blank. If the dict omits that slot, prepend it (issue #15).
+    let dict = rawDict;
+    if (rawDict.length === numClasses - 1) {
+      dict = ["", ...rawDict];
+    } else if (numClasses !== rawDict.length) {
       console.warn(
-        `Warning: Model output classes (${numClasses}) does not match dictionary length (${dict.length})`
+        `Warning: Model output classes (${numClasses}) does not match dictionary length (${rawDict.length}).\n Consider using our model & dictionary catalogue at https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models.`
       );
     }
 
