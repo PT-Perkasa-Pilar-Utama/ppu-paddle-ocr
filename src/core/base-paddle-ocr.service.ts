@@ -1,5 +1,4 @@
 import type { InferenceSession } from "onnxruntime-common";
-import { CanvasProcessor } from "ppu-ocv/canvas";
 import { DEFAULT_PADDLE_OPTIONS } from "../constants.js";
 import type { Box, PaddleOptions, RecognizeOptions } from "../interface.js";
 import { deepMerge, parseDictionary } from "../utils.js";
@@ -167,7 +166,7 @@ export abstract class BasePaddleOcrService {
       let boxes: Box[] = [];
       const canvas =
         typeof image === "string" || image instanceof ArrayBuffer
-          ? await CanvasProcessor.prepareCanvas(imageBuffer)
+          ? await this.platform.canvas.prepareCanvas(imageBuffer)
           : image;
       boxes = await (this.detector as BaseDetectionService).run(canvas);
 

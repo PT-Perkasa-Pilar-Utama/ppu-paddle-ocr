@@ -1,6 +1,5 @@
 import type { InferenceSession, Tensor } from "onnxruntime-common";
 import type { Contours, cv } from "ppu-ocv";
-import { CanvasProcessor, CanvasToolkit } from "ppu-ocv/canvas";
 import { DEFAULT_DEBUGGING_OPTIONS, DEFAULT_DETECTION_OPTIONS } from "../constants.js";
 import type { Box, DebuggingOptions, DetectionOptions, ProcessingEngine } from "../interface.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
@@ -83,7 +82,7 @@ export class BaseDetectionService {
       } else if (this.engine === "opencv" && this.platform.imageProcessor) {
         canvasToProcess = await this.platform.imageProcessor.prepareCanvas(image);
       } else {
-        canvasToProcess = await CanvasProcessor.prepareCanvas(image);
+        canvasToProcess = await this.platform.canvas.prepareCanvas(image);
       }
 
       const input = await this.preprocessDetection(canvasToProcess);
@@ -424,7 +423,10 @@ export class BaseDetectionService {
     paddingHorizontal: number
   ): Box[] {
     // Use native canvas operations (no OpenCV needed)
-    const processor = new CanvasProcessor(canvas).grayscale().threshold({ thresh: 127 });
+    const processor = this.platform.canvas
+      .createProcessor(canvas)
+      .grayscale()
+      .threshold({ thresh: 127 });
 
     // Use native region detection instead of OpenCV contours
     const regions = processor.findRegions({
@@ -556,13 +558,13 @@ export class BaseDetectionService {
   private async debugDetectedBoxes(image: ArrayBuffer | CoreCanvas, boxes: Box[]) {
     const canvas = this.platform.isCanvas(image)
       ? image
-      : await CanvasProcessor.prepareCanvas(image);
+      : await this.platform.canvas.prepareCanvas(image);
 
     const ctx = canvas.getContext("2d");
 
     for (const box of boxes) {
       const { x, y, width, height } = box;
-      CanvasToolkit.getInstance().drawLine({
+      this.platform.canvas.getToolkit().drawLine({
         ctx,
         x,
         y,

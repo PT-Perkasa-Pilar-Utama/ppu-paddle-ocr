@@ -1,5 +1,10 @@
 import * as ort from "onnxruntime-web";
-import type { CoreCanvas, PlatformProvider } from "../core/platform.js";
+import { CanvasProcessor, CanvasToolkit } from "ppu-ocv/canvas-web";
+import type {
+  CanvasProcessor as CanvasProcessorType,
+  CanvasToolkit as CanvasToolkitType,
+} from "ppu-ocv/canvas";
+import type { CanvasOps, CoreCanvas, PlatformProvider } from "../core/platform.js";
 
 // Provide an intelligent default for ONNX WASM paths to avoid 404s on CDN or unbundled usage.
 // Users can override this by explicitly setting ort.env.wasm.wasmPaths before initialization.
@@ -78,4 +83,13 @@ export class WebPlatformProvider implements PlatformProvider<CoreCanvas> {
     // No-op on the web since we can't easily write to a local debug folder
     return Promise.resolve();
   }
+
+  public readonly canvas: CanvasOps<CoreCanvas> = {
+    prepareCanvas: (image: unknown): Promise<CoreCanvas> =>
+      CanvasProcessor.prepareCanvas(image as ArrayBuffer) as unknown as Promise<CoreCanvas>,
+    createProcessor: (canvas: CoreCanvas): CanvasProcessorType =>
+      new CanvasProcessor(canvas as never) as unknown as CanvasProcessorType,
+    getToolkit: (): CanvasToolkitType =>
+      CanvasToolkit.getInstance() as unknown as CanvasToolkitType,
+  };
 }

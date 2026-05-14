@@ -1,9 +1,24 @@
 import type { InferenceSession, Tensor } from "onnxruntime-common";
 import type { Canvas, Contours, ImageProcessor, cv } from "ppu-ocv";
+import type { CanvasProcessor, CanvasToolkit } from "ppu-ocv/canvas";
 import type { CanvasLike } from "ppu-ocv/web";
 
 // Unified Canvas type to support both Node and Web Canvas variations
 export type CoreCanvas = Canvas | CanvasLike;
+
+/**
+ * Canvas-native operations supplied by the platform layer.
+ *
+ * Core services receive the `ppu-ocv/canvas` (Node) or `ppu-ocv/canvas-web`
+ * (browser) variant through this surface so they never import the bare
+ * `ppu-ocv/canvas` specifier directly — bundlers and browser importmaps
+ * would otherwise have to alias it.
+ */
+export type CanvasOps<TCanvas = CoreCanvas> = {
+  prepareCanvas: (image: unknown) => Promise<TCanvas>;
+  createProcessor: (canvas: TCanvas) => CanvasProcessor;
+  getToolkit: () => CanvasToolkit;
+};
 
 /**
  * Optional wrapper for platform-specific OpenCV image manipulation.
@@ -58,4 +73,7 @@ export type PlatformProvider<TCanvas = CoreCanvas> = {
 
   /** OpenCV-based image processor (only available in Node/Bun environments) */
   imageProcessor?: ImageProcessorProvider<TCanvas>;
+
+  /** Canvas-native helpers (`prepareCanvas`, `CanvasProcessor`, `CanvasToolkit`). */
+  canvas: CanvasOps<TCanvas>;
 };

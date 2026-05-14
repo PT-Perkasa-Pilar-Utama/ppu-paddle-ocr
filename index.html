@@ -786,6 +786,26 @@
             <label class="input-label">Image Height</label>
             <input type="number" id="cfg-rec-imgheight" class="input-field" placeholder="48" />
           </div>
+          <div class="input-group">
+            <label class="input-label">Strategy</label>
+            <select id="cfg-rec-strategy" class="input-field">
+              <option value="">Default (per-line)</option>
+              <option value="per-box">per-box (most accurate)</option>
+              <option value="per-line">per-line</option>
+              <option value="cross-line">cross-line (fewest inferences)</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Cross-Line Width Factor</label>
+            <input
+              type="number"
+              step="0.1"
+              min="0.1"
+              id="cfg-rec-crosslinefactor"
+              class="input-field"
+              placeholder="1.0"
+            />
+          </div>
 
           <div class="section-title" style="margin-top: 1.5rem">Debugging Options</div>
           <label class="checkbox-label"
@@ -915,6 +935,8 @@
       const cfgDetPadVert = document.getElementById("cfg-det-padvert");
       const cfgDetPadHoriz = document.getElementById("cfg-det-padhoriz");
       const cfgRecImgHeight = document.getElementById("cfg-rec-imgheight");
+      const cfgRecStrategy = document.getElementById("cfg-rec-strategy");
+      const cfgRecCrossLineFactor = document.getElementById("cfg-rec-crosslinefactor");
       const cfgDbgVerbose = document.getElementById("cfg-dbg-verbose");
       const btnApplyConfig = document.getElementById("btn-apply-config");
 
@@ -1027,6 +1049,9 @@
 
         if (cfgRecImgHeight.value)
           options.recognition.imageHeight = parseInt(cfgRecImgHeight.value, 10);
+        if (cfgRecStrategy.value) options.recognition.strategy = cfgRecStrategy.value;
+        if (cfgRecCrossLineFactor.value)
+          options.recognition.crossLineWidthFactor = parseFloat(cfgRecCrossLineFactor.value);
 
         if (cfgDbgVerbose.checked) options.debugging.verbose = true;
 
