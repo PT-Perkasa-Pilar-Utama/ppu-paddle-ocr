@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Developer experience
+
+- **Test files are now isolated in worker processes** via `bun test --parallel=N` (where N is the number of `*.test.ts` files under `tests/` and `private-tests/`). Sequential `bun test` on Bun 1.3.13 segfaulted when multiple test files each loaded `@techstark/opencv-js` together with the newly upgraded `@napi-rs/canvas@1.0.0` — an Emscripten/embind multi-load issue that previously surfaced as a recoverable warning under `@napi-rs/canvas@0.1.x`. The workaround is also ~2.4× faster (11s vs 26s on the local suite).
+- **Upstream fix landed.** Bun 1.3.14 (likely via [oven-sh/bun#30412](https://github.com/oven-sh/bun/pull/30412)) no longer crashes on the same suite without the workaround. Tracking issue: [oven-sh/bun#30716](https://github.com/oven-sh/bun/issues/30716). The `--parallel=N` flag is kept anyway for the speedup and to protect contributors still on 1.3.13.
+- **`bun.lock` is now committed.** Previously gitignored; now part of the repo so CI and contributors install the exact set the maintainers test against. Has no effect on the published package (the publish workflow only ships `./lib`).
+
 ## [5.4.4] - 2026-05-14
 
 ### Security
