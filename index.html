@@ -483,18 +483,26 @@
         position: fixed;
         inset: 0;
         z-index: 9999;
-        display: none;
+        display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         gap: 0.75rem;
-        background: rgba(0, 0, 0, 0.65);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-        pointer-events: all;
+        background: rgba(0, 0, 0, 0.7);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition:
+          opacity 0.18s ease-out,
+          visibility 0s linear 0.18s;
       }
       .loading-overlay.visible {
-        display: flex;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transition:
+          opacity 0.18s ease-out,
+          visibility 0s linear 0s;
       }
       .loading-spinner {
         width: 42px;
@@ -1371,12 +1379,16 @@
         loadingText.textContent = "Recognizing…";
         loadingOverlay.classList.add("visible");
         loadingOverlay.setAttribute("aria-hidden", "false");
+        const overlayShownAt = performance.now();
 
         // Clear previous overlay
         const overlayCtx = overlayCanvas.getContext("2d");
         overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
-        await new Promise((r) => requestAnimationFrame(r)); // yield to render UI
+        // Force the browser to paint the overlay before recognize() starts
+        // hogging the main thread. A single rAF can land in the same frame
+        // as the layout work, so we wait for two animation frames.
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
         try {
           const t0 = performance.now();
@@ -1423,6 +1435,11 @@
           setStatus("error", err.message);
         } finally {
           btnProcess.disabled = false;
+          // Guarantee the overlay was visible long enough for the user to see
+          // it even if recognize() finished in a few milliseconds.
+          const MIN_OVERLAY_MS = 350;
+          const remaining = MIN_OVERLAY_MS - (performance.now() - overlayShownAt);
+          if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
           loadingOverlay.classList.remove("visible");
           loadingOverlay.setAttribute("aria-hidden", "true");
         }
