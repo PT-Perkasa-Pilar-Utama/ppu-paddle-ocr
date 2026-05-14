@@ -3,12 +3,12 @@ title: "Deterministic OCR in JavaScript: PaddleOCR for Node, Bun, Deno, and the 
 published: false
 description: "A fast, lightweight PaddleOCR SDK that runs in every JavaScript runtime. Built on PP-OCRv5 and ONNX Runtime, with WebGPU acceleration, INT8 quantization, and 40+ languages."
 tags: ocr, javascript, webdev, ai
-cover_image: https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/main/assets/article-cover.svg
+cover_image: https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/main/assets/article-cover.png
 canonical_url:
 series: ppu-paddle-ocr
 ---
 
-![ppu-paddle-ocr cover](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/main/assets/article-cover.svg)
+![ppu-paddle-ocr cover](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/main/assets/article-cover.png)
 
 LLMs read text from images now. So why ship a 30 MB OCR model?
 
@@ -28,7 +28,7 @@ LLM OCR is great for one-off semantic extraction (give me the vendor name, summa
 
 ## How the JavaScript OCR landscape compares
 
-![OCR comparison](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/main/assets/article-comparison.svg)
+![OCR comparison](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/main/assets/article-comparison.png)
 
 A quick tour of the alternatives:
 
@@ -41,7 +41,7 @@ The official SDK and Tesseract.js are not bad pieces of software. They just stop
 
 ## One package, every runtime
 
-![Runtime support](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/main/assets/article-runtimes.svg)
+![Runtime support](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/main/assets/article-runtimes.png)
 
 The same `PaddleOcrService` class works in:
 
@@ -111,7 +111,7 @@ const result = await ocr.recognize(document.querySelector("canvas")!);
 
 ## The four-stage pipeline
 
-![Pipeline](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/main/assets/article-pipeline.svg)
+![Pipeline](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/main/assets/article-pipeline.png)
 
 Each `recognize()` call walks four stages:
 

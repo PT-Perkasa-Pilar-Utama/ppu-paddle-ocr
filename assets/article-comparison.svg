@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 488" role="img" aria-label="OCR comparison: ppu-paddle-ocr vs official PaddleOCR SDK, Tesseract.js, and LLM OCR">
-  <rect width="980" height="488" fill="#0b1020"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 540" role="img" aria-label="OCR comparison: ppu-paddle-ocr vs official PaddleOCR SDK, Tesseract.js, and LLM OCR">
+  <rect width="980" height="540" fill="#0b1020"/>
   <g font-family="Inter, system-ui, sans-serif" fill="#e2e8f0">
 
     <text x="40" y="46" font-size="22" font-weight="700">Choosing an OCR engine for JavaScript</text>
