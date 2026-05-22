@@ -1,0 +1,38 @@
+# Dependabot updates package.json but cannot maintain bun.lock (its npm
+# ecosystem only knows package-lock.json / yarn.lock / pnpm-lock.yaml), so CI's
+# `--frozen-lockfile` install fails on every dep-changing Dependabot PR.
+#
+# This job VERIFIES the lockfile is in sync — it holds no credentials, so there
+# is nothing for a poisoned dependency to steal. It runs read-only, never auto-
+# commits, and uses --ignore-scripts so install lifecycle scripts never execute.
+# If bun.lock drifts, the check fails and you sync it locally:
+#   git checkout <dependabot-branch> && bun install && git commit -am '...' && git push
+name: Check bun.lock
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.23
+
+      - name: Resolve lockfile
+        run: bun install --no-frozen-lockfile --ignore-scripts
+
+      - name: Fail if bun.lock is out of sync
+        run: |
+          if ! git diff --exit-code bun.lock; then
+            echo "::error::bun.lock is out of sync with package.json."
+            echo "Run locally on this branch: bun install && git commit -am 'chore: sync bun.lock' && git push"
+            exit 1
+          fi
