@@ -32,5 +32,6 @@
     "stripInternal": true,
     "isolatedDeclarations": true,
     "rootDir": "."
-  }
+  },
+  "exclude": ["apps", "lib", "node_modules"]
 }

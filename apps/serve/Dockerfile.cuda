@@ -1,0 +1,39 @@
+# syntax=docker/dockerfile:1
+# CUDA image for ppu-paddle-ocr-serve. Requires the NVIDIA Container Toolkit on
+# the host and `docker run --gpus all`. Build from the REPO ROOT:
+#   docker build -f apps/serve/Dockerfile.cuda -t ppu-paddle-ocr-serve:cuda .
+#
+# onnxruntime-node ships the CUDA execution provider on linux/x64; it loads when
+# the CUDA runtime libraries are present (this base image) and EXECUTION_PROVIDERS
+# includes "cuda". If the GPU/runtime is missing, the library falls back to CPU.
+
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04 AS runtime
+WORKDIR /app
+
+# Install Bun.
+RUN apt-get update && apt-get install -y --no-install-recommends curl unzip ca-certificates \
+  && rm -rf /var/lib/apt/lists/* \
+  && curl -fsSL https://bun.sh/install | bash \
+  && ln -s /root/.bun/bin/bun /usr/local/bin/bun
+
+ENV NODE_ENV=production \
+    PORT=8080 \
+    EXECUTION_PROVIDERS=cuda,cpu
+
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile && bun pm trust onnxruntime-node
+COPY apps/serve/package.json apps/serve/
+RUN cd apps/serve && bun install && bun pm trust onnxruntime-node
+
+COPY src ./src
+COPY tsconfig.json ./
+COPY apps/serve/src ./apps/serve/src
+COPY apps/serve/tsconfig.json ./apps/serve/
+
+RUN bun -e "import { PaddleOcrService } from '/app/src/index.ts'; await PaddleOcrService.downloadModels();"
+
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
+  CMD bun -e "fetch('http://127.0.0.1:'+(Bun.env.PORT||8080)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+CMD ["bun", "run", "apps/serve/src/index.ts"]

@@ -1,0 +1,12 @@
+node_modules
+lib
+out
+tests
+private-tests
+bench
+assets
+docs
+skill-ppu-paddle-ocr
+**/*.test.ts
+.git
+.github
