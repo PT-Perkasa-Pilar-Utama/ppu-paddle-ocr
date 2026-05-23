@@ -12,13 +12,16 @@
   },
   "comment": "Standalone app importing ppu-paddle-ocr from source via tsconfig paths. Runtime deps are just hono+zod; the lib's deps (ppu-ocv, onnxruntime) are dev-only here (needed to type-check the imported source) and resolve from the repo-root node_modules at runtime.",
   "dependencies": {
-    "@hono/zod-validator": "^0.4.2",
+    "@hono/zod-openapi": "^1.4.0",
+    "@hono/zod-validator": "^0.8.0",
+    "@scalar/hono-api-reference": "^0.10.19",
     "hono": "^4.6.14",
-    "zod": "^3.24.1"
+    "zod": "^4.1.3"
   },
   "devDependencies": {
     "onnxruntime-common": "^1.26.0",
     "onnxruntime-node": "^1.23.2",
-    "ppu-ocv": "^3.1.5"
+    "ppu-ocv": "^3.1.5",
+    "@typescript/native-preview": "^7.0.0-dev.20260509.2"
   }
 }

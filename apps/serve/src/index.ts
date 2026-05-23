@@ -1,6 +1,6 @@
 import { app } from "./app.js";
-import { config } from "./config.js";
-import { initService, shutdownService } from "./service.js";
+import { config } from "./lib/config.js";
+import { initService, shutdownService } from "./lib/service.js";
 
 console.log(`[serve] warming models (providers=${config.executionProviders.join(",")})…`);
 await initService();
