@@ -16,6 +16,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl unzip ca-c
   && curl -fsSL https://bun.sh/install | bash \
   && ln -s /root/.bun/bin/bun /usr/local/bin/bun
 
+LABEL org.opencontainers.image.title="ppu-paddle-ocr-serve" \
+      org.opencontainers.image.description="Production-grade REST API serving ppu-paddle-ocr (PaddleOCR PP-OCRv5 OCR) — Hono + Bun, CUDA." \
+      org.opencontainers.image.source="https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr" \
+      org.opencontainers.image.licenses="MIT"
+
 ENV NODE_ENV=production \
     PORT=8080 \
     EXECUTION_PROVIDERS=cuda,cpu

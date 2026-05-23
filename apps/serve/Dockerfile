@@ -24,6 +24,14 @@ RUN cd apps/serve && bun install --production
 # ---- runtime ----
 FROM oven/bun:1-slim AS runtime
 WORKDIR /app
+
+# OCI metadata — without these the ghcr package inherits the base image's
+# (Bun's) description.
+LABEL org.opencontainers.image.title="ppu-paddle-ocr-serve" \
+      org.opencontainers.image.description="Production-grade REST API serving ppu-paddle-ocr (PaddleOCR PP-OCRv5 OCR) — Hono + Bun." \
+      org.opencontainers.image.source="https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr" \
+      org.opencontainers.image.licenses="MIT"
+
 ENV NODE_ENV=production \
     PORT=8080 \
     EXECUTION_PROVIDERS=cpu
