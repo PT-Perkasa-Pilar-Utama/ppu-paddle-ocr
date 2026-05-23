@@ -1,9 +1,9 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { RouteHandler } from "@hono/zod-openapi";
-import { envelope, errorResponse, failure, success } from "../../lib/api-response.js";
-import { cancelJob } from "../../lib/async-jobs.js";
-import { taskIdParamsSchema } from "../../lib/schemas.js";
-import type { Env } from "../../lib/types.js";
+import { envelope, errorResponse, failure, success } from "../../core/api-response.js";
+import { cancelJob } from "../../core/async-jobs.js";
+import { taskIdParamsSchema } from "../../core/schemas.js";
+import type { Env } from "../../core/types.js";
 
 export const route = createRoute({
   method: "delete",

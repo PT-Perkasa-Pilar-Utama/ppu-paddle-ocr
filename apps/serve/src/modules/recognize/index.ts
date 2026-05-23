@@ -1,10 +1,10 @@
 import type { RouteConfig } from "@hono/zod-openapi";
 import type { Context } from "hono";
-import { envelope, errorResponse, success } from "../../lib/api-response.js";
-import { readSingle } from "../../lib/input.js";
-import { runOcr } from "../../lib/runner.js";
-import { jsonOcrSchema, multipartOcrSchema, ocrResultSchema } from "../../lib/schemas.js";
-import type { Env } from "../../lib/types.js";
+import { envelope, errorResponse, success } from "../../core/api-response.js";
+import { readSingle } from "../../core/input.js";
+import { runOcr } from "../../core/runner.js";
+import { jsonOcrSchema, multipartOcrSchema, ocrResultSchema } from "../../core/schemas.js";
+import type { Env } from "../../core/types.js";
 
 // This endpoint accepts BOTH multipart and JSON. @hono/zod-openapi runs every
 // declared body validator, so it can't auto-validate a dual-content body —

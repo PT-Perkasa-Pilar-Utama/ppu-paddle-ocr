@@ -1,9 +1,9 @@
 import { createRoute } from "@hono/zod-openapi";
 import type { RouteHandler } from "@hono/zod-openapi";
-import { envelope, errorResponse, success } from "../../lib/api-response.js";
-import { resolveBatch, runBatch } from "../../lib/runner.js";
-import { batchOcrSchema, batchResultSchema } from "../../lib/schemas.js";
-import type { Env } from "../../lib/types.js";
+import { envelope, errorResponse, success } from "../../core/api-response.js";
+import { resolveBatch, runBatch } from "../../core/runner.js";
+import { batchOcrSchema, batchResultSchema } from "../../core/schemas.js";
+import type { Env } from "../../core/types.js";
 
 export const route = createRoute({
   method: "post",

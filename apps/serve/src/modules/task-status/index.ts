@@ -1,9 +1,9 @@
 import { createRoute } from "@hono/zod-openapi";
 import type { RouteHandler } from "@hono/zod-openapi";
-import { envelope, errorResponse, failure, success } from "../../lib/api-response.js";
-import { taskIdParamsSchema, taskStatusSchema } from "../../lib/schemas.js";
-import { tasks } from "../../lib/tasks.js";
-import type { Env } from "../../lib/types.js";
+import { envelope, errorResponse, failure, success } from "../../core/api-response.js";
+import { taskIdParamsSchema, taskStatusSchema } from "../../core/schemas.js";
+import { tasks } from "../../core/tasks.js";
+import type { Env } from "../../core/types.js";
 
 export const route = createRoute({
   method: "get",

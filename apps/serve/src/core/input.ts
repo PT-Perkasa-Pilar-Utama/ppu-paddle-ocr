@@ -21,7 +21,8 @@ function detectImageMime(buf: ArrayBuffer): string | null {
   ) {
     return "image/tiff";
   }
-  const tag = (s: number) => String.fromCharCode(b[s] ?? 0, b[s + 1] ?? 0, b[s + 2] ?? 0, b[s + 3] ?? 0);
+  const tag = (s: number) =>
+    String.fromCharCode(b[s] ?? 0, b[s + 1] ?? 0, b[s + 2] ?? 0, b[s + 3] ?? 0);
   if (tag(0) === "RIFF" && tag(8) === "WEBP") return "image/webp";
   if (tag(4) === "ftyp" && ["avif", "heic", "heif", "mif1"].includes(tag(8))) return "image/avif";
   return null;

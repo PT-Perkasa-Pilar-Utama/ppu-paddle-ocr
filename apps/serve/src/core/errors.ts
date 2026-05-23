@@ -14,7 +14,8 @@ export class HttpError extends Error {
   }
 }
 
-export const badRequest = (message: string): HttpError => new HttpError(400, "bad_request", message);
+export const badRequest = (message: string): HttpError =>
+  new HttpError(400, "bad_request", message);
 export const payloadTooLarge = (message: string): HttpError =>
   new HttpError(413, "payload_too_large", message);
 export const tooManyRequests = (message: string): HttpError =>

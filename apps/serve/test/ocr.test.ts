@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { PaddleOcrService } from "ppu-paddle-ocr";
 import { app } from "../src/app.js";
-import { shutdownService } from "../src/lib/service.js";
+import { shutdownService } from "../src/core/service.js";
 
 const receipt = await Bun.file(`${import.meta.dir}/../../../assets/receipt.jpg`).arrayBuffer();
 const dataUri = `data:image/jpeg;base64,${Buffer.from(receipt).toString("base64")}`;
@@ -21,11 +21,12 @@ const upload = () => {
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+// Only downloadModels here — it fits the default hook timeout (which can't be
+// raised: CI's Bun rejects a beforeAll timeout arg). Model init happens lazily
+// on the first request; the inference tests below carry generous timeouts.
 beforeAll(async () => {
   await PaddleOcrService.downloadModels();
-  // Warm the lazily-created service so per-test timeouts aren't hit by init.
-  await app.request("/v1/ocr", upload());
-}, 60_000);
+});
 
 afterAll(async () => {
   await shutdownService();
@@ -43,7 +44,7 @@ describe("POST /v1/ocr (success)", () => {
     expect(body.metadata.confidence).toBeGreaterThan(0);
     expect(body.metadata.speed).toBeGreaterThan(0);
     expect(body.metadata.engine).toBe("opencv");
-  });
+  }, 30_000);
 
   test("JSON data: URI source works", async () => {
     const res = await app.request("/v1/ocr", json({ source: dataUri, flatten: true }));
@@ -51,7 +52,7 @@ describe("POST /v1/ocr (success)", () => {
     const body = await res.json();
     expect(body.status).toBe("success");
     expect(Array.isArray(body.data.results)).toBe(true);
-  });
+  }, 30_000);
 });
 
 describe("POST /v1/ocr/batch", () => {
@@ -61,7 +62,7 @@ describe("POST /v1/ocr/batch", () => {
     const body = await res.json();
     expect(body.status).toBe("success");
     expect(body.data.results).toHaveLength(2);
-  });
+  }, 30_000);
 
   test("empty sources array is a validation error", async () => {
     const res = await app.request("/v1/ocr/batch", json({ sources: [] }));
@@ -77,7 +78,7 @@ describe("POST /v1/ocr/stream", () => {
     const text = await res.text();
     expect((text.match(/event: fulfilled/g) ?? []).length).toBe(2);
     expect(text).toContain("event: done");
-  });
+  }, 30_000);
 });
 
 describe("async tasks lifecycle", () => {
@@ -98,7 +99,7 @@ describe("async tasks lifecycle", () => {
     const result = await app.request(`/v1/tasks/${data.taskId}/result`);
     expect(result.status).toBe(200);
     expect((await result.json()).data.results).toHaveLength(1);
-  });
+  }, 30_000);
 
   test("unknown task id is 404 for status and result", async () => {
     const id = crypto.randomUUID();
@@ -112,5 +113,5 @@ describe("async tasks lifecycle", () => {
     const del = await app.request(`/v1/tasks/${data.taskId}`, { method: "DELETE" });
     expect(del.status).toBe(200);
     expect((await del.json()).data.status).toBe("cancelled");
-  });
+  }, 30_000);
 });
