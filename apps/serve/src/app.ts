@@ -8,8 +8,9 @@ import { logger } from "hono/logger";
 import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
 import { ZodError } from "zod";
+import { failure } from "./lib/api-response.js";
 import { config } from "./lib/config.js";
-import { errorBody, HttpError, sendError } from "./lib/errors.js";
+import { HttpError, sendError } from "./lib/errors.js";
 import { recordRequest } from "./lib/metrics.js";
 import { rateLimiter } from "./lib/middleware.js";
 import { QueueFullError } from "./lib/queue.js";
@@ -34,7 +35,7 @@ export const app = new OpenAPIHono<Env>({
       const detail = result.error.issues
         .map((i) => `${i.path.join(".") || "body"}: ${i.message}`)
         .join("; ");
-      return sendError(c, 400, "validation_error", detail);
+      return sendError(c, 400, `Validation failed — ${detail}`);
     }
   },
 });
@@ -96,19 +97,17 @@ if (config.docsEnabled) {
   app.get("/", (c) => c.json({ name: "ppu-paddle-ocr-serve", health: "/health" }));
 }
 
-app.notFound((c) => sendError(c, 404, "not_found", "Route not found"));
+app.notFound((c) => sendError(c, 404, "Route not found"));
 
 app.onError((err, c) => {
-  if (err instanceof HttpError) return sendError(c, err.status, err.code, err.message);
+  if (err instanceof HttpError) return sendError(c, err.status, err.message);
   if (err instanceof ZodError) {
     const detail = err.issues.map((i) => `${i.path.join(".") || "body"}: ${i.message}`).join("; ");
-    return sendError(c, 400, "validation_error", detail);
+    return sendError(c, 400, `Validation failed — ${detail}`);
   }
   if (err instanceof QueueFullError) {
-    return c.json(errorBody("too_many_requests", err.message, c.get("requestId")), 429, {
-      "Retry-After": "1",
-    });
+    return c.json(failure(err.message, c.get("requestId")), 429, { "Retry-After": "1" });
   }
   console.error("[unhandled]", err);
-  return sendError(c, 500, "internal_error", "Internal server error");
+  return sendError(c, 500, "Internal server error");
 });

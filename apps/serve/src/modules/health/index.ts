@@ -1,5 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { RouteHandler } from "@hono/zod-openapi";
+import { envelope, success } from "../../lib/api-response.js";
 import type { Env } from "../../lib/types.js";
 
 export const route = createRoute({
@@ -10,10 +11,10 @@ export const route = createRoute({
   responses: {
     200: {
       description: "Service is up.",
-      content: { "application/json": { schema: z.object({ status: z.literal("ok") }) } },
+      content: { "application/json": { schema: envelope(z.object({ alive: z.boolean() })) } },
     },
   },
 });
 
 export const handler: RouteHandler<typeof route, Env> = (c) =>
-  c.json({ status: "ok" } as const, 200);
+  c.json(success(c, { alive: true }), 200);

@@ -1,17 +1,38 @@
 # ppu-paddle-ocr-serve
 
-Production-grade REST API around [`ppu-paddle-ocr`](../../README.md) — Hono + Bun, dockerized. Pull the image, `docker run`, POST an image, get OCR JSON.
+Production-grade REST API around [`ppu-paddle-ocr`](../../README.md) — Hono + Bun. POST an image, get OCR JSON.
+
+Pick the path that fits you:
+
+### A) Run the published image (no clone)
+
+For deploying or just trying it — nothing to build, models are pre-baked.
 
 ```bash
-# Pull the published image…
 docker run -p 8080:8080 ghcr.io/pt-perkasa-pilar-utama/ppu-paddle-ocr/serve:latest
-# …or build locally:
-docker compose -f apps/serve/docker-compose.yml up --build
-
 curl -F file=@receipt.jpg http://localhost:8080/v1/ocr
 ```
 
-Images are built and published to GitHub Container Registry on each release (slimmed with docker-slim). A CUDA image is built from `Dockerfile.cuda`.
+Images publish to GitHub Container Registry on each release (slimmed with docker-slim). GPU users build the CUDA image from `Dockerfile.cuda`. Configure via `-e` env vars (see below).
+
+### B) Clone & run from source
+
+For developing or self-building. From the repo root:
+
+```bash
+cd apps/serve
+bun install
+cp .env.example .env          # optional — sane defaults otherwise
+bun run dev                   # watch mode on http://localhost:8080
+```
+
+Or build the image yourself (from the **repo root**, the build context):
+
+```bash
+docker compose -f apps/serve/docker-compose.yml up --build
+```
+
+Open **http://localhost:8080/docs** for the Scalar API reference.
 
 ## Why
 
@@ -46,7 +67,25 @@ The library is a building block; this wraps it as a service you'd be comfortable
 }
 ```
 
-`source` must be a `data:` URI or an `https` URL whose host is in `SOURCE_URL_ALLOWLIST` (empty = https disabled). **Local filesystem paths are rejected**, and URL fetches refuse redirects — so the API never reads arbitrary host files or gets steered off-allowlist.
+`source` must be a `data:` URI or an `https` URL whose host is in `SOURCE_URL_ALLOWLIST` (empty = https disabled). **Local filesystem paths are rejected**, and URL fetches refuse redirects — so the API never reads arbitrary host files or gets steered off-allowlist. Uploads are sniffed by magic bytes; non-images get a `400`, not a `500`.
+
+### Response format
+
+Every JSON response uses a consistent envelope and carries the request id (also returned as the `X-Request-Id` header):
+
+```jsonc
+// success
+{
+  "status": "success",
+  "version": "0.1.0",
+  "metadata": { "id": "<request-id>", "speed": 0.27, "confidence": 0.95, "engine": "opencv", "strategy": "per-line" },
+  "data": { "text": "…", "lines": [ … ], "confidence": 0.95 }
+}
+// error
+{ "status": "error", "version": "0.1.0", "data": { "message": "…", "requestId": "<request-id>" } }
+```
+
+`/metrics` is the only exception (Prometheus text). The spec at `/openapi.json` (rendered at `/docs`) is generated from the zod schemas via `@hono/zod-openapi`.
 
 ## Configuration (env)
 
@@ -74,16 +113,11 @@ See [`.env.example`](.env.example) for the full annotated list.
 | `TASK_TTL_SECONDS`                                     | `600`              | Async task retention                                                |
 | `SOURCE_URL_ALLOWLIST`                                 | —                  | Comma list of allowed https hosts                                   |
 
-## Develop
+## Architecture
 
-```bash
-cd apps/serve
-bun install
-bun run dev        # watch mode
-bun test           # HTTP-layer tests (no model load)
-```
+`bun test` runs HTTP-layer tests (no model load). The app imports the library from source via a tsconfig path (`../../src`), so no build step is needed in dev; it's a standalone package (its own `node_modules`), kept out of the library's workspace so the published package is unaffected.
 
-The app imports the library from source via a tsconfig path (`../../src`), so no build step is needed in dev. It is a standalone package (its own `node_modules`), kept out of the library's workspace so the published package and its install layout are unaffected.
+Layout: shared infrastructure in `src/lib/` (config, queue, service, metrics, input, api-response), and one vertical slice per endpoint in `src/modules/<endpoint>/` (each a `createRoute` + handler registered on the `OpenAPIHono` app).
 
 ## Notes & limits
 

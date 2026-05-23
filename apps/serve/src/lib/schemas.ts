@@ -54,24 +54,17 @@ const recognitionItemSchema = z.object({
   confidence: z.number(),
   box: boxSchema,
 });
-const metaSchema = z.object({
-  engine: z.string(),
-  strategy: z.string(),
-  ms: z.number().optional(),
-});
-
 export const ocrResultSchema = z
   .object({
     text: z.string(),
     confidence: z.number(),
     lines: z.array(z.array(recognitionItemSchema)).optional(),
     results: z.array(recognitionItemSchema).optional(),
-    meta: metaSchema,
   })
   .openapi("OcrResult");
 
 export const batchResultSchema = z
-  .object({ results: z.array(z.unknown()), meta: metaSchema })
+  .object({ results: z.array(z.unknown()) })
   .openapi("BatchResult");
 
 export const taskAcceptedSchema = z
@@ -95,18 +88,3 @@ export const modelsSchema = z
   })
   .openapi("Models");
 
-export const errorSchema = z
-  .object({
-    error: z.object({
-      code: z.string(),
-      message: z.string(),
-      requestId: z.string().optional(),
-    }),
-  })
-  .openapi("ErrorResponse");
-
-/** Reusable error response entry for createRoute `responses`. */
-export const errorResponse = (description: string) => ({
-  description,
-  content: { "application/json": { schema: errorSchema } },
-});
