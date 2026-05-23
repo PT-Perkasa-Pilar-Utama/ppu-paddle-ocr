@@ -75,7 +75,6 @@
     "canvas": "^3.2.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.3",
-    "mitata": "latest",
     "onnxruntime-node": "^1.23.2",
     "onnxruntime-web": "^1.24.2",
     "oxfmt": "^0.51.0",

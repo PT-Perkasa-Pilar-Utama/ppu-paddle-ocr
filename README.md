@@ -553,39 +553,40 @@ const service = new PaddleOcrService({
 
 ## Benchmark
 
-Run `bun task bench`. Results on Apple M1 / Bun 1.3.13:
+Benches use a small zero-dependency harness (`bench/harness.ts`): in-process timing, round-robin scheduling across rounds so thermal/GC drift hits every task equally, reporting the median plus min/max/stddev. Run `bun task bench`. Representative results on Apple M1 / Bun 1.3.14 (20 rounds, opencv + canvas-native):
 
 ```bash
-benchmark                           avg (min … max) p75 / p99    (min … top 1%)
---------------------------------------------------- -------------------------------
-[per-line][opencv][noCache]          188.75 ms/iter 188.89 ms
-[cross-line][opencv][noCache]        193.43 ms/iter 190.81 ms
-[per-box][opencv][noCache]           206.60 ms/iter 207.79 ms
-
-[per-line][canvas-native][noCache]   200.04 ms/iter 199.92 ms
-[cross-line][canvas-native][noCache] 198.32 ms/iter 198.70 ms
-[per-box][canvas-native][noCache]    212.86 ms/iter 212.75 ms
+task                                   median      ±stddev        min        max
+--------------------------------------------------------------------------------
+[per-box][opencv][noCache]             233.0 ms      14.6 ms   211.2 ms   254.5 ms
+[per-line][opencv][noCache]            224.7 ms      17.6 ms   194.3 ms   256.0 ms
+[cross-line][opencv][noCache]          213.9 ms      18.7 ms   194.7 ms   266.3 ms
+[per-box][canvas-native][noCache]      242.3 ms      22.0 ms   213.3 ms   301.1 ms
+[per-line][canvas-native][noCache]     224.3 ms      13.9 ms   201.9 ms   245.4 ms
+[cross-line][canvas-native][noCache]   223.3 ms      14.4 ms   198.3 ms   248.6 ms
 
 === Accuracy on receipt.jpg (ground truth: 383 chars) ===
   [opencv]       per-box=97.91%  per-line=99.22%  cross-line=96.34%
   [canvas-native] per-box=97.65% per-line=98.43%  cross-line=97.65%
 ```
 
+Absolute timings are thermal-sensitive on fanless hardware (Apple Silicon): sustained benching warms the chip and drags the **median** up, while the **min** column tracks the unthrottled per-call cost (~195 ms here). Treat these as relative, same-run comparisons, not cross-machine absolutes.
+
 ### Batch vs. concurrent `recognize()`
 
-`bench/batch.bench.ts` compares the ways to OCR many images. Round-robin scheduling cancels thermal/GC drift; median over 7 rounds of 16 images each, Apple M1 / Bun 1.3.14, opencv, `noCache`:
+`bench/batch.bench.ts` compares the ways to OCR many images, tracking peak RSS alongside time. Median over 7 rounds of 16 images each, Apple M1 / Bun 1.3.14, opencv, `noCache`:
 
 ```bash
-method                          median ms/iter   ms/image   peak RSS
-------------------------------- -------------- ---------- ----------
-sequential for-loop                    3789 ms    236.8 ms     868 MB
-Promise.all(map(recognize))            3502 ms    218.9 ms    1280 MB
-batchRecognize (auto)                  3563 ms    222.7 ms     894 MB
-batchRecognize (c=4)                   3627 ms    226.7 ms     823 MB
-batchRecognize (c=8)                   3537 ms    221.0 ms     949 MB
+task                          median      ±stddev        min        max   peak RSS
+----------------------------------------------------------------------------------
+sequential for-loop          3807.6 ms     177.6 ms  3531.1 ms  4056.4 ms    1027 MB
+Promise.all(map(recognize))  3561.2 ms     142.3 ms  3302.1 ms  3719.8 ms    1408 MB
+batchRecognize (auto)        3650.6 ms     149.6 ms  3342.1 ms  3721.6 ms    1076 MB
+batchRecognize (c=4)         3649.7 ms     118.3 ms  3435.2 ms  3754.6 ms     990 MB
+batchRecognize (c=8)         3592.5 ms     130.7 ms  3340.5 ms  3712.8 ms    1084 MB
 ```
 
-On CPU, throughput is bound by ONNX Runtime's native thread pool (which already saturates all cores per inference), so every parallel approach lands within ~2% on time — JS-level concurrency cannot add cores that are already busy. The real difference is **memory**: unbounded `Promise.all` peaks at ~1280 MB and grows with batch size, while `batchRecognize` stays **bounded at ~820–950 MB regardless of `N`**. So `batchRecognize` matches the fastest approach at ~30% lower, bounded peak memory — and the throughput win from concurrency shows up on GPU (overlapping host↔device) or I/O-bound inputs. Tune `BATCH_N` / `ROUNDS` via env.
+On CPU, throughput is bound by ONNX Runtime's native thread pool (which already saturates all cores per inference), so every parallel approach lands within ~3% on time — JS-level concurrency cannot add cores that are already busy. The real difference is **memory**: unbounded `Promise.all` peaks at ~1400 MB and grows with batch size, while `batchRecognize` stays **bounded at ~990–1080 MB regardless of `N`**. So `batchRecognize` matches the fastest approach at lower, bounded peak memory — and the throughput win from concurrency shows up on GPU (overlapping host↔device) or I/O-bound inputs. Tune `BATCH_N` / `ROUNDS` via env.
 
 ## Contributing
 

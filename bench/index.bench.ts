@@ -1,5 +1,5 @@
-import { bench, run, summary } from "mitata";
 import { PaddleOcrService } from "../src";
+import { Bench, printResults } from "./harness";
 import type { RecognitionStrategy } from "../src/interface.js";
 import { levenshteinDistance } from "../src/utils.js";
 
@@ -32,25 +32,19 @@ const canvasNativeService = new PaddleOcrService({
 });
 await canvasNativeService.initialize();
 
-// Summary 1: opencv (all strategies)
-summary(() => {
-  for (const strategy of strategies) {
-    bench(`[${strategy}][opencv][noCache]`, async () => {
-      await openCVService.recognize(fileBuffer, { noCache: true, strategy });
-    });
-  }
-});
+const bench = new Bench({ rounds: 20, warmup: 2 });
+for (const strategy of strategies) {
+  bench.add(`[${strategy}][opencv][noCache]`, () =>
+    openCVService.recognize(fileBuffer, { noCache: true, strategy })
+  );
+}
+for (const strategy of strategies) {
+  bench.add(`[${strategy}][canvas-native][noCache]`, () =>
+    canvasNativeService.recognize(fileBuffer, { noCache: true, strategy })
+  );
+}
 
-// Summary 2: canvas-native (all strategies)
-summary(() => {
-  for (const strategy of strategies) {
-    bench(`[${strategy}][canvas-native][noCache]`, async () => {
-      await canvasNativeService.recognize(fileBuffer, { noCache: true, strategy });
-    });
-  }
-});
-
-await run();
+printResults(await bench.run());
 
 await openCVService.destroy();
 await canvasNativeService.destroy();
