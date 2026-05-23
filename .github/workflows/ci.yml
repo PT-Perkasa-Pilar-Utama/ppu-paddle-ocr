@@ -48,3 +48,13 @@ jobs:
 
       - name: Build
         run: bun run build
+
+      # apps/serve is a standalone package (its own deps); check it separately.
+      - name: Serve — install
+        run: cd apps/serve && bun install --frozen-lockfile
+
+      - name: Serve — type check
+        run: cd apps/serve && bun run type-check
+
+      - name: Serve — tests
+        run: cd apps/serve && bun test

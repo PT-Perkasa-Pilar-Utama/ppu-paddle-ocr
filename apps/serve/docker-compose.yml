@@ -1,0 +1,29 @@
+# Build context is the repo root so the image can copy the library source.
+#   docker compose -f apps/serve/docker-compose.yml up --build
+services:
+  serve:
+    build:
+      context: ../..
+      dockerfile: apps/serve/Dockerfile
+    image: ppu-paddle-ocr-serve
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      EXECUTION_PROVIDERS: "cpu"
+      DEFAULT_STRATEGY: "per-line"
+      DEFAULT_ENGINE: "opencv"
+      MAX_UPLOAD_BYTES: "10485760"
+      MAX_QUEUE_DEPTH: "100"
+      # API_KEY: "change-me"
+      # CORS_ORIGINS: "https://app.example.com"
+      # SOURCE_URL_ALLOWLIST: "images.example.com"
+    restart: unless-stopped
+    # GPU variant: build apps/serve/Dockerfile.cuda and uncomment:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]

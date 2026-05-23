@@ -69,6 +69,8 @@ await service.destroy();
 - **Customizable** — custom models, dictionaries, and per-call overrides.
 - **TypeScript** — full type definitions.
 
+> Need it as an HTTP service? [`apps/serve`](apps/serve/README.md) is a production-grade REST API (Hono + Bun, dockerized) — `docker run`, POST an image, get OCR JSON.
+
 ## Runtime Support
 
 The same package, the same API, every JavaScript runtime:

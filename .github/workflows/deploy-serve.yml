@@ -1,0 +1,70 @@
+name: Deploy serve image
+
+# Builds the apps/serve Docker image on each published release, slims it with
+# docker-slim, and pushes to GitHub Container Registry.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    name: Build, slim, and push to ghcr.io
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # Lowercased automatically by the action.
+          images: ghcr.io/${{ github.repository }}/serve
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      - name: Build fat image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/serve/Dockerfile
+          load: true
+          tags: ppu-paddle-ocr-serve:fat
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # The container boots and warms models during profiling, so docker-slim
+      # observes the native onnxruntime / OpenCV-wasm / Bun files actually used.
+      # The prebaked model cache is force-kept via DSLIM_INCLUDE_PATH.
+      - name: Slim the image
+        uses: kitabisa/docker-slim-action@v1.2.0
+        env:
+          DSLIM_HTTP_PROBE: true
+          DSLIM_HTTP_PROBE_CMD: "/health,/ready,/v1/models,/metrics"
+          DSLIM_CONTINUE_AFTER: 20
+          DSLIM_INCLUDE_PATH: /home/bun/.cache
+        with:
+          target: ppu-paddle-ocr-serve:fat
+          tag: "slim"
+
+      - name: Tag and push slim image
+        run: |
+          SLIM_IMAGE="ppu-paddle-ocr-serve:slim"
+          while IFS= read -r tag; do
+            [ -z "$tag" ] && continue
+            docker tag "$SLIM_IMAGE" "$tag"
+            docker push "$tag"
+          done <<< "${{ steps.meta.outputs.tags }}"
