@@ -10,16 +10,15 @@
     "test": "bun test",
     "type-check": "bunx tsgo --noEmit"
   },
-  "comment": "Standalone app: ppu-paddle-ocr is imported from source via tsconfig paths (../../src), so its deps (ppu-ocv, onnxruntime) are declared here too.",
+  "comment": "Standalone app importing ppu-paddle-ocr from source via tsconfig paths. Runtime deps are just hono+zod; the lib's deps (ppu-ocv, onnxruntime) are dev-only here (needed to type-check the imported source) and resolve from the repo-root node_modules at runtime.",
   "dependencies": {
     "@hono/zod-validator": "^0.4.2",
     "hono": "^4.6.14",
-    "onnxruntime-common": "^1.26.0",
-    "onnxruntime-node": "^1.23.2",
-    "ppu-ocv": "^3.1.5",
     "zod": "^3.24.1"
   },
-  "trustedDependencies": [
-    "onnxruntime-node"
-  ]
+  "devDependencies": {
+    "onnxruntime-common": "^1.26.0",
+    "onnxruntime-node": "^1.23.2",
+    "ppu-ocv": "^3.1.5"
+  }
 }
