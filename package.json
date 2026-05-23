@@ -36,7 +36,8 @@
     "text-from-image",
     "text-recognition",
     "typescript-ocr",
-    "web-ocr"
+    "web-ocr",
+    "docker-ocr"
   ],
   "author": "snowfluke",
   "license": "MIT",
