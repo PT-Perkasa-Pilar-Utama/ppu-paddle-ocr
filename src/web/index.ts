@@ -19,11 +19,18 @@
  * ```
  */
 
-export type { FlattenedPaddleOcrResult, PaddleOcrResult } from "../core/base-paddle-ocr.service.js";
+export type {
+  AnyOcrResult,
+  BatchRecognizeInput,
+  FlattenedPaddleOcrResult,
+  PaddleOcrResult,
+} from "../core/base-paddle-ocr.service.js";
 export { DEFAULT_MODEL_URLS } from "../core/base-paddle-ocr.service.js";
+export type { BatchItemResult } from "../core/batch.js";
 export { PaddleOcrService } from "./paddle-ocr.service.web.js";
 
 export type {
+  BatchRecognizeOptions,
   Box,
   DebuggingOptions,
   DetectionOptions,

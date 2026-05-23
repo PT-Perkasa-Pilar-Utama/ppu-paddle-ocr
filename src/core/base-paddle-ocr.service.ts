@@ -1,7 +1,9 @@
 import type { InferenceSession } from "onnxruntime-common";
 import { DEFAULT_PADDLE_OPTIONS } from "../constants.js";
-import type { Box, PaddleOptions, RecognizeOptions } from "../interface.js";
+import type { BatchRecognizeOptions, Box, PaddleOptions, RecognizeOptions } from "../interface.js";
 import { deepMerge, parseDictionary } from "../utils.js";
+import type { BatchItemResult } from "./batch.js";
+import { createAsyncQueue, runPool } from "./batch.js";
 import type { BaseDetectionService } from "./base-detection.service.js";
 import type { BaseRecognitionService } from "./base-recognition.service.js";
 import type { RecognitionResult } from "./base-recognition.service.js";
@@ -37,6 +39,12 @@ export type FlattenedPaddleOcrResult = {
   /** Average confidence across all recognized items (0–1). */
   confidence: number;
 };
+
+/** A single OCR result, grouped or flattened depending on `flatten`. */
+export type AnyOcrResult = PaddleOcrResult | FlattenedPaddleOcrResult;
+
+/** Accepted source for a single image in a batch. */
+export type BatchRecognizeInput = ArrayBuffer | CoreCanvas | string;
 
 /** Base URL for downloading default PaddleOCR model files from GitHub. */
 export const MODEL_BASE_URL =
@@ -215,6 +223,108 @@ export abstract class BasePaddleOcrService {
       console.error("recognize: error", err.message, err.stack);
       throw e;
     }
+  }
+
+  /**
+   * Run {@link recognize} over many images with bounded concurrency.
+   *
+   * Results are returned index-aligned to the inputs regardless of completion
+   * order. Memory stays bounded: at most `concurrency` images are decoded and
+   * in flight at once, so a large (or streamed) input set never materializes
+   * all at once. See {@link BatchRecognizeOptions} for `settle`, `signal`, and
+   * `onProgress`.
+   *
+   * @param images - An array or (async) iterable of image sources.
+   * @param options - Per-image recognize options plus batch controls.
+   */
+  public batchRecognize(
+    images: Iterable<BatchRecognizeInput> | AsyncIterable<BatchRecognizeInput>,
+    options: BatchRecognizeOptions & { settle: true }
+  ): Promise<BatchItemResult<AnyOcrResult>[]>;
+  public batchRecognize(
+    images: Iterable<BatchRecognizeInput> | AsyncIterable<BatchRecognizeInput>,
+    options?: BatchRecognizeOptions
+  ): Promise<AnyOcrResult[]>;
+  public async batchRecognize(
+    images: Iterable<BatchRecognizeInput> | AsyncIterable<BatchRecognizeInput>,
+    options?: BatchRecognizeOptions
+  ): Promise<AnyOcrResult[] | BatchItemResult<AnyOcrResult>[]> {
+    const settle = options?.settle ?? false;
+    const collected: BatchItemResult<AnyOcrResult>[] = [];
+
+    await runPool<BatchRecognizeInput, AnyOcrResult>(
+      images,
+      {
+        concurrency: this.resolveConcurrency(options?.concurrency),
+        settle,
+        signal: options?.signal,
+        onProgress: options?.onProgress,
+        total: Array.isArray(images) ? images.length : undefined,
+      },
+      (image) => this.recognize(image, options),
+      (result) => {
+        collected[result.index] = result;
+      }
+    );
+
+    if (settle) return collected;
+    return collected.map((item) =>
+      item.status === "fulfilled" ? item.value : (undefined as never)
+    );
+  }
+
+  /**
+   * Streaming variant of {@link batchRecognize}: yields each image's result as
+   * soon as it finishes (completion order), so callers needn't buffer the whole
+   * batch. Each item carries its input `index` for reordering.
+   *
+   * With `settle: false` (default) the generator throws on the first image
+   * failure; with `settle: true` failures arrive as `{ status: "rejected" }`.
+   */
+  public async *batchRecognizeStream(
+    images: Iterable<BatchRecognizeInput> | AsyncIterable<BatchRecognizeInput>,
+    options?: BatchRecognizeOptions
+  ): AsyncGenerator<BatchItemResult<AnyOcrResult>> {
+    const queue = createAsyncQueue<BatchItemResult<AnyOcrResult>>();
+
+    const pump = (async () => {
+      try {
+        await runPool<BatchRecognizeInput, AnyOcrResult>(
+          images,
+          {
+            concurrency: this.resolveConcurrency(options?.concurrency),
+            settle: options?.settle ?? false,
+            signal: options?.signal,
+            onProgress: options?.onProgress,
+            total: Array.isArray(images) ? images.length : undefined,
+          },
+          (image) => this.recognize(image, options),
+          (result) => queue.push(result)
+        );
+        queue.close();
+      } catch (error) {
+        queue.fail(error);
+      }
+    })();
+
+    yield* queue.drain();
+    await pump;
+  }
+
+  /**
+   * Resolve the effective concurrency. `"auto"` (or unset) yields `1` when an
+   * accelerator execution provider is configured, else a small CPU default.
+   */
+  private resolveConcurrency(value?: number | "auto"): number {
+    if (typeof value === "number" && value > 0) return Math.floor(value);
+
+    const providers = this.options.session?.executionProviders ?? [];
+    const usesAccelerator = providers.some((provider) => {
+      const name = (typeof provider === "string" ? provider : provider.name).toLowerCase();
+      return name !== "cpu" && name !== "wasm";
+    });
+
+    return usesAccelerator ? 1 : 4;
   }
 
   private flattenResults(results: RecognitionResult[]): FlattenedPaddleOcrResult {

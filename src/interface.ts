@@ -178,6 +178,46 @@ export type RecognizeOptions = {
 };
 
 /**
+ * Options for `batchRecognize()` / `batchRecognizeStream()`.
+ *
+ * Extends {@link RecognizeOptions} (applied to every image) with controls for
+ * concurrency, error handling, progress, and cancellation.
+ */
+export type BatchRecognizeOptions = RecognizeOptions & {
+  /**
+   * Maximum number of images processed concurrently.
+   *
+   * `"auto"` (default) picks `1` when an accelerator execution provider
+   * (e.g. CUDA, WebGPU) is configured — a shared inference session serializes
+   * device work anyway and parallel runs would stack VRAM — and a small CPU
+   * default otherwise, to overlap JS preprocessing with native inference.
+   * @default "auto"
+   */
+  concurrency?: number | "auto";
+
+  /**
+   * When `true`, a failing image does not abort the batch: its slot is filled
+   * with a `{ status: "rejected", reason }` entry. When `false` (default), the
+   * first failure rejects the whole call, matching `recognize()`.
+   * @default false
+   */
+  settle?: boolean;
+
+  /**
+   * Cancels the batch. Pending images are not scheduled and the call rejects
+   * with an `AbortError`. In-flight inferences are allowed to finish but their
+   * results are discarded.
+   */
+  signal?: AbortSignal;
+
+  /**
+   * Invoked after each image settles with the running completed count and the
+   * total (when the input length is known up front, e.g. an array).
+   */
+  onProgress?: (done: number, total: number | undefined) => void;
+};
+
+/**
  * Controls the image processing backend.
  */
 export type ProcessingOptions = {
