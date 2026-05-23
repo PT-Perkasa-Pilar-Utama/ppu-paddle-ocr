@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.5.0] - 2026-05-23
+
 ### Added
 
 - **`batchRecognize()` and `batchRecognizeStream()`** — run `recognize()` over an array or (async) iterable of images with bounded concurrency, so peak memory stays bounded regardless of batch size. Results are index-aligned to the inputs; supports per-item error isolation (`settle`), `AbortSignal` cancellation, and `onProgress`. Concurrency defaults to `"auto"` — `1` when an accelerator execution provider (CUDA/WebGPU) is configured, a small CPU default otherwise. Inherited by both the Node and Web builds. See the new "Batch Recognition" section in the README.
