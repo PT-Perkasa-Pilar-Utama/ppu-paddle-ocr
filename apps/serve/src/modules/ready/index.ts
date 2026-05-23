@@ -1,8 +1,8 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { RouteHandler } from "@hono/zod-openapi";
-import { envelope, errorResponse, failure, success } from "../../lib/api-response.js";
-import { isReady } from "../../lib/service.js";
-import type { Env } from "../../lib/types.js";
+import { envelope, errorResponse, failure, success } from "../../core/api-response.js";
+import { isReady } from "../../core/service.js";
+import type { Env } from "../../core/types.js";
 
 export const route = createRoute({
   method: "get",

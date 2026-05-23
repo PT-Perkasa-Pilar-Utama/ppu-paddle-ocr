@@ -40,7 +40,10 @@ export const multipartOcrSchema = z
 /** JSON body for batch / async / stream OCR. */
 export const batchOcrSchema = ocrOptionsSchema
   .extend({
-    sources: z.array(z.string().min(1)).min(1).openapi({ description: "data: URIs or https URLs." }),
+    sources: z
+      .array(z.string().min(1))
+      .min(1)
+      .openapi({ description: "data: URIs or https URLs." }),
     concurrency: z.coerce.number().int().positive().optional(),
     settle: booleanish,
   })
@@ -70,9 +73,7 @@ export const ocrResultSchema = z
   })
   .openapi("OcrResult");
 
-export const batchResultSchema = z
-  .object({ results: z.array(z.unknown()) })
-  .openapi("BatchResult");
+export const batchResultSchema = z.object({ results: z.array(z.unknown()) }).openapi("BatchResult");
 
 export const taskAcceptedSchema = z
   .object({ taskId: z.string(), status: z.string() })
@@ -94,4 +95,3 @@ export const modelsSchema = z
     executionProviders: z.array(z.string()),
   })
   .openapi("Models");
-

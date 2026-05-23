@@ -1,7 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { RouteHandler } from "@hono/zod-openapi";
-import { renderMetrics } from "../../lib/metrics.js";
-import type { Env } from "../../lib/types.js";
+import { renderMetrics } from "../../core/metrics.js";
+import type { Env } from "../../core/types.js";
 
 export const route = createRoute({
   method: "get",
