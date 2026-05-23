@@ -1,10 +1,8 @@
 name: Deploy serve image
 
-# Builds the apps/serve Docker image on each published release, slims it with
-# docker-slim, and pushes to GitHub Container Registry.
+# Manually-triggered. Reads the version from apps/serve/package.json, and skips
+# entirely if that version is already published — bump the version to release.
 on:
-  release:
-    types: [published]
   workflow_dispatch:
 
 jobs:
@@ -19,6 +17,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Resolve image name + version
+        id: img
+        run: |
+          repo=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          version=$(jq -r .version apps/serve/package.json)
+          echo "image=ghcr.io/${repo}/serve" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Resolved ghcr.io/${repo}/serve:${version}"
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -26,30 +33,30 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          # Lowercased automatically by the action.
-          images: ghcr.io/${{ github.repository }}/serve
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest
+      - name: Skip if this version is already published
+        id: published
+        run: |
+          if docker manifest inspect "${{ steps.img.outputs.image }}:${{ steps.img.outputs.version }}" > /dev/null 2>&1; then
+            echo "::notice::${{ steps.img.outputs.image }}:${{ steps.img.outputs.version }} already exists — skipping build."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build fat image
+        if: steps.published.outputs.skip != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/serve/Dockerfile
           load: true
           tags: ppu-paddle-ocr-serve:fat
-          labels: ${{ steps.meta.outputs.labels }}
 
       # The container boots and warms models during profiling, so docker-slim
       # observes the native onnxruntime / OpenCV-wasm / Bun files actually used.
       # The prebaked model cache is force-kept via DSLIM_INCLUDE_PATH.
       - name: Slim the image
+        if: steps.published.outputs.skip != 'true'
         uses: kitabisa/docker-slim-action@v1.2.0
         env:
           DSLIM_HTTP_PROBE: true
@@ -60,11 +67,10 @@ jobs:
           target: ppu-paddle-ocr-serve:fat
           tag: "slim"
 
-      - name: Tag and push slim image
+      - name: Tag and push (version + latest)
+        if: steps.published.outputs.skip != 'true'
         run: |
-          SLIM_IMAGE="ppu-paddle-ocr-serve:slim"
-          while IFS= read -r tag; do
-            [ -z "$tag" ] && continue
-            docker tag "$SLIM_IMAGE" "$tag"
-            docker push "$tag"
-          done <<< "${{ steps.meta.outputs.tags }}"
+          for tag in "${{ steps.img.outputs.version }}" latest; do
+            docker tag ppu-paddle-ocr-serve:slim "${{ steps.img.outputs.image }}:${tag}"
+            docker push "${{ steps.img.outputs.image }}:${tag}"
+          done
