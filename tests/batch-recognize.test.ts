@@ -14,7 +14,7 @@ beforeAll(async () => {
   service = new PaddleOcrService();
   await service.initialize();
   single = (await service.recognize(imageBuffer)).text;
-}, 30_000);
+});
 
 afterAll(async () => {
   await service?.destroy();

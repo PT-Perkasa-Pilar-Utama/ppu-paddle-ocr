@@ -8,7 +8,7 @@ const imageBuffer = await imgFile.arrayBuffer();
 // Exercise the library's default models (v5).
 beforeAll(async () => {
   await PaddleOcrService.downloadModels();
-}, 30_000);
+});
 
 /**
  * Regression test suite for engine parity (opencv vs canvas-native).
