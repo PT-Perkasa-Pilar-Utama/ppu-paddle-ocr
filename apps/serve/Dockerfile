@@ -7,12 +7,19 @@ FROM oven/bun:1 AS deps
 WORKDIR /app
 # Library (root) deps — the serve app imports ppu-paddle-ocr from source, which
 # pulls onnxruntime-node + ppu-ocv from the root node_modules.
+# Library runtime deps only: ppu-ocv (a prod dep) plus onnxruntime-node, which
+# is a peer/dev dep so we add it explicitly. --production drops the heavy
+# build/test devDeps (typescript, the native tsgo compiler, oxlint, ...).
 COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile && bun pm trust onnxruntime-node
-# Serve app deps (hono, zod, ...). onnxruntime-node is auto-built via the app's
-# trustedDependencies, so no separate `bun pm trust` is needed here.
+# --ignore-scripts skips the root `prepare: husky` (husky is a devDep, absent in
+# --production); the onnxruntime native binary is then built via `bun pm trust`.
+RUN bun install --production --ignore-scripts \
+  && bun add onnxruntime-node --ignore-scripts \
+  && bun pm trust onnxruntime-node
+# Serve app: only hono + zod at runtime (its lib deps are devDeps that resolve
+# from the root node_modules above).
 COPY apps/serve/package.json apps/serve/bun.lock apps/serve/
-RUN cd apps/serve && bun install --frozen-lockfile
+RUN cd apps/serve && bun install --production
 
 # ---- runtime ----
 FROM oven/bun:1-slim AS runtime

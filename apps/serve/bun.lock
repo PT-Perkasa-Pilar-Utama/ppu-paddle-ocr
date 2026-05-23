@@ -7,16 +7,15 @@
       "dependencies": {
         "@hono/zod-validator": "^0.4.2",
         "hono": "^4.6.14",
+        "zod": "^3.24.1",
+      },
+      "devDependencies": {
         "onnxruntime-common": "^1.26.0",
         "onnxruntime-node": "^1.23.2",
         "ppu-ocv": "^3.1.5",
-        "zod": "^3.24.1",
       },
     },
   },
-  "trustedDependencies": [
-    "onnxruntime-node",
-  ],
   "packages": {
     "@hono/zod-validator": ["@hono/zod-validator@0.4.3", "", { "peerDependencies": { "hono": ">=3.9.0", "zod": "^3.19.1" } }, "sha512-xIgMYXDyJ4Hj6ekm9T9Y27s080Nl9NXHcJkOvkXPhubOLj8hZkOL8pDnnXfvCf5xEE8Q4oMFenQUZZREUY2gqQ=="],
 
