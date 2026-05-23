@@ -12,12 +12,17 @@ const engine = z.enum(["opencv", "canvas-native"]).optional();
 export const ocrOptionsSchema = z.object({ strategy, flatten: booleanish, engine });
 export type OcrOptions = z.infer<typeof ocrOptionsSchema>;
 
+// A 1×1 PNG as a data: URI — a valid, runnable example so Scalar's "Send"
+// works out of the box (it decodes, finds no text, returns an empty result).
+const EXAMPLE_IMAGE =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
 /** JSON body for single-image OCR. */
 export const jsonOcrSchema = ocrOptionsSchema
   .extend({
     source: z.string().min(1).openapi({
       description: "A `data:` URI or an allowlisted https URL. Local paths are rejected.",
-      example: "https://images.example.com/receipt.jpg",
+      example: EXAMPLE_IMAGE,
     }),
   })
   .openapi("OcrJsonRequest");
@@ -39,7 +44,9 @@ export const batchOcrSchema = ocrOptionsSchema
     concurrency: z.coerce.number().int().positive().optional(),
     settle: booleanish,
   })
-  .openapi("BatchRequest");
+  .openapi("BatchRequest", {
+    example: { sources: [EXAMPLE_IMAGE], strategy: "per-line", settle: true },
+  });
 export type BatchOcrBody = z.infer<typeof batchOcrSchema>;
 
 export const taskIdParamsSchema = z.object({
