@@ -29,6 +29,7 @@ await service.destroy();
   - [Custom Models](#custom-models)
   - [Changing Models at Runtime](#changing-models-at-runtime)
   - [Per-Call Options](#per-call-options)
+- [Batch Recognition](#batch-recognition)
 - [Recognition Strategies](#recognition-strategies)
 - [Image Preprocessing](#image-preprocessing)
 - [Processing Engine](#processing-engine)
@@ -159,6 +160,51 @@ const result = await service.recognize("./assets/receipt.jpg", {
   strategy: "per-box",
 });
 ```
+
+## Batch Recognition
+
+`batchRecognize()` runs `recognize()` over many images with **bounded concurrency**, so memory stays in check: at most `concurrency` images are decoded and in flight at once. Results are returned **index-aligned** to the inputs regardless of completion order.
+
+```ts
+const results = await service.batchRecognize([buf1, buf2, buf3]);
+results.forEach((r, i) => console.log(i, r.text));
+```
+
+Concurrency defaults to `"auto"` — `1` when an accelerator provider (CUDA, WebGPU) is configured (a shared session serializes device work anyway, and parallel runs would stack VRAM), and a small CPU default otherwise to overlap JS preprocessing with native inference. Override it explicitly when you know your hardware:
+
+```ts
+await service.batchRecognize(images, { concurrency: 8, flatten: true });
+```
+
+Use `settle: true` to keep going when an image fails — each slot becomes `{ status, value | reason }` instead of the call rejecting:
+
+```ts
+const results = await service.batchRecognize(images, { settle: true });
+for (const r of results) {
+  if (r.status === "fulfilled") console.log(r.value.text);
+  else console.error("failed:", r.reason);
+}
+```
+
+Track progress and cancel with the usual primitives:
+
+```ts
+const ac = new AbortController();
+await service.batchRecognize(images, {
+  signal: ac.signal,
+  onProgress: (done, total) => console.log(`${done}/${total}`),
+});
+```
+
+To consume results as they finish (and avoid buffering the whole batch), stream them — each item carries its input `index` for reordering:
+
+```ts
+for await (const item of service.batchRecognizeStream(images)) {
+  if (item.status === "fulfilled") console.log(item.index, item.value.text);
+}
+```
+
+`batchRecognize` / `batchRecognizeStream` also accept any `Iterable` or `AsyncIterable` of inputs, so a directory walk or queue never has to be materialized in memory at once. All `RecognizeOptions` (`flatten`, `strategy`, `dictionary`, `noCache`) are accepted and applied to every image. See [`BatchRecognizeOptions`](#batchrecognizeoptions) for the full surface.
 
 ## Recognition Strategies
 
@@ -420,6 +466,17 @@ Per-call options for `recognize()`.
 | `dictionary` |          `string \| ArrayBuffer`          |     `null`      | Custom character dictionary (disables caching).  |
 | `noCache`    |                 `boolean`                 |     `false`     | Bypass the result cache.                         |
 
+### `BatchRecognizeOptions`
+
+Extends `RecognizeOptions` (applied to every image) for `batchRecognize()` / `batchRecognizeStream()`.
+
+| Property      |           Type           | Default  | Description                                                                              |
+| :------------ | :----------------------: | :------: | :--------------------------------------------------------------------------------------- |
+| `concurrency` |    `number \| "auto"`    | `"auto"` | Max images in flight. `"auto"` = `1` on an accelerator provider, small default on CPU.   |
+| `settle`      |        `boolean`         | `false`  | When `true`, a failed image yields `{ status: "rejected", reason }` instead of throwing. |
+| `signal`      |      `AbortSignal`       |  `null`  | Cancels the batch; pending images are not scheduled and the call rejects.                |
+| `onProgress`  | `(done, total?) => void` |  `null`  | Called after each image settles, with the running count and total (if known).            |
+
 ### `ModelPathOptions`
 
 | Property               |          Type           |             Default / Required             | Description                                     |
@@ -513,6 +570,22 @@ benchmark                           avg (min … max) p75 / p99    (min … top 
   [opencv]       per-box=97.91%  per-line=99.22%  cross-line=96.34%
   [canvas-native] per-box=97.65% per-line=98.43%  cross-line=97.65%
 ```
+
+### Batch vs. concurrent `recognize()`
+
+`bench/batch.bench.ts` compares the ways to OCR many images. Round-robin scheduling cancels thermal/GC drift; median over 7 rounds of 16 images each, Apple M1 / Bun 1.3.14, opencv, `noCache`:
+
+```bash
+method                          median ms/iter   ms/image   peak RSS
+------------------------------- -------------- ---------- ----------
+sequential for-loop                    3789 ms    236.8 ms     868 MB
+Promise.all(map(recognize))            3502 ms    218.9 ms    1280 MB
+batchRecognize (auto)                  3563 ms    222.7 ms     894 MB
+batchRecognize (c=4)                   3627 ms    226.7 ms     823 MB
+batchRecognize (c=8)                   3537 ms    221.0 ms     949 MB
+```
+
+On CPU, throughput is bound by ONNX Runtime's native thread pool (which already saturates all cores per inference), so every parallel approach lands within ~2% on time — JS-level concurrency cannot add cores that are already busy. The real difference is **memory**: unbounded `Promise.all` peaks at ~1280 MB and grows with batch size, while `batchRecognize` stays **bounded at ~820–950 MB regardless of `N`**. So `batchRecognize` matches the fastest approach at ~30% lower, bounded peak memory — and the throughput win from concurrency shows up on GPU (overlapping host↔device) or I/O-bound inputs. Tune `BATCH_N` / `ROUNDS` via env.
 
 ## Contributing
 
