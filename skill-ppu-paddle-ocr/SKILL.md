@@ -1,6 +1,6 @@
 ---
 name: skill-ppu-paddle-ocr
-description: Use this skill whenever the user is writing TypeScript/JavaScript code that imports `ppu-paddle-ocr` or `ppu-paddle-ocr/web`, or asks about PaddleOCR / PP-OCRv5 in JavaScript runtimes — text detection, text recognition, OCR on receipts/invoices/documents, ONNX Runtime OCR, multilingual OCR (Latin, Cyrillic, Arabic, Indic, CJK, Thai), WebGPU OCR in browsers, browser-extension OCR, INT8-quantized recognition, custom dictionaries, recognition strategies (`per-box` / `per-line` / `cross-line`), or processing engines (`opencv` / `canvas-native`). Trigger even when the user says "PaddleOCR in Node" or "OCR library that runs in Bun and the browser" without naming the package, as long as the codebase imports it. This skill encodes the two entry points (`ppu-paddle-ocr` vs `ppu-paddle-ocr/web`), the lifecycle (`new` → `initialize` → `recognize` → `destroy`), the strategy/engine trade-offs, the model-cache behaviour on Node/Bun, and the WebGPU fallback path on web.
+description: Use this skill whenever the user is writing TypeScript/JavaScript code that imports `ppu-paddle-ocr` or `ppu-paddle-ocr/web`, or asks about PaddleOCR / PP-OCRv5 in JavaScript runtimes — text detection, text recognition, OCR on receipts/invoices/documents, ONNX Runtime OCR, multilingual OCR (Latin, Cyrillic, Arabic, Indic, CJK, Thai), WebGPU OCR in browsers, browser-extension OCR, INT8-quantized recognition, custom dictionaries, recognition strategies (`per-box` / `per-line` / `cross-line`), or processing engines (`opencv` / `canvas-native`). Trigger even when the user says "PaddleOCR in Node" or "OCR library that runs in Bun and the browser" without naming the package, as long as the codebase imports it. This skill encodes the two entry points (`ppu-paddle-ocr` vs `ppu-paddle-ocr/web`), the lifecycle (`new` → `initialize` → `recognize` → `destroy`), the strategy/engine trade-offs, the model-cache behaviour on Node/Bun, and the WebGPU fallback path on web. Also covers running OCR as a dockerized REST API via the `apps/serve` service (Hono + Bun) when the user wants OCR-as-a-service or a deployable container instead of embedding the SDK.
 ---
 
 # Writing code with `ppu-paddle-ocr`
@@ -403,6 +403,17 @@ await service.destroy();
 ```
 
 If you're already using `ppu-ocv` extensively, the `skill-ppu-ocv` skill covers the preprocessing pipeline in depth — perspective warp, deskew, contour-based receipt extraction, and the OpenCV memory model.
+
+## OCR as an HTTP service (don't embed the SDK)
+
+If the user wants OCR-as-a-service — a running endpoint to POST images to, rather than embedding the SDK in their own process — point them at **`apps/serve`** in the repo: a production-grade REST API (Hono + Bun, dockerized) that wraps this library. It's the right answer when the consumer isn't a JS/TS program, when they want a language-agnostic HTTP boundary, or when they ask for "an OCR API / a docker image".
+
+```bash
+docker run -p 8080:8080 ghcr.io/pt-perkasa-pilar-utama/ppu-paddle-ocr/serve:latest
+curl -F file=@receipt.jpg http://localhost:8080/v1/ocr
+```
+
+What it provides on top of the raw SDK: one warmed `PaddleOcrService` behind a bounded inference queue (backpressure, no OOM/VRAM blow-up), sync / batch / SSE-stream / async-task OCR endpoints, a consistent response envelope with a request id, optional bearer auth + rate limiting + IP rules, Prometheus `/metrics`, and an OpenAPI spec rendered at `/docs`. Config is via env vars; models are pre-baked into the image (zero cold start). Use the standalone SDK (the rest of this skill) when you're building a JS/TS app; use the serve API when you want a deployable service. See [`apps/serve/README.md`](../../apps/serve/README.md).
 
 ## Further reading
 
