@@ -39,13 +39,8 @@ describe("PaddleOcrService Initialization", () => {
   }, 30000); // Increase timeout for download
 
   test("should initialize and recognize using explicit file paths", async () => {
-    service = new PaddleOcrService({
-      model: {
-        detection: detModel,
-        recognition: recModel,
-        charactersDictionary: dict,
-      },
-    });
+    // Uses the library's default models (v5).
+    service = new PaddleOcrService();
     await service.initialize();
 
     expect(service.isInitialized()).toBe(true);
@@ -85,13 +80,8 @@ describe("PaddleOcrService.recognize()", () => {
   let service: PaddleOcrService;
 
   beforeEach(async () => {
-    service = new PaddleOcrService({
-      model: {
-        detection: detModel,
-        recognition: recModel,
-        charactersDictionary: dict,
-      },
-    });
+    // Uses the library's default models (v5).
+    service = new PaddleOcrService();
     await service.initialize();
   });
 
@@ -208,13 +198,8 @@ describe("ImageProcessor try/finally safety", () => {
   let service: PaddleOcrService;
 
   beforeEach(async () => {
-    service = new PaddleOcrService({
-      model: {
-        detection: detModel,
-        recognition: recModel,
-        charactersDictionary: dict,
-      },
-    });
+    // Uses the library's default models (v5).
+    service = new PaddleOcrService();
     await service.initialize();
   });
 
@@ -232,14 +217,6 @@ describe("ImageProcessor try/finally safety", () => {
 });
 
 describe("OCR accuracy (Levenshtein distance)", () => {
-  const modelOptions = {
-    model: {
-      detection: detModel,
-      recognition: recModel,
-      charactersDictionary: dict,
-    },
-  };
-
   function accuracy(ocrText: string): number {
     const normalized = ocrText.trim();
     const dist = levenshteinDistance(normalized, groundTruth);
@@ -248,7 +225,6 @@ describe("OCR accuracy (Levenshtein distance)", () => {
 
   test("opencv engine should achieve >= 85% accuracy on receipt", async () => {
     const service = new PaddleOcrService({
-      ...modelOptions,
       processing: { engine: "opencv" },
     });
     await service.initialize();
@@ -262,7 +238,6 @@ describe("OCR accuracy (Levenshtein distance)", () => {
 
   test("canvas-native engine should achieve >= 85% accuracy on receipt", async () => {
     const service = new PaddleOcrService({
-      ...modelOptions,
       processing: { engine: "canvas-native" },
     });
     await service.initialize();

@@ -1,21 +1,14 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 import type { ProcessingEngine } from "../src/interface.js";
-
-import dict from "../models/en_dict.txt" with { type: "file" };
-import recModel from "../models/en_PP-OCRv4_mobile_rec_infer.onnx" with { type: "file" };
-import detModel from "../models/PP-OCRv5_mobile_det_infer.onnx" with { type: "file" };
 
 const imgFile = Bun.file(`${import.meta.dir}/../assets/receipt.jpg`);
 const imageBuffer = await imgFile.arrayBuffer();
 
-const modelOptions = {
-  model: {
-    detection: detModel,
-    recognition: recModel,
-    charactersDictionary: dict,
-  },
-};
+// Exercise the library's default models (v5).
+beforeAll(async () => {
+  await PaddleOcrService.downloadModels();
+}, 30_000);
 
 /**
  * Regression test suite for engine parity (opencv vs canvas-native).
@@ -32,11 +25,9 @@ describe("Processing engine parity (opencv vs canvas-native)", () => {
 
   beforeEach(async () => {
     opencvService = new PaddleOcrService({
-      ...modelOptions,
       processing: { engine: "opencv" },
     });
     canvasService = new PaddleOcrService({
-      ...modelOptions,
       processing: { engine: "canvas-native" },
     });
 
@@ -139,7 +130,7 @@ describe("Processing engine parity (opencv vs canvas-native)", () => {
 
 describe("Processing engine selection", () => {
   test("default engine should be opencv", async () => {
-    const service = new PaddleOcrService(modelOptions);
+    const service = new PaddleOcrService();
     await service.initialize();
 
     const result = await service.recognize(imageBuffer, { noCache: true });
@@ -151,7 +142,6 @@ describe("Processing engine selection", () => {
 
   test("canvas-native engine should work when explicitly selected", async () => {
     const service = new PaddleOcrService({
-      ...modelOptions,
       processing: { engine: "canvas-native" },
     });
     await service.initialize();
@@ -165,7 +155,6 @@ describe("Processing engine selection", () => {
 
   test("opencv engine should work when explicitly selected", async () => {
     const service = new PaddleOcrService({
-      ...modelOptions,
       processing: { engine: "opencv" },
     });
     await service.initialize();
@@ -180,7 +169,6 @@ describe("Processing engine selection", () => {
   test("both engines should produce deterministic results across runs", async () => {
     for (const engine of ["opencv", "canvas-native"] as ProcessingEngine[]) {
       const service = new PaddleOcrService({
-        ...modelOptions,
         processing: { engine },
       });
       await service.initialize();

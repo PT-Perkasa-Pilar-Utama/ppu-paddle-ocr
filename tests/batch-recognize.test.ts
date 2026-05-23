@@ -3,22 +3,18 @@ import type { BatchItemResult } from "../src/core/batch.js";
 import type { AnyOcrResult } from "../src/core/base-paddle-ocr.service.js";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 
-import dict from "../models/en_dict.txt" with { type: "file" };
-import recModel from "../models/en_PP-OCRv4_mobile_rec_infer.onnx" with { type: "file" };
-import detModel from "../models/PP-OCRv5_mobile_det_infer.onnx" with { type: "file" };
-
 const imageBuffer = await Bun.file(`${import.meta.dir}/../assets/receipt.jpg`).arrayBuffer();
 
 let service: PaddleOcrService;
 let single: string;
 
 beforeAll(async () => {
-  service = new PaddleOcrService({
-    model: { detection: detModel, recognition: recModel, charactersDictionary: dict },
-  });
+  await PaddleOcrService.downloadModels();
+  // Uses the library's default models (v5).
+  service = new PaddleOcrService();
   await service.initialize();
   single = (await service.recognize(imageBuffer)).text;
-});
+}, 30_000);
 
 afterAll(async () => {
   await service?.destroy();

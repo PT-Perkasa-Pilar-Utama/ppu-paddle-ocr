@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Developer experience
 
 - **Benchmarks now measure the shipped default models (v5).** `bench/batch.bench.ts` and `bench/profile.ts` hardcoded the stale v4 recognition model from `models/`; they now omit explicit model paths so every benchmark exercises the library default, matching `bench/index.bench.ts`. README benchmark numbers refreshed accordingly.
+- **Tests now exercise the default models (v5) too.** `index.test.ts` (recognition behaviour + accuracy), `engine-parity.test.ts`, and `batch-recognize.test.ts` no longer pin the stale v4 recognition model; the explicit file-path / ArrayBuffer / buffer-release tests in `index.test.ts` keep loading a local file, since they verify the model-loading API itself.
 
 ## [5.5.0] - 2026-05-23
 
