@@ -67,6 +67,16 @@ jobs:
           target: ppu-paddle-ocr-serve:fat
           tag: "slim"
 
+      # docker-slim-action does its own docker login and clobbers the
+      # credential store, so re-authenticate before pushing.
+      - name: Re-login to GitHub Container Registry
+        if: steps.published.outputs.skip != 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Tag and push (version + latest)
         if: steps.published.outputs.skip != 'true'
         run: |
