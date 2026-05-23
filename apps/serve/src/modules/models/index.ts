@@ -1,5 +1,6 @@
 import { createRoute } from "@hono/zod-openapi";
 import type { RouteHandler } from "@hono/zod-openapi";
+import { envelope, success } from "../../lib/api-response.js";
 import { config } from "../../lib/config.js";
 import { modelsSchema } from "../../lib/schemas.js";
 import type { Env } from "../../lib/types.js";
@@ -11,17 +12,17 @@ export const route = createRoute({
   summary: "Available engines, strategies, and defaults",
   security: [{ Bearer: [] }],
   responses: {
-    200: { description: "ok", content: { "application/json": { schema: modelsSchema } } },
+    200: { description: "ok", content: { "application/json": { schema: envelope(modelsSchema) } } },
   },
 });
 
 export const handler: RouteHandler<typeof route, Env> = (c) =>
   c.json(
-    {
+    success(c, {
       engines: ["opencv", "canvas-native"],
       strategies: ["per-box", "per-line", "cross-line"],
       default: { engine: config.defaultEngine, strategy: config.defaultStrategy },
       executionProviders: config.executionProviders,
-    },
+    }),
     200
   );

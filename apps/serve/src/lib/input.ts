@@ -7,6 +7,33 @@ import { jsonOcrSchema, ocrOptionsSchema } from "./schemas.js";
 const tooBig = () =>
   payloadTooLarge(`Image exceeds MAX_UPLOAD_BYTES (${config.maxUploadBytes} bytes)`);
 
+/** Sniff a supported image format from magic bytes; null if unrecognized. */
+function detectImageMime(buf: ArrayBuffer): string | null {
+  const b = new Uint8Array(buf.slice(0, 16));
+  if (b.length < 12) return null;
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "image/jpeg";
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return "image/png";
+  if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38) return "image/gif";
+  if (b[0] === 0x42 && b[1] === 0x4d) return "image/bmp";
+  if (
+    (b[0] === 0x49 && b[1] === 0x49 && b[2] === 0x2a && b[3] === 0x00) ||
+    (b[0] === 0x4d && b[1] === 0x4d && b[2] === 0x00 && b[3] === 0x2a)
+  ) {
+    return "image/tiff";
+  }
+  const tag = (s: number) => String.fromCharCode(b[s] ?? 0, b[s + 1] ?? 0, b[s + 2] ?? 0, b[s + 3] ?? 0);
+  if (tag(0) === "RIFF" && tag(8) === "WEBP") return "image/webp";
+  if (tag(4) === "ftyp" && ["avif", "heic", "heif", "mif1"].includes(tag(8))) return "image/avif";
+  return null;
+}
+
+/** Reject non-image payloads with a 400 instead of a downstream decode 500. */
+function assertImage(buf: ArrayBuffer): void {
+  if (!detectImageMime(buf)) {
+    throw badRequest("Unsupported image type. Provide JPEG, PNG, WebP, GIF, BMP, TIFF, or AVIF.");
+  }
+}
+
 function decodeDataUri(uri: string): ArrayBuffer {
   const comma = uri.indexOf(",");
   if (comma === -1) throw badRequest("Malformed data: URI");
@@ -51,11 +78,14 @@ async function fetchHttps(source: string): Promise<ArrayBuffer> {
   return buf;
 }
 
-/** Resolve a `source` string to image bytes. Local paths are rejected. */
+/** Resolve a `source` string to image bytes. Local paths and non-images rejected. */
 export async function resolveSource(source: string): Promise<ArrayBuffer> {
-  if (source.startsWith("data:")) return decodeDataUri(source);
-  if (source.startsWith("https://")) return fetchHttps(source);
-  throw badRequest("source must be an https URL or a data: URI (local paths are not allowed)");
+  let buf: ArrayBuffer;
+  if (source.startsWith("data:")) buf = decodeDataUri(source);
+  else if (source.startsWith("https://")) buf = await fetchHttps(source);
+  else throw badRequest("source must be an https URL or a data: URI (local paths are not allowed)");
+  assertImage(buf);
+  return buf;
 }
 
 /** Read a single image: multipart `file` field, or JSON `{ source, ...opts }`. */
@@ -70,6 +100,7 @@ export async function readSingle(c: Context): Promise<{ image: ArrayBuffer; opts
     }
     const image = await file.arrayBuffer();
     if (image.byteLength > config.maxUploadBytes) throw tooBig();
+    assertImage(image);
     const opts = ocrOptionsSchema.parse({
       strategy: body["strategy"],
       flatten: body["flatten"],

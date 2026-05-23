@@ -1,13 +1,9 @@
 import type { RouteConfig } from "@hono/zod-openapi";
 import type { Context } from "hono";
+import { envelope, errorResponse, success } from "../../lib/api-response.js";
 import { readSingle } from "../../lib/input.js";
 import { runOcr } from "../../lib/runner.js";
-import {
-  errorResponse,
-  jsonOcrSchema,
-  multipartOcrSchema,
-  ocrResultSchema,
-} from "../../lib/schemas.js";
+import { jsonOcrSchema, multipartOcrSchema, ocrResultSchema } from "../../lib/schemas.js";
 import type { Env } from "../../lib/types.js";
 
 // This endpoint accepts BOTH multipart and JSON. @hono/zod-openapi runs every
@@ -31,10 +27,10 @@ export const route: RouteConfig = {
   },
   responses: {
     200: {
-      description: "OCR result.",
-      content: { "application/json": { schema: ocrResultSchema } },
+      description: "OCR result. `metadata` carries `speed` (seconds) and `confidence`.",
+      content: { "application/json": { schema: envelope(ocrResultSchema) } },
     },
-    400: errorResponse("Invalid input or source."),
+    400: errorResponse("Invalid input, unsupported image type, or source error."),
     413: errorResponse("Image exceeds MAX_UPLOAD_BYTES."),
     429: errorResponse("Rate limit or inference queue full."),
   },
@@ -43,5 +39,12 @@ export const route: RouteConfig = {
 export const handler = async (c: Context<Env>): Promise<Response> => {
   const { image, opts } = await readSingle(c);
   const { result, meta } = await runOcr(image, opts);
-  return c.json({ ...(result as object), meta });
+  return c.json(
+    success(c, result, {
+      speed: meta.ms / 1000,
+      confidence: (result as { confidence: number }).confidence,
+      engine: meta.engine,
+      strategy: meta.strategy,
+    })
+  );
 };
