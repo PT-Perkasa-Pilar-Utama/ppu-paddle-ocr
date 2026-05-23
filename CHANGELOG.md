@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`batchRecognize()` and `batchRecognizeStream()`** — run `recognize()` over an array or (async) iterable of images with bounded concurrency, so peak memory stays bounded regardless of batch size. Results are index-aligned to the inputs; supports per-item error isolation (`settle`), `AbortSignal` cancellation, and `onProgress`. Concurrency defaults to `"auto"` — `1` when an accelerator execution provider (CUDA/WebGPU) is configured, a small CPU default otherwise. Inherited by both the Node and Web builds. See the new "Batch Recognition" section in the README.
+
 ### Developer experience
 
 - **Test files are now isolated in worker processes** via `bun test --parallel=N` (where N is the number of `*.test.ts` files under `tests/` and `private-tests/`). Sequential `bun test` on Bun 1.3.13 segfaulted when multiple test files each loaded `@techstark/opencv-js` together with the newly upgraded `@napi-rs/canvas@1.0.0` — an Emscripten/embind multi-load issue that previously surfaced as a recoverable warning under `@napi-rs/canvas@0.1.x`. The workaround is also ~2.4× faster (11s vs 26s on the local suite).
