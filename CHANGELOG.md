@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Developer experience
+
+- **Benchmarks now measure the shipped default models (v5).** `bench/batch.bench.ts` and `bench/profile.ts` hardcoded the stale v4 recognition model from `models/`; they now omit explicit model paths so every benchmark exercises the library default, matching `bench/index.bench.ts`. README benchmark numbers refreshed accordingly.
+
 ## [5.5.0] - 2026-05-23
 
 ### Added

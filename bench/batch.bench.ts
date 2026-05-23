@@ -1,10 +1,6 @@
 import { PaddleOcrService } from "../src";
 import { Bench, printResults } from "./harness";
 
-import dict from "../models/en_dict.txt" with { type: "file" };
-import recModel from "../models/en_PP-OCRv4_mobile_rec_infer.onnx" with { type: "file" };
-import detModel from "../models/PP-OCRv5_mobile_det_infer.onnx" with { type: "file" };
-
 // Images per batch / measurement rounds. Override with env:
 //   BATCH_N=32 ROUNDS=9 bun bench/batch.bench.ts
 const N = Number(process.env.BATCH_N ?? 16);
@@ -13,8 +9,8 @@ const ROUNDS = Number(process.env.ROUNDS ?? 7);
 const imageBuffer = await Bun.file(`${import.meta.dir}/../assets/receipt.jpg`).arrayBuffer();
 const images = Array.from({ length: N }, () => imageBuffer.slice(0));
 
+// Uses the library's default models (v5).
 const service = new PaddleOcrService({
-  model: { detection: detModel, recognition: recModel, charactersDictionary: dict },
   processing: { engine: "opencv" },
   recognition: { charactersDictionary: [] as string[] },
 });

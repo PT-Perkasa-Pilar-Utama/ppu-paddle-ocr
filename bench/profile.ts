@@ -1,18 +1,6 @@
 import { performance } from "node:perf_hooks";
 import { PaddleOcrService } from "../src";
 
-import dict from "../models/en_dict.txt" with { type: "file" };
-import recModel from "../models/en_PP-OCRv4_mobile_rec_infer.onnx" with { type: "file" };
-import detModel from "../models/PP-OCRv5_mobile_det_infer.onnx" with { type: "file" };
-
-const modelOptions = {
-  model: {
-    detection: detModel,
-    recognition: recModel,
-    charactersDictionary: dict,
-  },
-};
-
 const imgFile = Bun.file(`${import.meta.dir}/../assets/receipt.jpg`);
 const imageBuffer = await imgFile.arrayBuffer();
 
@@ -34,7 +22,6 @@ for (const engine of ["opencv", "canvas-native"] as const) {
   console.log(`=== Engine: ${engine} ===`);
 
   const service = new PaddleOcrService({
-    ...modelOptions,
     processing: { engine },
   });
 
