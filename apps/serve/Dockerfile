@@ -9,9 +9,10 @@ WORKDIR /app
 # pulls onnxruntime-node + ppu-ocv from the root node_modules.
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile && bun pm trust onnxruntime-node
-# Serve app deps (hono, zod, ...).
-COPY apps/serve/package.json apps/serve/
-RUN cd apps/serve && bun install && bun pm trust onnxruntime-node
+# Serve app deps (hono, zod, ...). onnxruntime-node is auto-built via the app's
+# trustedDependencies, so no separate `bun pm trust` is needed here.
+COPY apps/serve/package.json apps/serve/bun.lock apps/serve/
+RUN cd apps/serve && bun install --frozen-lockfile
 
 # ---- runtime ----
 FROM oven/bun:1-slim AS runtime

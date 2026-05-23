@@ -50,22 +50,29 @@ The library is a building block; this wraps it as a service you'd be comfortable
 
 ## Configuration (env)
 
-| Var                                                    | Default            | Notes                                     |
-| ------------------------------------------------------ | ------------------ | ----------------------------------------- |
-| `PORT` / `HOST`                                        | `8080` / `0.0.0.0` |                                           |
-| `EXECUTION_PROVIDERS`                                  | `cpu`              | Comma list, e.g. `cuda,cpu`               |
-| `DEFAULT_STRATEGY`                                     | `per-line`         | `per-box` \| `per-line` \| `cross-line`   |
-| `DEFAULT_ENGINE`                                       | `opencv`           | `opencv` \| `canvas-native`               |
-| `MODEL_DETECTION` / `MODEL_RECOGNITION` / `MODEL_DICT` | default v5         | Override model sources                    |
-| `MAX_UPLOAD_BYTES`                                     | `10485760`         | Per-image cap                             |
-| `MAX_BATCH_IMAGES`                                     | `32`               |                                           |
-| `MAX_CONCURRENCY`                                      | `0` (auto)         | Auto = 1 on an accelerator, 4 on CPU      |
-| `MAX_QUEUE_DEPTH`                                      | `100`              | Excess requests get `429` + `Retry-After` |
-| `REQUEST_TIMEOUT_MS`                                   | `30000`            |                                           |
-| `TASK_TTL_MS`                                          | `600000`           | Async task retention                      |
-| `API_KEY`                                              | —                  | If set, `Bearer` required on `/v1/*`      |
-| `CORS_ORIGINS`                                         | `*`                | Comma list or `*`                         |
-| `SOURCE_URL_ALLOWLIST`                                 | —                  | Comma list of allowed https hosts         |
+See [`.env.example`](.env.example) for the full annotated list.
+
+| Var                                                    | Default            | Notes                                                               |
+| ------------------------------------------------------ | ------------------ | ------------------------------------------------------------------- |
+| `API_ENV`                                              | `development`      | `development` \| `production`                                       |
+| `PORT` / `HOST`                                        | `8080` / `0.0.0.0` |                                                                     |
+| `SECRET_KEY`                                           | —                  | If set, `Bearer <key>` required on `/v1/*` (`openssl rand -hex 32`) |
+| `IP_WHITE_LIST` / `IP_DENY_LIST`                       | `*` / —            | Comma lists; `*` allows all (deny still applies)                    |
+| `CORS_ORIGINS`                                         | `*`                | Comma list or `*`                                                   |
+| `DOCS_ENABLED`                                         | `true`             | Serve `/docs` + `/openapi.json`                                     |
+| `RATE_LIMIT_ENABLED`                                   | `true`             | Fixed-window per client IP on `/v1/*`                               |
+| `RATE_LIMIT_PER_WINDOW` / `RATE_LIMIT_WINDOW_SECONDS`  | `120` / `60`       | `429` + `Retry-After` past the limit                                |
+| `REQUEST_TIMEOUT_SECONDS`                              | `30`               |                                                                     |
+| `MAX_UPLOAD_BYTES`                                     | `10485760`         | Per-image cap                                                       |
+| `MAX_BATCH_IMAGES`                                     | `32`               |                                                                     |
+| `EXECUTION_PROVIDERS`                                  | `cpu`              | Comma list, e.g. `cuda,cpu`                                         |
+| `DEFAULT_STRATEGY`                                     | `per-line`         | `per-box` \| `per-line` \| `cross-line`                             |
+| `DEFAULT_ENGINE`                                       | `opencv`           | `opencv` \| `canvas-native`                                         |
+| `MODEL_DETECTION` / `MODEL_RECOGNITION` / `MODEL_DICT` | default v5         | Override model sources                                              |
+| `MAX_CONCURRENCY`                                      | `0` (auto)         | Auto = 1 on an accelerator, 4 on CPU                                |
+| `MAX_QUEUE_DEPTH`                                      | `100`              | Excess inferences get `429` + `Retry-After`                         |
+| `TASK_TTL_SECONDS`                                     | `600`              | Async task retention                                                |
+| `SOURCE_URL_ALLOWLIST`                                 | —                  | Comma list of allowed https hosts                                   |
 
 ## Develop
 
