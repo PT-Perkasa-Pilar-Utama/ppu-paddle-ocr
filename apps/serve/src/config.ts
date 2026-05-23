@@ -1,18 +1,34 @@
 import { z } from "zod";
 
-/** Raw environment schema. All knobs are documented in the README. */
+const toArray = (val: string | undefined): string[] =>
+  (val ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+const toBoolean = (val: string | undefined): boolean =>
+  val ? ["true", "1", "yes", "on"].includes(val.toLowerCase()) : false;
+
+/** Raw environment schema. Every knob is documented in `.env.example`. */
 const EnvSchema = z.object({
+  API_ENV: z.enum(["development", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(8080),
   HOST: z.string().default("0.0.0.0"),
 
-  EXECUTION_PROVIDERS: z.string().default("cpu"),
-  DEFAULT_STRATEGY: z.enum(["per-box", "per-line", "cross-line"]).default("per-line"),
-  DEFAULT_ENGINE: z.enum(["opencv", "canvas-native"]).default("opencv"),
+  // Security
+  SECRET_KEY: z.string().optional(),
+  IP_WHITE_LIST: z.string().default("*"),
+  IP_DENY_LIST: z.string().default(""),
+  CORS_ORIGINS: z.string().default("*"),
+  DOCS_ENABLED: z.string().default("true"),
 
-  MODEL_DETECTION: z.string().optional(),
-  MODEL_RECOGNITION: z.string().optional(),
-  MODEL_DICT: z.string().optional(),
+  // Rate limiting (fixed window, per client IP)
+  RATE_LIMIT_ENABLED: z.string().default("true"),
+  RATE_LIMIT_PER_WINDOW: z.coerce.number().int().positive().default(120),
+  RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(60),
 
+  // Request limits
+  REQUEST_TIMEOUT_SECONDS: z.coerce.number().int().positive().default(30),
   MAX_UPLOAD_BYTES: z.coerce
     .number()
     .int()
@@ -21,29 +37,35 @@ const EnvSchema = z.object({
   MAX_IMAGE_PIXELS: z.coerce.number().int().positive().default(40_000_000),
   MAX_BATCH_IMAGES: z.coerce.number().int().positive().default(32),
 
+  // OCR engine / models
+  EXECUTION_PROVIDERS: z.string().default("cpu"),
+  DEFAULT_STRATEGY: z.enum(["per-box", "per-line", "cross-line"]).default("per-line"),
+  DEFAULT_ENGINE: z.enum(["opencv", "canvas-native"]).default("opencv"),
+  MODEL_DETECTION: z.string().optional(),
+  MODEL_RECOGNITION: z.string().optional(),
+  MODEL_DICT: z.string().optional(),
+
+  // Inference backpressure / async tasks
   MAX_CONCURRENCY: z.coerce.number().int().nonnegative().default(0),
   MAX_QUEUE_DEPTH: z.coerce.number().int().positive().default(100),
-  REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
-  TASK_TTL_MS: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(10 * 60_000),
+  TASK_TTL_SECONDS: z.coerce.number().int().positive().default(600),
 
-  API_KEY: z.string().optional(),
-  CORS_ORIGINS: z.string().default("*"),
+  // Source fetching (SSRF allowlist of https hosts)
   SOURCE_URL_ALLOWLIST: z.string().default(""),
 });
 
-const splitList = (value: string): string[] =>
-  value
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+function build(raw: NodeJS.ProcessEnv) {
+  const parsed = EnvSchema.safeParse(raw);
+  if (!parsed.success) {
+    console.error(
+      "❌ Invalid environment variables:",
+      JSON.stringify(parsed.error.flatten().fieldErrors, null, 2)
+    );
+    process.exit(1);
+  }
+  const e = parsed.data;
 
-function build(env: NodeJS.ProcessEnv) {
-  const e = EnvSchema.parse(env);
-  const executionProviders = splitList(e.EXECUTION_PROVIDERS);
+  const executionProviders = toArray(e.EXECUTION_PROVIDERS);
   const usesAccelerator = executionProviders.some((p) => p !== "cpu" && p !== "wasm");
   // 0 = auto: serialize on an accelerator (a shared session serializes device
   // work anyway and parallel runs stack VRAM), a small pool on CPU.
@@ -59,23 +81,36 @@ function build(env: NodeJS.ProcessEnv) {
       : undefined;
 
   return {
+    apiEnv: e.API_ENV,
     port: e.PORT,
     host: e.HOST,
+
+    secretKey: e.SECRET_KEY,
+    ipWhiteList: toArray(e.IP_WHITE_LIST),
+    ipDenyList: toArray(e.IP_DENY_LIST),
+    corsOrigins: e.CORS_ORIGINS === "*" ? "*" : toArray(e.CORS_ORIGINS),
+    docsEnabled: toBoolean(e.DOCS_ENABLED),
+
+    rateLimitEnabled: toBoolean(e.RATE_LIMIT_ENABLED),
+    rateLimitMax: e.RATE_LIMIT_PER_WINDOW,
+    rateLimitWindowMs: e.RATE_LIMIT_WINDOW_SECONDS * 1000,
+
+    requestTimeoutMs: e.REQUEST_TIMEOUT_SECONDS * 1000,
+    maxUploadBytes: e.MAX_UPLOAD_BYTES,
+    maxImagePixels: e.MAX_IMAGE_PIXELS,
+    maxBatchImages: e.MAX_BATCH_IMAGES,
+
     executionProviders,
     usesAccelerator,
     defaultStrategy: e.DEFAULT_STRATEGY,
     defaultEngine: e.DEFAULT_ENGINE,
     model,
-    maxUploadBytes: e.MAX_UPLOAD_BYTES,
-    maxImagePixels: e.MAX_IMAGE_PIXELS,
-    maxBatchImages: e.MAX_BATCH_IMAGES,
+
     concurrency: e.MAX_CONCURRENCY > 0 ? e.MAX_CONCURRENCY : autoConcurrency,
     maxQueueDepth: e.MAX_QUEUE_DEPTH,
-    requestTimeoutMs: e.REQUEST_TIMEOUT_MS,
-    taskTtlMs: e.TASK_TTL_MS,
-    apiKey: e.API_KEY,
-    corsOrigins: e.CORS_ORIGINS === "*" ? "*" : splitList(e.CORS_ORIGINS),
-    sourceUrlAllowlist: splitList(e.SOURCE_URL_ALLOWLIST),
+    taskTtlMs: e.TASK_TTL_SECONDS * 1000,
+
+    sourceUrlAllowlist: toArray(e.SOURCE_URL_ALLOWLIST),
   };
 }
 
