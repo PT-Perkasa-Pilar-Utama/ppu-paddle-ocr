@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.6.0] - 2026-05-24
+
 ### Added
 
 - **`apps/serve` — production-grade REST API** (Hono + Bun, dockerized). One warmed `PaddleOcrService` behind a bounded inference queue (429 backpressure, no OOM/VRAM blow-up), graceful shutdown, optional API-key auth, Prometheus `/metrics`, OpenAPI `/docs`. Endpoints: sync/batch/async/SSE OCR, task status/cancel, `/v1/models`, `/health`, `/ready`. Multi-stage CPU + CUDA Dockerfiles (models pre-baked, non-root), compose, and a release workflow that builds, slims (docker-slim), and pushes to ghcr.io. Standalone package — kept out of the library's install/publish path.
