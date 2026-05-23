@@ -4,6 +4,8 @@
 
 Lightweight, probably the fastest PaddleOCR SDK in TypeScript. Runs anywhere JavaScript runs: Node.js, Bun, Deno, web browsers, and browser extensions. The official SDK is browser-only and significantly slower. [Compare it for yourself](https://snowfluke.github.io/paddle-ocr-comparison/).
 
+Need it as HTTP-service? dockerized? we've got you covered! Quickly spins up ppu-paddle-ocr REST API here: [ppu-paddle-ocr-serve](/apps/serve/README.md)
+
 ![ppu-paddle-ocr demo](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/refs/heads/main/assets/ppu-paddle-ocr-demo.jpg)
 
 ```ts
@@ -68,8 +70,6 @@ await service.destroy();
 - **Runs everywhere** — Node.js, Bun, Deno, web browsers, and browser extensions. The official SDK is browser-only.
 - **Customizable** — custom models, dictionaries, and per-call overrides.
 - **TypeScript** — full type definitions.
-
-> Need it as an HTTP service? [`apps/serve`](apps/serve/README.md) is a production-grade REST API (Hono + Bun, dockerized) — `docker run`, POST an image, get OCR JSON.
 
 ## Runtime Support
 
