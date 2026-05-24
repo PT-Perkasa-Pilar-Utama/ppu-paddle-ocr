@@ -25,8 +25,7 @@
     "typescript/explicit-module-boundary-types": "error",
 
     // §2.2 — Prefer `type` over `interface` for data shapes.
-    // Warn (not error) because `interface` is still valid for extensible contracts.
-    "typescript/consistent-type-definitions": ["warn", "type"],
+    "typescript/consistent-type-definitions": ["error", "type"],
 
     // §2.2 — Separate `import type` from value imports. Two statements preferred.
     "typescript/consistent-type-imports": [
