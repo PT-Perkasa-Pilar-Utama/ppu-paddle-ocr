@@ -8,6 +8,7 @@
         "ppu-ocv": "^3.1.5",
       },
       "devDependencies": {
+        "@napi-rs/canvas": "^1.0.0",
         "@types/bun": "latest",
         "@types/uglify-js": "latest",
         "@typescript/native-preview": "^7.0.0-dev.20260509.2",

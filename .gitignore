@@ -10,3 +10,8 @@ dist/*
 .DS_Store
 
 private-tests
+# coverage output (scripts/coverage.ts)
+coverage/
+# stray test debug output
+out-test-debug/
+/Users/

@@ -174,6 +174,12 @@ export class PaddleOcrService extends BasePaddleOcrService {
 
     await this.detectionSession?.release();
     this.detectionSession = await this._createSession(new Uint8Array(modelBuffer));
+    // Rebuild the detector against the new session; the old one is now released.
+    this.detector = new DetectionService(
+      this.detectionSession as unknown as ort.InferenceSession,
+      this.options.detection,
+      this.options.debugging
+    );
     if (this.options.model) this.options.model.detection = modelBuffer;
     this.log("Detection model changed successfully.");
   }
@@ -184,6 +190,12 @@ export class PaddleOcrService extends BasePaddleOcrService {
 
     await this.recognitionSession?.release();
     this.recognitionSession = await this._createSession(new Uint8Array(modelBuffer));
+    // Rebuild the recognitor against the new session; the old one is now released.
+    this.recognitor = new RecognitionService(
+      this.recognitionSession as unknown as ort.InferenceSession,
+      this.options.recognition,
+      this.options.debugging
+    );
     if (this.options.model) this.options.model.recognition = modelBuffer;
     this.log("Recognition model changed successfully.");
   }

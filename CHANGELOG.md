@@ -27,10 +27,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **OpenSSF baseline + best practices.** Added CodeQL on every push/PR (with a
   top-level least-privilege token), an osv-scanner SCA gate (CI and
   pre-release), a CycloneDX SBOM attached to each release, per-file SPDX
-  headers, an enforced coverage floor (`bunfig.toml`), and the supporting docs:
-  `GOVERNANCE.md`, `ROADMAP.md`, `docs/DESIGN.md`, `docs/THREAT_MODEL.md`,
-  release-verification / dependency / remediation / VEX policy in `SECURITY.md`,
-  and a DCO sign-off requirement in `CONTRIBUTING.md`.
+  headers, and the supporting docs: `GOVERNANCE.md`, `ROADMAP.md`,
+  `docs/DESIGN.md`, `docs/THREAT_MODEL.md`, release-verification / dependency /
+  remediation / VEX policy in `SECURITY.md`, and a DCO sign-off requirement in
+  `CONTRIBUTING.md`.
+
+### Added
+
+- **Web OCR test coverage.** The `ppu-paddle-ocr/web` path now runs under the
+  test runner via an `@napi-rs/canvas` polyfill harness
+  (`tests/web-canvas-polyfill.ts`), exercising onnxruntime-web's WASM backend
+  outside a browser. Combined line coverage is enforced at **90%** across
+  isolated node and web test passes (`scripts/coverage.ts`).
+
+### Fixed
+
+- **`changeDetectionModel` / `changeRecognitionModel` used a disposed session.**
+  Both the node and web services swapped the ONNX session at runtime without
+  rebuilding the detector/recognitor, so the next `recognize()` failed with
+  "Session already disposed". They now rebuild against the new session.
 
 ## [5.7.1] - 2026-05-24
 

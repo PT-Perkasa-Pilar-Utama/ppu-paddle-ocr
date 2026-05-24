@@ -43,8 +43,10 @@ jobs:
       - name: TypeScript type check
         run: bun run type-check
 
+      # Runs the node and web suites in isolated processes and gates on the
+      # merged line coverage (>= 90%). See scripts/coverage.ts.
       - name: Run tests with coverage
-        run: bun run test --coverage
+        run: bun run test:coverage
 
       - name: Build
         run: bun run build

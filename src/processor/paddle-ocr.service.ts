@@ -245,6 +245,13 @@ export class PaddleOcrService extends BasePaddleOcrService {
       (msg) => this.log(msg),
       (next) => (this.options.session = next)
     );
+    // Rebuild the detector against the new session; the old one is now released.
+    this.detector = new DetectionService(
+      this.detectionSession,
+      this.options.detection,
+      this.options.debugging,
+      this.options.processing?.engine || "opencv"
+    );
     if (this.options.model) this.options.model.detection = modelBuffer;
     this.log("Detection model changed successfully.");
   }
@@ -264,6 +271,13 @@ export class PaddleOcrService extends BasePaddleOcrService {
       this.options.session,
       (msg) => this.log(msg),
       (next) => (this.options.session = next)
+    );
+    // Rebuild the recognitor against the new session; the old one is now released.
+    this.recognitor = new RecognitionService(
+      this.recognitionSession,
+      this.options.recognition,
+      this.options.debugging,
+      this.options.processing?.engine || "opencv"
     );
     if (this.options.model) this.options.model.recognition = modelBuffer;
     this.log("Recognition model changed successfully.");

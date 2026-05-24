@@ -61,11 +61,12 @@
   "scripts": {
     "task": "bun scripts/task.ts",
     "build": "bun task build",
-    "build:test": "bun task build && bun test",
+    "build:test": "bun task build && bun scripts/test.ts",
     "build:publish": "bun task build && bun task report-size && bun task publish",
     "clear-cache": "bun scripts/clear-cache.ts",
     "type-check": "bunx tsgo --noEmit",
-    "test": "bun test tests private-tests --parallel=$(find tests private-tests -name '*.test.ts' 2>/dev/null | wc -l | tr -d ' ')",
+    "test": "bun scripts/test.ts",
+    "test:coverage": "bun scripts/coverage.ts",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "fmt": "oxfmt --check",
@@ -74,6 +75,7 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@napi-rs/canvas": "^1.0.0",
     "@types/bun": "latest",
     "@types/uglify-js": "latest",
     "@typescript/native-preview": "^7.0.0-dev.20260509.2",

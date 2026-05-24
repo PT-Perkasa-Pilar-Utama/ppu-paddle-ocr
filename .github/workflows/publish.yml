@@ -56,7 +56,7 @@ jobs:
         run: bun run type-check
 
       - name: Run tests with coverage
-        run: bun run test --coverage
+        run: bun run test:coverage
 
       - name: Publish package to jsr
         run: bunx jsr publish
