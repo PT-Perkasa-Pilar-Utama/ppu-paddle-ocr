@@ -1,10 +1,23 @@
-import { describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { getPlatform, setPlatform } from "ppu-ocv";
 
 /**
  * Unit tests for the web support module structure.
  * These tests verify that the web entry point exports are correctly wired up
  * and that the web services can be imported without pulling in Node-specific deps.
  */
+
+// Importing the web entry (below, dynamically) calls ppu-ocv's process-global
+// setPlatform(webPlatform). Save the platform before this file's tests and
+// restore it after, so node test files that run later in the same `bun test`
+// process aren't left on the web path (createImageBitmap is not defined).
+let savedPlatform: ReturnType<typeof getPlatform>;
+beforeAll(() => {
+  savedPlatform = getPlatform();
+});
+afterAll(() => {
+  setPlatform(savedPlatform);
+});
 
 describe("Web module exports", () => {
   test("src/web/index.ts exports PaddleOcrService", async () => {
