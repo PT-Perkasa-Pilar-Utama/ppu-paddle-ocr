@@ -38,6 +38,11 @@ jobs:
         # `jsr publish` step below abort ("Aborting due to uncommitted changes").
         run: bun install --frozen-lockfile
 
+      # The test step runs the whole repo, including apps/serve (a standalone
+      # package with its own deps); install them first so they resolve.
+      - name: Install serve dependencies
+        run: cd apps/serve && bun install --frozen-lockfile
+
       # Block the release on any High/Critical advisory in a dependency.
       # Mirrors the SCA gate that runs on every PR in ci.yml.
       - name: SCA scan (block on vulnerable dependencies)
