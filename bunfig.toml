@@ -1,0 +1,4 @@
+[test]
+# Enforce the coverage we already hold (~94% line / ~94% function) so it can
+# only go up. CI runs `bun test --coverage`, which fails below these floors.
+coverageThreshold = { line = 0.9, function = 0.9 }

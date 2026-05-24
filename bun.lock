@@ -5,7 +5,7 @@
     "": {
       "name": "ppu-paddle-ocr",
       "dependencies": {
-        "ppu-ocv": "^3.1.5",
+        "ppu-ocv": "^3.2.2",
       },
       "devDependencies": {
         "@napi-rs/canvas": "^1.0.0",
@@ -358,7 +358,7 @@
 
     "platform": ["platform@1.3.6", "", {}, "sha512-fnWVljUchTro6RiCFvCXBbNhJc2NijN7oIQxbwsyL0buWJPG85v81ehlHI9fXrJsMNgTofEoWIQeClKpgxFLrg=="],
 
-    "ppu-ocv": ["ppu-ocv@3.1.5", "", { "dependencies": { "@napi-rs/canvas": "^1.0.0", "@techstark/opencv-js": "^4.10.0-release.1" } }, "sha512-BAvk7Akrm4BbezR3B9FY1F+7nqafDKnRmqGP5iLudeVSwTI1N7CWTAOyPdm3GYFWjCKPYqwt/DB2yiXYhzfOMQ=="],
+    "ppu-ocv": ["ppu-ocv@3.2.2", "", { "dependencies": { "@napi-rs/canvas": "^1.0.0", "@techstark/opencv-js": "^4.10.0-release.1" } }, "sha512-CIDzeybd8PW8HB+l9wbKGs8cqvUZ/Gzk2XImr+oWqsUn2iobXcBLa9kxZYFXLZfFu0qL5zFHZgnnZHzjwQ/eeg=="],
 
     "prebuild-install": ["prebuild-install@7.1.3", "", { "dependencies": { "detect-libc": "^2.0.0", "expand-template": "^2.0.3", "github-from-package": "0.0.0", "minimist": "^1.2.3", "mkdirp-classic": "^0.5.3", "napi-build-utils": "^2.0.0", "node-abi": "^3.3.0", "pump": "^3.0.0", "rc": "^1.2.7", "simple-get": "^4.0.0", "tar-fs": "^2.0.0", "tunnel-agent": "^0.6.0" }, "bin": { "prebuild-install": "bin.js" } }, "sha512-8Mf2cbV7x1cXPUILADGI3wuhfqWvtiLA1iclTDbFRZkgRQS0NqsPZphna9V+HyTEadheuPmjaJMsbzKQFOzLug=="],
 

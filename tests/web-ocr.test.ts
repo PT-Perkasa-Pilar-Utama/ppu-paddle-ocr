@@ -2,20 +2,37 @@
 // Copyright (c) 2026 PT Perkasa Pilar Utama
 
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
+import { getPlatform, setPlatform } from "ppu-ocv";
 
-import { PaddleOcrService as WebPaddleOcrService } from "../src/web/paddle-ocr.service.web.js";
+import type { PaddleOcrService } from "../src/web/paddle-ocr.service.web.js";
 import { installWebCanvas, uninstallWebCanvas } from "./web-canvas-polyfill.js";
+
+// The web entry is imported dynamically inside beforeAll — NOT at module load —
+// so it doesn't call ppu-ocv's process-global setPlatform(webPlatform) before
+// the node test suites run in the same `bun test` process. The active platform
+// is saved before and restored after this suite.
+let WebPaddleOcrService: typeof PaddleOcrService;
+let savedPlatform: ReturnType<typeof getPlatform>;
 
 const imgFile = Bun.file(`${import.meta.dir}/../assets/receipt.jpg`);
 const imageBuffer = await imgFile.arrayBuffer();
 
 describe("web OCR service (onnxruntime-web under the polyfilled runtime)", () => {
-  let service: WebPaddleOcrService;
+  let service: PaddleOcrService;
 
-  // Canvas globals exist only for the duration of this suite so the node OCR
-  // tests (run in the same process) never take ppu-ocv's browser path.
-  beforeAll(() => installWebCanvas());
-  afterAll(() => uninstallWebCanvas());
+  // Switch to the web platform + browser canvas globals only for this suite,
+  // then restore the previous (node) platform so node OCR tests sharing the
+  // process aren't left on the web path.
+  beforeAll(async () => {
+    savedPlatform = getPlatform();
+    installWebCanvas();
+    ({ PaddleOcrService: WebPaddleOcrService } =
+      await import("../src/web/paddle-ocr.service.web.js"));
+  });
+  afterAll(() => {
+    uninstallWebCanvas();
+    setPlatform(savedPlatform);
+  });
 
   afterEach(async () => {
     if (service) await service.destroy();
@@ -64,8 +81,9 @@ describe("web OCR service (onnxruntime-web under the polyfilled runtime)", () =>
     expect(streamed.length).toBe(1);
   }, 90000);
 
-  // The web suite runs in its own process, so the opencv engine here does not
-  // collide with the node OCR tests' OpenCV state.
+  // The opencv engine sets the web OpenCV as the global `cv`; ppu-ocv's
+  // structural Mat check (3.2.0+) keeps node OCR tests working in the same
+  // process, and afterAll restores the node platform.
   test("recognizes with the opencv engine", async () => {
     service = new WebPaddleOcrService({ processing: { engine: "opencv" } });
     await service.initialize();

@@ -43,8 +43,9 @@ jobs:
       - name: TypeScript type check
         run: bun run type-check
 
-      # Runs the node and web suites in isolated processes and gates on the
-      # merged line coverage (>= 90%). See scripts/coverage.ts.
+      # Runs the whole suite in one process (web tests isolate their platform
+      # via setPlatform save/restore) and gates on coverage (>= 90% line +
+      # function, enforced by bunfig.toml's coverageThreshold).
       - name: Run tests with coverage
         run: bun run test:coverage
 

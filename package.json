@@ -61,12 +61,12 @@
   "scripts": {
     "task": "bun scripts/task.ts",
     "build": "bun task build",
-    "build:test": "bun task build && bun scripts/test.ts",
+    "build:test": "bun task build && bun test",
     "build:publish": "bun task build && bun task report-size && bun task publish",
     "clear-cache": "bun scripts/clear-cache.ts",
     "type-check": "bunx tsgo --noEmit",
-    "test": "bun scripts/test.ts",
-    "test:coverage": "bun scripts/coverage.ts",
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "fmt": "oxfmt --check",
@@ -95,7 +95,7 @@
     "url": "git+https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr.git"
   },
   "dependencies": {
-    "ppu-ocv": "^3.1.5"
+    "ppu-ocv": "^3.2.2"
   },
   "optionalDependencies": {
     "onnxruntime-node": "^1.23.2"
