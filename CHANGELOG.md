@@ -7,45 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [5.7.2] - 2026-05-24
+## [5.8.0] - 2026-05-25
+
+### Added
+
+- **Signed release artifacts.** The publish workflow signs the published tarball
+  keyless with cosign (Sigstore, via OIDC) and attaches the `.sigstore.json`
+  bundle to the GitHub release, satisfying OpenSSF Scorecard's Signed-Releases
+  check. Release tags are SSH-signed.
+- **Reproducible-build verification.** CI builds twice and fails unless `lib/`
+  is byte-identical; `docs/REPRODUCIBLE_BUILD.md` documents how to verify.
+- **Fuzz testing (dynamic analysis).** `tests/fuzz.test.ts` uses `fast-check` to
+  feed random and malformed input to the OCR decode boundary on every CI run.
+- **300-line-of-code cap.** A `max-lines` oxlint rule (error, `.ts` only) caps
+  files at 300 lines of code; documented in `CONTRIBUTING.md`.
+- **Web OCR test coverage.** The `ppu-paddle-ocr/web` path runs under the test
+  runner via an `@napi-rs/canvas` polyfill harness (`tests/web-canvas-polyfill.ts`).
+
+### Changed
+
+- **The whole suite runs in one `bun test`.** Bumped `ppu-ocv` to `^3.2.2` (its
+  structural canvas/Mat detection) and isolated the web suite's platform, so the
+  node, web, CLI, and `apps/serve` tests run in a single process — no split
+  runner. Combined coverage ~94%, gated at 90% via `bunfig.toml`. Removed the
+  `scripts/test.ts` / `scripts/coverage.ts` two-pass runner.
+- **Service layer split under the 300-LOC cap.** The recognition, detection, and
+  processor services were split into focused internal modules
+  (`src/core/recognition/`, `src/core/detection/`, `src/processor/model-cache.ts`).
+  Public class APIs are unchanged.
+- **`type` over `interface`** is now a lint error; pre-commit formatting is
+  scoped to staged files (no whole-repo reformat sweep).
+- **`apps/serve`** bumped to 0.1.3 with `API_VERSION` synced.
+
+### Fixed
+
+- **Demo (`index.html`) pins an exact package version.** The `ppu-paddle-ocr@5`
+  CDN range could resolve to a stale build; it now pins the released version.
+- **`changeDetectionModel` / `changeRecognitionModel` used a disposed session.**
+  Both the node and web services swapped the ONNX session at runtime without
+  rebuilding the detector/recognitor, so the next `recognize()` failed with
+  "Session already disposed". They now rebuild against the new session.
 
 ### Security
 
-- **Supply-chain hardening.** All GitHub Actions are now pinned to commit SHAs
-  (Dependabot keeps them current), `npm publish` passes `--provenance`
-  explicitly, and a new OpenSSF Scorecard workflow publishes a supply-chain
-  health score.
-- **Published package runs no install scripts.** The publish manifest is now
-  sanitized — `scripts` (including `prepare`) and `devDependencies` are stripped
-  before publishing, so an installed copy can execute no lifecycle code. npm
-  reports `hasInstallScript: false`.
+- **Supply-chain hardening.** All GitHub Actions are pinned to commit SHAs,
+  `npm publish` passes `--provenance`, and an OpenSSF Scorecard workflow
+  publishes a supply-chain health score.
+- **Published package runs no install scripts.** `scripts` (including `prepare`)
+  and `devDependencies` are stripped from the published manifest, so an
+  installed copy can execute no lifecycle code (`hasInstallScript: false`).
+- **OpenSSF baseline + best practices.** CodeQL on every push/PR (least-privilege
+  token), an osv-scanner SCA gate (CI and pre-release), a CycloneDX SBOM per
+  release, per-file SPDX headers, and the supporting docs: `GOVERNANCE.md`,
+  `ROADMAP.md`, `docs/DESIGN.md`, `docs/THREAT_MODEL.md`, the
+  release-verification / dependency / remediation / VEX policy in `SECURITY.md`,
+  and a DCO sign-off requirement in `CONTRIBUTING.md`.
 - **`SECURITY.md`** documents the Socket "obfuscated code" alerts on
   `onnxruntime-web` / `@protobufjs/float` as false positives on minified and
   generated upstream artifacts.
 - **LICENSE now ships in the npm tarball** (previously only the SPDX field
   traveled).
-- **OpenSSF baseline + best practices.** Added CodeQL on every push/PR (with a
-  top-level least-privilege token), an osv-scanner SCA gate (CI and
-  pre-release), a CycloneDX SBOM attached to each release, per-file SPDX
-  headers, and the supporting docs: `GOVERNANCE.md`, `ROADMAP.md`,
-  `docs/DESIGN.md`, `docs/THREAT_MODEL.md`, release-verification / dependency /
-  remediation / VEX policy in `SECURITY.md`, and a DCO sign-off requirement in
-  `CONTRIBUTING.md`.
-
-### Added
-
-- **Web OCR test coverage.** The `ppu-paddle-ocr/web` path now runs under the
-  test runner via an `@napi-rs/canvas` polyfill harness
-  (`tests/web-canvas-polyfill.ts`), exercising onnxruntime-web's WASM backend
-  outside a browser. Combined line coverage is enforced at **90%** across
-  isolated node and web test passes (`scripts/coverage.ts`).
-
-### Fixed
-
-- **`changeDetectionModel` / `changeRecognitionModel` used a disposed session.**
-  Both the node and web services swapped the ONNX session at runtime without
-  rebuilding the detector/recognitor, so the next `recognize()` failed with
-  "Session already disposed". They now rebuild against the new session.
 
 ## [5.7.1] - 2026-05-24
 
