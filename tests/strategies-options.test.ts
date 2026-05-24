@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 PT Perkasa Pilar Utama
 
-import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { existsSync, rmSync } from "node:fs";
 
 import { DEFAULT_MODEL_URLS } from "../src/core/base-paddle-ocr.service.js";
@@ -94,15 +94,24 @@ describe("debugging options", () => {
   });
 
   test("verbose + debug exercise the logging and dump paths", async () => {
-    const service = new PaddleOcrService({
-      debugging: { verbose: true, debug: true, debugFolder },
-    });
-    await service.initialize();
+    // Run the verbose/debug code paths for coverage, but silence the console so
+    // the suite output stays clean (the calls still execute, just to a no-op).
+    const logSpy = spyOn(console, "log").mockImplementation(() => {});
+    const warnSpy = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const service = new PaddleOcrService({
+        debugging: { verbose: true, debug: true, debugFolder },
+      });
+      await service.initialize();
 
-    const result = await service.recognize(imageBuffer, { noCache: true });
-    expect(result.text.length).toBeGreaterThan(0);
+      const result = await service.recognize(imageBuffer, { noCache: true });
+      expect(result.text.length).toBeGreaterThan(0);
 
-    await service.destroy();
+      await service.destroy();
+    } finally {
+      logSpy.mockRestore();
+      warnSpy.mockRestore();
+    }
   }, 30000);
 });
 
@@ -181,7 +190,11 @@ describe("input forms and caching", () => {
   }, 30000);
 
   test("accepts a per-call dictionary as an ArrayBuffer", async () => {
-    const dictBuffer = await Bun.file(`${import.meta.dir}/../models/en_dict.txt`).arrayBuffer();
+    // v5 dictionary (437 entries → 438 with the CTC blank) matching the default
+    // v5 recognition model; the stale v4 models/en_dict.txt (96) would mismatch.
+    const dictBuffer = await Bun.file(
+      `${import.meta.dir}/../models/ppocrv5_en_dict.txt`
+    ).arrayBuffer();
     const result = await service.recognize(imageBuffer, { dictionary: dictBuffer });
     expect(result.text).toBeString();
   }, 30000);
@@ -270,13 +283,20 @@ describe("error paths and lifecycle", () => {
 // streaming fetch-with-progress path), leaving the cache warm again.
 describe("model cache download path", () => {
   test("clearModelCache then downloadModels fetches and re-caches", async () => {
-    const service = new PaddleOcrService();
-    service.clearModelCache();
-    await PaddleOcrService.downloadModels({ verbose: true });
+    // verbose: true exercises the streaming fetch-with-progress logging path;
+    // silence the console so the suite output stays clean.
+    const logSpy = spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const service = new PaddleOcrService();
+      service.clearModelCache();
+      await PaddleOcrService.downloadModels({ verbose: true });
 
-    await service.initialize();
-    const result = await service.recognize(imageBuffer, { noCache: true });
-    expect(result.text.length).toBeGreaterThan(0);
-    await service.destroy();
+      await service.initialize();
+      const result = await service.recognize(imageBuffer, { noCache: true });
+      expect(result.text.length).toBeGreaterThan(0);
+      await service.destroy();
+    } finally {
+      logSpy.mockRestore();
+    }
   }, 120000);
 });
