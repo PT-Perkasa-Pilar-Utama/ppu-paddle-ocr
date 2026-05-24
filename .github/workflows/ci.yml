@@ -52,6 +52,20 @@ jobs:
       - name: Build
         run: bun run build
 
+      # Verify the build is reproducible: build a second time and confirm the
+      # output is byte-identical (OpenSSF Best Practices: build_reproducible).
+      - name: Verify reproducible build
+        run: |
+          h1=$(find lib -type f -exec shasum {} \; | sort | shasum)
+          rm -rf lib
+          bun run build
+          h2=$(find lib -type f -exec shasum {} \; | sort | shasum)
+          if [ "$h1" != "$h2" ]; then
+            echo "::error::Build is not reproducible: $h1 != $h2"
+            exit 1
+          fi
+          echo "Build is reproducible."
+
       # The bin is only usable via npx/bunx if the build kept its shebang and
       # executable bit; assert both, then that it actually runs.
       - name: CLI — verify bin
