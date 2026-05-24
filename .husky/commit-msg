@@ -2,10 +2,10 @@
 
 subject=$(head -1 "$1")
 
-if ! echo "$subject" | grep -qE "^(feat|fix|chore|refactor|test|docs|perf)!?: .+$"; then
+if ! echo "$subject" | grep -qE "^(feat|fix|chore|refactor|test|docs|perf|ci|cli)!?: .+$"; then
   echo "Error: Invalid commit format." >&2
   echo "Expected: type: description" >&2
-  echo "Types: feat, fix, chore, refactor, test, docs, perf" >&2
+  echo "Types: feat, fix, chore, refactor, test, docs, perf, ci, cli" >&2
   exit 1
 fi
 

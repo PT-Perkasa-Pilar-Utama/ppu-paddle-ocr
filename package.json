@@ -46,7 +46,7 @@
   "main": "./index.js",
   "types": "./index.d.ts",
   "bin": {
-    "ppu-paddle-ocr": "./cli/index.js"
+    "ppu-paddle-ocr": "cli/index.js"
   },
   "exports": {
     ".": {
@@ -90,7 +90,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr.git"
+    "url": "git+https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr.git"
   },
   "dependencies": {
     "ppu-ocv": "^3.1.5"
