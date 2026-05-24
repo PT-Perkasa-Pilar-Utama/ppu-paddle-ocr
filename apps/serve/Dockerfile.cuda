@@ -7,14 +7,15 @@
 # the CUDA runtime libraries are present (this base image) and EXECUTION_PROVIDERS
 # includes "cuda". If the GPU/runtime is missing, the library falls back to CPU.
 
-FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04 AS runtime
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04@sha256:2fcc4280646484290cc50dce5e65f388dd04352b07cbe89a635703bd1f9aedb6 AS runtime
 WORKDIR /app
 
-# Install Bun.
-RUN apt-get update && apt-get install -y --no-install-recommends curl unzip ca-certificates \
-  && rm -rf /var/lib/apt/lists/* \
-  && curl -fsSL https://bun.sh/install | bash \
-  && ln -s /root/.bun/bin/bun /usr/local/bin/bun
+# ca-certificates for HTTPS model downloads. Bun is copied from the pinned
+# oven/bun image rather than piping its install script to bash (Scorecard
+# Pinned-Dependencies: no `curl | bash`).
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+COPY --from=oven/bun:1-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 /usr/local/bin/bun /usr/local/bin/bun
 
 LABEL org.opencontainers.image.title="ppu-paddle-ocr-serve" \
       org.opencontainers.image.description="Production-grade REST API serving ppu-paddle-ocr (PaddleOCR PP-OCRv5 OCR) — Hono + Bun, CUDA." \

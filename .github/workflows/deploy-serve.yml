@@ -5,6 +5,11 @@ name: Deploy serve image
 on:
   workflow_dispatch:
 
+# Least-privilege default for the workflow; the build job opts into the
+# `packages: write` it needs to push to ghcr.io (Scorecard Token-Permissions).
+permissions:
+  contents: read
+
 jobs:
   build-and-push:
     name: Build, slim, and push to ghcr.io
