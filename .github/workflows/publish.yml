@@ -55,5 +55,12 @@ jobs:
       - name: Copy package files
         run: cp README.md package.json lib/
 
+      # Guard the bin before it ships: it must run and be in the tarball, or
+      # `npx ppu-paddle-ocr` breaks for everyone.
+      - name: Verify CLI bin is runnable and packed
+        run: |
+          node lib/cli/index.js --version
+          npm pack ./lib --dry-run 2>&1 | grep -q 'cli/index.js'
+
       - name: Publish to npm
         run: npm publish ./lib --access=public

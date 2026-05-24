@@ -2,9 +2,9 @@
 
 [![Slack](https://img.shields.io/badge/Slack-Community-4A154B?logo=slack&logoColor=white)](https://join.slack.com/t/ppupaddleocrcommunity/shared_invite/zt-3uzp1uuma-lrkEq8OYBYhGdUtzRoVmUg) [![NPM](https://img.shields.io/npm/dw/ppu-paddle-ocr)](https://www.npmjs.com/package/ppu-paddle-ocr)
 
-Lightweight, probably the fastest PaddleOCR SDK in TypeScript. Runs anywhere JavaScript runs: Node.js, Bun, Deno, web browsers, and browser extensions. Docker-ready. The official SDK is browser-only and significantly slower. [Compare it for yourself](https://snowfluke.github.io/paddle-ocr-comparison/).
+Lightweight, probably the fastest PaddleOCR SDK in TypeScript. Runs anywhere JavaScript runs: Node.js, Bun, Deno, web browsers, and browser extensions. Docker & CLI supported. The official SDK is browser-only and significantly slower. [Compare it for yourself](https://snowfluke.github.io/paddle-ocr-comparison/).
 
-Need it as HTTP-service? dockerized? we've got you covered! Quickly spins up ppu-paddle-ocr REST API here: [ppu-paddle-ocr-serve](/apps/serve/README.md)
+Need it as HTTP-service? dockerized? we've got you covered! Quickly spins up ppu-paddle-ocr REST API here: [ppu-paddle-ocr-serve](/apps/serve/README.md). Need a CLI instead? sure here: [ppu-paddle-ocr CLI support](#command-line).
 
 ![ppu-paddle-ocr demo](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/refs/heads/main/assets/ppu-paddle-ocr-demo.jpg)
 
@@ -31,6 +31,7 @@ await service.destroy();
   - [Custom Models](#custom-models)
   - [Changing Models at Runtime](#changing-models-at-runtime)
   - [Per-Call Options](#per-call-options)
+- [Command Line](#command-line)
 - [Batch Recognition](#batch-recognition)
 - [Recognition Strategies](#recognition-strategies)
 - [Image Preprocessing](#image-preprocessing)
@@ -162,6 +163,33 @@ const result = await service.recognize("./assets/receipt.jpg", {
   strategy: "per-box",
 });
 ```
+
+## Command Line
+
+The package ships a `bin`, so you can OCR without writing any code — `bunx`/`npx` resolve it directly (no global install):
+
+```bash
+# one image → recognized text on stdout
+bunx ppu-paddle-ocr recognize receipt.jpg
+
+# a URL, as structured JSON
+npx ppu-paddle-ocr recognize https://example.com/invoice.png --json --pretty
+
+# many images (glob), fastest strategy, written to a file
+bunx ppu-paddle-ocr batch "scans/*.png" --strategy cross-line --json -o results.json
+
+# print each result as it finishes
+bunx ppu-paddle-ocr stream "scans/*.png"
+
+# pre-warm / clear the model cache, inspect the active config
+bunx ppu-paddle-ocr download-models
+bunx ppu-paddle-ocr clear-cache
+bunx ppu-paddle-ocr models --json
+```
+
+Every `PaddleOptions` / `RecognizeOptions` field maps to a flag: `--strategy`, `--engine`, `--flatten`, `--no-cache`, `--image-height`, `--model-detection/-recognition/-dict`, detection tuning (`--max-side-length`, `--padding-vertical`, `--padding-horizontal`, `--min-area`, `--mean`, `--std`), `--execution-providers`, and for `batch`/`stream` `--concurrency`. Output is controlled by `--json`, `--pretty`, `-o/--output`, `-q/--quiet`, and `--verbose`.
+
+Recognized text goes to **stdout**; progress and logs go to **stderr**, so output pipes cleanly. Exit codes: `0` success, `1` runtime error, `2` usage error. Run `bunx ppu-paddle-ocr help` for the full reference. The CLI uses the default v5 models unless you override the `--model-*` flags.
 
 ## Batch Recognition
 
