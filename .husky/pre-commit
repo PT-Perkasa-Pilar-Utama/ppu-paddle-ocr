@@ -1,11 +1,8 @@
-# Format + lint the whole repo before committing so CI doesn't trip on an
-# unrelated file. Restage the fixer output via `git add -u` so the fixes
-# land in this commit instead of a follow-up. Still bypassable with
-# `git commit --no-verify`; CI is the ultimate guardrail.
+# Run staged-file checks only. Do NOT format or lint-fix the whole repo here —
+# that reformats files unrelated to the commit and, with `git add -u`, sweeps
+# them all in. Formatting is scoped to the staged files via lint-staged.
+# Bypassable with `git commit --no-verify`; CI is the ultimate guardrail.
 
 set -e
 
-bun run fmt:fix
-bun run lint:fix || true
-git add -u
 bunx lint-staged
