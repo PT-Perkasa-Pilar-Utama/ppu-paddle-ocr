@@ -1,6 +1,6 @@
 # ppu-paddle-ocr
 
-[![Slack](https://img.shields.io/badge/Slack-Community-4A154B?logo=slack&logoColor=white)](https://join.slack.com/t/ppupaddleocrcommunity/shared_invite/zt-3uzp1uuma-lrkEq8OYBYhGdUtzRoVmUg) [![NPM](https://img.shields.io/npm/dw/ppu-paddle-ocr)](https://www.npmjs.com/package/ppu-paddle-ocr)
+[![Slack](https://img.shields.io/badge/Slack-Community-4A154B?logo=slack&logoColor=white)](https://join.slack.com/t/ppupaddleocrcommunity/shared_invite/zt-3uzp1uuma-lrkEq8OYBYhGdUtzRoVmUg) [![NPM](https://img.shields.io/npm/dw/ppu-paddle-ocr)](https://www.npmjs.com/package/ppu-paddle-ocr) [![npm version](https://img.shields.io/npm/v/ppu-paddle-ocr)](https://www.npmjs.com/package/ppu-paddle-ocr) [![Provenance](https://img.shields.io/badge/npm-signed%20provenance-blue?logo=npm)](https://www.npmjs.com/package/ppu-paddle-ocr#provenance) [![License: MIT](https://img.shields.io/npm/l/ppu-paddle-ocr)](./LICENSE) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/badge)](https://scorecard.dev/viewer/?uri=github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr) [![Socket Badge](https://socket.dev/api/badge/npm/package/ppu-paddle-ocr)](https://socket.dev/npm/package/ppu-paddle-ocr)
 
 Lightweight, probably the fastest PaddleOCR SDK in TypeScript. Runs anywhere JavaScript runs: Node.js, Bun, Deno, web browsers, and browser extensions. Docker & CLI supported. The official SDK is browser-only and significantly slower. [Compare it for yourself](https://snowfluke.github.io/paddle-ocr-comparison/).
 

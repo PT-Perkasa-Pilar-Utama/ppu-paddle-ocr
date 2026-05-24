@@ -36,6 +36,28 @@ Out-of-scope reports:
 - Issues that require an attacker to already have write access to the host filesystem
 - General questions or feature requests
 
+## Dependency scanner notes
+
+Static scanners (e.g. Socket) flag an **"obfuscated code"** alert on a few
+transitive dependencies. These are false positives on minified or
+machine-generated artifacts, not malicious code:
+
+- `onnxruntime-web` — `dist/ort.webgpu.bundle.min.mjs` is a **minified** WASM /
+  WebWorker bundle; `lib/onnxjs/ort-schema/protobuf/onnx.js` is **generated**
+  protobuf binding code.
+- `@protobufjs/float` (pulled in via `protobufjs`, a dependency of ONNX Runtime
+  for parsing the protobuf-encoded model format) — hand-written IEEE-754
+  bit-manipulation that trips dense-code heuristics.
+
+The scanners' own deeper analysis rates all three low-risk with no evidence of
+data exfiltration, backdoors, or supply-chain tampering. They originate from
+the upstream ONNX Runtime (Microsoft) and protobuf.js packages, not from this
+SDK. No action is required.
+
+This package itself ships with **npm provenance** (a signed SLSA attestation
+linking each release to the exact source commit and CI run) and runs **no
+install scripts**.
+
 ## Disclosure Policy
 
 We follow responsible disclosure. Once a fix is released we will publish a GitHub Security Advisory describing the issue, affected versions, and the fix.

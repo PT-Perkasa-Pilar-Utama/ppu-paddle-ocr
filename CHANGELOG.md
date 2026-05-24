@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Supply-chain hardening.** All GitHub Actions are now pinned to commit SHAs
+  (Dependabot keeps them current), `npm publish` passes `--provenance`
+  explicitly, and a new OpenSSF Scorecard workflow publishes a supply-chain
+  health score.
+- **Published package runs no install scripts.** The publish manifest is now
+  sanitized — `scripts` (including `prepare`) and `devDependencies` are stripped
+  before publishing, so an installed copy can execute no lifecycle code. npm
+  reports `hasInstallScript: false`.
+- **`SECURITY.md`** documents the Socket "obfuscated code" alerts on
+  `onnxruntime-web` / `@protobufjs/float` as false positives on minified and
+  generated upstream artifacts.
+
 ## [5.7.1] - 2026-05-24
 
 ### Fixed

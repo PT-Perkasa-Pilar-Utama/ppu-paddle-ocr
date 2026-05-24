@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Resolve image name + version
         id: img
@@ -27,7 +27,7 @@ jobs:
           echo "Resolved ghcr.io/${repo}/serve:${version}"
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -45,7 +45,7 @@ jobs:
 
       - name: Build fat image
         if: steps.published.outputs.skip != 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: apps/serve/Dockerfile
@@ -57,7 +57,7 @@ jobs:
       # The prebaked model cache is force-kept via DSLIM_INCLUDE_PATH.
       - name: Slim the image
         if: steps.published.outputs.skip != 'true'
-        uses: kitabisa/docker-slim-action@v1.2.0
+        uses: kitabisa/docker-slim-action@6a9a64eaf0c08b1251c148514dd70be1495bff12 # v1.2.0
         env:
           DSLIM_HTTP_PROBE: true
           DSLIM_HTTP_PROBE_CMD: "/health,/ready,/v1/models,/metrics"
@@ -71,7 +71,7 @@ jobs:
       # credential store, so re-authenticate before pushing.
       - name: Re-login to GitHub Container Registry
         if: steps.published.outputs.skip != 'true'
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
