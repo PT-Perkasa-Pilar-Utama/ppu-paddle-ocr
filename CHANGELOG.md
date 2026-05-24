@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.7.0] - 2026-05-24
+
 ### Added
 
 - **First-party CLI — `bunx ppu-paddle-ocr …` / `npx ppu-paddle-ocr …`.** Shipped as a `bin` in the package (no extra install), it covers the whole library surface: `recognize` (single image), `batch` and `stream` (globs or lists, with bounded concurrency), plus `download-models`, `clear-cache`, and `models`. Every `PaddleOptions` / `RecognizeOptions` field has a flag — `--strategy`, `--engine`, `--flatten`, `--model-detection/-recognition/-dict`, detection tuning (`--max-side-length`, `--mean`, `--std`, …), `--execution-providers`, `--concurrency`, and output controls (`--json`, `--pretty`, `-o`, `-q`). Recognized text goes to stdout, progress/logs to stderr; exit codes are `0` success / `1` runtime error / `2` usage error. Uses the default v5 models unless overridden. Cross-runtime (Node and Bun); no new runtime dependencies (`node:util.parseArgs`).
