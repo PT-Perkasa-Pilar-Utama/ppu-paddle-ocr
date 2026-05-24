@@ -14,13 +14,15 @@
         "canvas": "^3.2.1",
         "husky": "^9.1.7",
         "lint-staged": "^17.0.3",
-        "onnxruntime-node": "^1.23.2",
         "onnxruntime-web": "^1.24.2",
         "oxfmt": "^0.51.0",
         "oxlint": "^1.63.0",
         "tsx": "latest",
         "typescript": "latest",
         "uglify-js": ">=2.4.24",
+      },
+      "optionalDependencies": {
+        "onnxruntime-node": "^1.23.2",
       },
       "peerDependencies": {
         "onnxruntime-node": "^1.23.2",
