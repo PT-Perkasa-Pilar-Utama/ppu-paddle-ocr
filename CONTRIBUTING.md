@@ -8,6 +8,8 @@ Thank you for taking the time to contribute. This document covers how to set up 
 - [Development Setup](#development-setup)
 - [Making Changes](#making-changes)
 - [Code Quality](#code-quality)
+- [How tests run](#how-tests-run)
+- [Developer Certificate of Origin](#developer-certificate-of-origin)
 - [Submitting a Pull Request](#submitting-a-pull-request)
 - [Reporting Issues](#reporting-issues)
 - [Community](#community)
@@ -44,9 +46,50 @@ Pre-commit hooks are set up via Husky and run automatically after `bun install`.
 ## Making Changes
 
 - Keep changes focused. One feature or bug fix per PR makes review faster.
-- Add or update tests for anything you change in the hot path or public API.
+- **Any change to behavior must add or update tests.** New options, bug fixes,
+  detection/recognition changes, and public-API changes all require test
+  coverage in the same PR. A reviewer will ask for tests before merging if they
+  are missing.
 - Update `README.md` if you change public-facing options, defaults, or the setup steps.
 - Add an entry under `## [Unreleased]` in `CHANGELOG.md` for user-visible changes.
+
+### What we accept
+
+A pull request is ready to merge when it:
+
+- solves one clearly described problem and links its issue (if any);
+- passes every check in [Code Quality](#code-quality) and the required CI run;
+- adds or updates tests for the behavior it changes;
+- keeps the public API stable, or documents the break and bumps the version
+  accordingly;
+- carries a signed-off commit (see [Developer Certificate of Origin](#developer-certificate-of-origin)).
+
+Maintainers may decline changes that broaden scope beyond OCR, add heavy
+dependencies, or regress accuracy or performance without justification.
+
+## How tests run
+
+`bun test` runs the suite locally. CI runs the same suite on every push and
+pull request to `main`, and the `Quality Checks and Tests` job is a **required
+status check**: a pull request cannot merge until it passes. Coverage is
+collected on each run (`bun run test --coverage`). Run the tests locally before
+pushing so CI only confirms what you already know.
+
+## Developer Certificate of Origin
+
+Every commit must be signed off under the [Developer Certificate of Origin
+(DCO)](https://developercertificate.org/). The sign-off is your statement that
+you wrote the change, or have the right to submit it under the project's MIT
+license.
+
+Add it with `-s`:
+
+```bash
+git commit -s -m "fix: correct box ordering in cross-line strategy"
+```
+
+This appends a `Signed-off-by:` trailer to your commit message. Commits without
+a sign-off will be asked to amend before merge (`git commit --amend -s`).
 
 ## Code Quality
 

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 PT Perkasa Pilar Utama
+
 /**
  * Cross-runtime IO helpers for the CLI. Deliberately free of `Bun.*` globals so
  * the published `bin` runs under plain `node` (via `npx`) as well as Bun.

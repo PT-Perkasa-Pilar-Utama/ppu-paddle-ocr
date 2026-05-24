@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 PT Perkasa Pilar Utama
+
 /**
  * Command implementations. Each owns one `PaddleOcrService` lifecycle and
  * throws `CliError` on failure; the dispatcher in `index.ts` maps that to an

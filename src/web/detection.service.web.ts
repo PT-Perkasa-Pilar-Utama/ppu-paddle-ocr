@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 PT Perkasa Pilar Utama
+
 import type * as ort from "onnxruntime-web";
 import { BaseDetectionService } from "../core/base-detection.service.js";
 import type { DebuggingOptions, DetectionOptions } from "../interface.js";

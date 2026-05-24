@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 PT Perkasa Pilar Utama
+
 import type { InferenceSession } from "onnxruntime-common";
 import { DEFAULT_PADDLE_OPTIONS } from "../constants.js";
 import type { BatchRecognizeOptions, Box, PaddleOptions, RecognizeOptions } from "../interface.js";

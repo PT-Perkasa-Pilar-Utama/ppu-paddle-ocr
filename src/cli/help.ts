@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 PT Perkasa Pilar Utama
+
 /**
  * Usage text for the `ppu-paddle-ocr` CLI. Printed to stdout for `help` /
  * `--help`, and to stderr (followed by a non-zero exit) on usage errors.

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 PT Perkasa Pilar Utama
+
 import * as fs from "fs/promises";
 import * as ort from "onnxruntime-node";
 import * as path from "path";

@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 PT Perkasa Pilar Utama
+
 /**
  * `ppu-paddle-ocr` executable entry point. Thin shim around {@link main}: wires
  * argv, the SIGINT handler, and the final exit code. All logic lives in

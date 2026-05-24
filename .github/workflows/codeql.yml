@@ -10,6 +10,10 @@ on:
   schedule:
     - cron: "41 5 * * 1"
 
+# Least-privilege default; the analyze job grants itself the writes it needs.
+permissions:
+  contents: read
+
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 PT Perkasa Pilar Utama
+
 /**
  * Maps parsed CLI flags onto the library's option objects. Every flag here has
  * a 1:1 counterpart in `PaddleOptions` / `RecognizeOptions`.

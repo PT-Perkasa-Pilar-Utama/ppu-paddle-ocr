@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 PT Perkasa Pilar Utama
+
 import type { InferenceSession, Tensor } from "onnxruntime-common";
 import type { Canvas, Contours, ImageProcessor, cv } from "ppu-ocv";
 import type { CanvasProcessor, CanvasToolkit } from "ppu-ocv/canvas";

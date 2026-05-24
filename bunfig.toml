@@ -1,0 +1,5 @@
+[test]
+# Regression floor for coverage (currently ~75% line / ~79% function). Set
+# below the present level to catch major drops without breaking CI on noise.
+# Raise toward 0.8 as coverage improves. CI runs `bun test --coverage`.
+coverageThreshold = { line = 0.7, function = 0.7 }

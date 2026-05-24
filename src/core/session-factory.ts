@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 PT Perkasa Pilar Utama
+
 import type { InferenceSession } from "onnxruntime-common";
 
 /** Minimal shape of an ORT namespace capable of creating sessions. */

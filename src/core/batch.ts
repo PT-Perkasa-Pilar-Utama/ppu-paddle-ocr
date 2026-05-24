@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 PT Perkasa Pilar Utama
+
 /**
  * Bounded-concurrency orchestration used by `batchRecognize` /
  * `batchRecognizeStream`. Kept platform-agnostic and free of any OCR types so

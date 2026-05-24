@@ -58,6 +58,55 @@ This package itself ships with **npm provenance** (a signed SLSA attestation
 linking each release to the exact source commit and CI run) and runs **no
 install scripts**.
 
+## Verifying a release
+
+Every release is published from CI with npm provenance, a signed SLSA
+attestation that ties the tarball to the exact commit and workflow run that
+built it. To verify what you installed:
+
+```bash
+npm audit signatures
+```
+
+On the package page at npmjs.com, the **Provenance** section links the release
+to its source commit and the GitHub Actions run. Each GitHub release also
+carries a CycloneDX **SBOM** asset. A release artifact that lacks a matching
+attestation should be treated as untrusted; report it through the process
+above.
+
+## Dependencies
+
+We keep the dependency tree deliberate. A new runtime dependency is added only
+when it is necessary, actively maintained, and carries an OSI- or FSF-approved
+license. The runtime dependencies are `ppu-ocv` (preprocessing) and the
+`onnxruntime-*` packages (inference), declared in `package.json` and pinned in
+`bun.lock`. GitHub Actions are pinned to commit SHAs. Dependabot opens update
+pull requests weekly for both npm packages and Actions, and CI re-verifies the
+lockfile on every pull request.
+
+## Vulnerability remediation policy
+
+We gate releases on automated analysis and act on findings against fixed
+thresholds:
+
+- **Dependency (SCA) findings.** CI runs `osv-scanner` on every push and pull
+  request, and again before each release. A **High or Critical** advisory in a
+  dependency blocks the release until it is fixed, upgraded, or documented as
+  non-exploitable (see VEX below). Lower-severity advisories are fixed within
+  **30 days**.
+- **Code (SAST) findings.** CodeQL runs on every push and pull request. Any
+  **error-severity** finding blocks merge to `main`. Warning- and note-severity
+  findings are triaged and fixed or dismissed with a recorded reason.
+
+## VEX
+
+When a scanner flags a vulnerability in a dependency that does **not** affect
+ppu-paddle-ocr (the vulnerable code path is never reached), we record that with
+a [VEX](https://www.cisa.gov/sites/default/files/2023-04/minimum-requirements-for-vex-508c.pdf)
+statement in [`docs/vex/`](docs/vex/), in [OpenVEX](https://github.com/openvex)
+format. As of the current release there are no outstanding non-exploitable
+findings.
+
 ## Disclosure Policy
 
 We follow responsible disclosure. Once a fix is released we will publish a GitHub Security Advisory describing the issue, affected versions, and the fix.

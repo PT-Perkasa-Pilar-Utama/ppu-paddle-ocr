@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.7.2] - 2026-05-24
+
 ### Security
 
 - **Supply-chain hardening.** All GitHub Actions are now pinned to commit SHAs
@@ -20,6 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`SECURITY.md`** documents the Socket "obfuscated code" alerts on
   `onnxruntime-web` / `@protobufjs/float` as false positives on minified and
   generated upstream artifacts.
+- **LICENSE now ships in the npm tarball** (previously only the SPDX field
+  traveled).
+- **OpenSSF baseline + best practices.** Added CodeQL on every push/PR (with a
+  top-level least-privilege token), an osv-scanner SCA gate (CI and
+  pre-release), a CycloneDX SBOM attached to each release, per-file SPDX
+  headers, an enforced coverage floor (`bunfig.toml`), and the supporting docs:
+  `GOVERNANCE.md`, `ROADMAP.md`, `docs/DESIGN.md`, `docs/THREAT_MODEL.md`,
+  release-verification / dependency / remediation / VEX policy in `SECURITY.md`,
+  and a DCO sign-off requirement in `CONTRIBUTING.md`.
 
 ## [5.7.1] - 2026-05-24
 

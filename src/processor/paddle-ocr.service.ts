@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 PT Perkasa Pilar Utama
+
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import * as ort from "onnxruntime-node";
 import * as os from "os";

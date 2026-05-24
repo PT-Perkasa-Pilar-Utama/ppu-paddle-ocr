@@ -8,11 +8,13 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # attach the SBOM to the GitHub release
+      id-token: write # npm provenance + jsr OIDC
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -35,6 +37,14 @@ jobs:
         # Frozen so install never rewrites bun.lock — a dirty tree makes the
         # `jsr publish` step below abort ("Aborting due to uncommitted changes").
         run: bun install --frozen-lockfile
+
+      # Block the release on any High/Critical advisory in a dependency.
+      # Mirrors the SCA gate that runs on every PR in ci.yml.
+      - name: SCA scan (block on vulnerable dependencies)
+        uses: google/osv-scanner-action/osv-scanner-action@9a498708959aeaef5ef730655706c5a1df1edbc2 # v2.3.8
+        with:
+          scan-args: |-
+            --lockfile=./bun.lock
 
       - name: Formatter check
         run: bun run fmt
@@ -71,3 +81,13 @@ jobs:
       # silently shipping without an attestation.
       - name: Publish to npm
         run: npm publish ./lib --access=public --provenance
+
+      # Generate a CycloneDX SBOM and attach it to the GitHub release so
+      # consumers can audit each version's dependency set.
+      - name: Generate and attach SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          format: cyclonedx-json
+          artifact-name: ppu-paddle-ocr-sbom.cyclonedx.json
+          output-file: ppu-paddle-ocr-sbom.cyclonedx.json
+          upload-release-assets: true

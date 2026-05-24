@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 PT Perkasa Pilar Utama
+
 import type * as ort from "onnxruntime-web";
 import { BaseRecognitionService } from "../core/base-recognition.service.js";
 import type { RecognitionResult } from "../core/base-recognition.service.js";

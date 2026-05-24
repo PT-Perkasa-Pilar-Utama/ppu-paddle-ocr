@@ -20,5 +20,8 @@ delete pkg["lint-staged"];
 
 await Bun.write(`${OUTDIR}/package.json`, `${JSON.stringify(pkg, null, 2)}\n`);
 await Bun.write(`${OUTDIR}/README.md`, Bun.file(`${ROOTDIR}/README.md`));
+// Ship the license with the package — npm reads the SPDX field but the file
+// itself must travel for OSI/FSF compliance and the OpenSSF baseline.
+await Bun.write(`${OUTDIR}/LICENSE`, Bun.file(`${ROOTDIR}/LICENSE`));
 
 console.log("Prepared publish manifest (scripts + devDependencies stripped).");
