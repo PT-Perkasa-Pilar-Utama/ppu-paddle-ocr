@@ -92,6 +92,21 @@ npm install ppu-paddle-ocr onnxruntime-node onnxruntime-web
 
 Omit `onnxruntime-node` or `onnxruntime-web` depending on your target environment (Node/Bun vs browser).
 
+### CLI (global install)
+
+To use the [command line](#command-line) without `bunx`/`npx`, install globally — this puts a `ppu-paddle-ocr` command on your `PATH`:
+
+```bash
+npm install -g ppu-paddle-ocr      # or: bun add -g ppu-paddle-ocr
+ppu-paddle-ocr recognize receipt.jpg
+```
+
+`onnxruntime-node` is pulled automatically (it's an optional dependency), so nothing else is needed. Notes:
+
+- **bun**: ensure `~/.bun/bin` is on your `PATH` (npm's global bin usually already is).
+- **Updates are manual** — re-run the install with `@latest` to upgrade. (`bunx`/`npx` always fetch the latest but can serve a stale cache; a global install pins the version and you own upgrades.)
+- It's still the Node/Bun build — a global install gives you a global command, not a standalone binary, so Node or Bun must be present.
+
 ## Core Usage
 
 ### Basic Recognition
