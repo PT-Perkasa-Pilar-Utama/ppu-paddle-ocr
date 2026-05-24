@@ -415,6 +415,43 @@ curl -F file=@receipt.jpg http://localhost:8080/v1/ocr
 
 What it provides on top of the raw SDK: one warmed `PaddleOcrService` behind a bounded inference queue (backpressure, no OOM/VRAM blow-up), sync / batch / SSE-stream / async-task OCR endpoints, a consistent response envelope with a request id, optional bearer auth + rate limiting + IP rules, Prometheus `/metrics`, and an OpenAPI spec rendered at `/docs`. Config is via env vars; models are pre-baked into the image (zero cold start). Use the standalone SDK (the rest of this skill) when you're building a JS/TS app; use the serve API when you want a deployable service. See [`apps/serve/README.md`](../../apps/serve/README.md).
 
+## The command-line interface (don't write a script)
+
+When the user just wants text out of an image — a one-shot, a shell pipeline, a
+quick check — point them at the bundled CLI instead of writing a `new → initialize
+→ recognize → destroy` script. It ships as a `bin` in the package, so `bunx`/`npx`
+run it with no install:
+
+```bash
+bunx ppu-paddle-ocr recognize receipt.jpg            # text → stdout
+bunx ppu-paddle-ocr recognize page.png --json --pretty
+bunx ppu-paddle-ocr batch "scans/*.png" --strategy cross-line --json -o out.json
+bunx ppu-paddle-ocr stream "scans/*.png"             # prints each result as it finishes
+bunx ppu-paddle-ocr download-models                  # warm the cache
+bunx ppu-paddle-ocr clear-cache
+bunx ppu-paddle-ocr models --json                    # active models / defaults / providers
+```
+
+Rules to remember:
+
+- It's **Node/Bun only** — the `bin` is the `ppu-paddle-ocr` entry point, not `/web`.
+- Every constructor / per-call option has a flag: `--strategy`, `--engine`,
+  `--flatten`, `--no-cache`, `--model-detection/-recognition/-dict`, detection
+  tuning (`--max-side-length`, `--mean`, `--std`, …), `--execution-providers`,
+  and `--concurrency` for batch/stream. Defaults match the SDK (v5 models,
+  `per-line`, `opencv`).
+- **Recognized text → stdout; progress and logs → stderr.** Pipe stdout safely;
+  add `-q` to silence stderr. `--json` emits the full result object (NDJSON for
+  `stream`); `-o <file>` writes to disk.
+- Exit codes: `0` success, `1` runtime error, `2` usage error. An image with no
+  detected text still exits `0` with empty output.
+- `recognize` is strictly one image; use `batch` (index-aligned JSON) or `stream`
+  (results in completion order) for many. Both isolate per-image failures and
+  exit `1` if any image failed.
+
+Reach for the CLI for ad-hoc/scripting use, the SDK when embedding in a JS/TS
+program, and `apps/serve` when you need a long-running HTTP service.
+
 ## Further reading
 
 - [`references/configuration.md`](references/configuration.md) — every option in `PaddleOptions`, defaults, and when to tune them.

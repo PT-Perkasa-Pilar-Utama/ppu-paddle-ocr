@@ -1,5 +1,5 @@
 /// <reference types='bun-types' />
-import { existsSync, rmSync } from "node:fs";
+import { chmodSync, existsSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path/posix";
 
 import { transpileDeclaration } from "typescript";
@@ -32,7 +32,16 @@ for (const path of new Bun.Glob("**/*.ts").scanSync(SOURCEDIR)) {
   const buf = await Bun.file(srcPath).text();
   const res = transpiler.transformSync(buf);
   if (res.length !== 0) {
-    Bun.write(`${outPathNoExt}.js`, res.replace(/const /g, "let "));
+    let js = res.replace(/const /g, "let ");
+
+    // Preserve a leading shebang the transpiler strips, then mark the bin
+    // executable so `npx`/`bunx ppu-paddle-ocr` can run it directly.
+    const shebang = buf.startsWith("#!") ? buf.slice(0, buf.indexOf("\n")) : null;
+    if (shebang && !js.startsWith("#!")) js = `${shebang}\n${js}`;
+
+    const outFile = `${outPathNoExt}.js`;
+    await Bun.write(outFile, js);
+    if (shebang) chmodSync(outFile, 0o755);
   }
   Bun.write(
     `${outPathNoExt}.d.ts`,

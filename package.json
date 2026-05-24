@@ -37,13 +37,17 @@
     "text-recognition",
     "typescript-ocr",
     "web-ocr",
-    "docker-ocr"
+    "docker-ocr",
+    "cli-ocr"
   ],
   "author": "snowfluke",
   "license": "MIT",
   "type": "module",
   "main": "./index.js",
   "types": "./index.d.ts",
+  "bin": {
+    "ppu-paddle-ocr": "./cli/index.js"
+  },
   "exports": {
     ".": {
       "types": "./index.d.ts",

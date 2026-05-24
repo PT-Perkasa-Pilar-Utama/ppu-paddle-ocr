@@ -49,6 +49,14 @@ jobs:
       - name: Build
         run: bun run build
 
+      # The bin is only usable via npx/bunx if the build kept its shebang and
+      # executable bit; assert both, then that it actually runs.
+      - name: CLI — verify bin
+        run: |
+          test -x lib/cli/index.js
+          head -1 lib/cli/index.js | grep -q '^#!/usr/bin/env node'
+          node lib/cli/index.js --version
+
       # apps/serve is a standalone package (its own deps); check it separately.
       - name: Serve — install
         run: cd apps/serve && bun install --frozen-lockfile
