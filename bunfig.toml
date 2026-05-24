@@ -1,4 +1,7 @@
 [test]
+# Scope `bun test` discovery to tests/ so it doesn't sweep in apps/serve (which
+# has its own deps + its own CI test step). Keeps plain `bun test` working.
+root = "tests"
 # Enforce the coverage we already hold (~94% line / ~94% function) so it can
 # only go up. CI runs `bun test --coverage`, which fails below these floors.
 coverageThreshold = { line = 0.9, function = 0.9 }
