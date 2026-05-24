@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 PT Perkasa Pilar Utama
 
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, rmSync } from "fs";
 import * as ort from "onnxruntime-node";
-import * as os from "os";
 import * as path from "path";
 import type { Canvas } from "ppu-ocv";
 import { ImageProcessor } from "ppu-ocv";
@@ -11,77 +10,15 @@ import { CanvasProcessor } from "ppu-ocv/canvas";
 
 import { BasePaddleOcrService, DEFAULT_MODEL_URLS } from "../core/base-paddle-ocr.service.js";
 import { globalImageCache, ImageCache } from "../core/image-cache.js";
+import { groupRecognitionResultsByLine } from "../core/recognition/result-grouping.js";
 import { createSessionWithFallback } from "../core/session-factory.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
 import { parseDictionary } from "../utils.js";
 import type { FlattenedPaddleOcrResult, PaddleOcrResult } from "../web/paddle-ocr.service.web.js";
 import { DetectionService } from "./detection.service.js";
+import { CACHE_DIR, fetchAndCacheResource } from "./model-cache.js";
 import { NodePlatformProvider } from "./platform.node.js";
 import { RecognitionService } from "./recognition.service.js";
-import type { RecognitionResult } from "./recognition.service.js";
-
-const CACHE_DIR = path.join(os.homedir(), ".cache", "ppu-paddle-ocr");
-
-async function fetchAndCacheResource(url: string, verbose?: boolean): Promise<ArrayBuffer> {
-  const fileName = path.basename(new URL(url).pathname);
-  const cachePath = path.join(CACHE_DIR, fileName);
-
-  if (existsSync(cachePath)) {
-    if (verbose) console.log(`[PaddleOcrService] Loading cached resource from: ${cachePath}`);
-    const buf = readFileSync(cachePath);
-    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
-  }
-
-  console.log(
-    `[PaddleOcrService] Downloading resource: ${fileName}\n` +
-      `                 Cached at: ${CACHE_DIR}`
-  );
-  if (verbose) console.log(`[PaddleOcrService] Fetching resource from URL: ${url}`);
-
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch resource from ${url}`);
-  }
-  if (!response.body) {
-    throw new Error("Response body is null or undefined");
-  }
-
-  const contentLength = response.headers.get("Content-Length");
-  const totalLength = contentLength ? parseInt(contentLength, 10) : 0;
-  let receivedLength = 0;
-  const chunks: Uint8Array[] = [];
-
-  const reader = response.body.getReader();
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
-    chunks.push(value);
-    receivedLength += value.length;
-
-    if (totalLength > 0) {
-      const percentage = ((receivedLength / totalLength) * 100).toFixed(2);
-      process.stdout.write(`\rDownloading... ${percentage}%`);
-    }
-  }
-  process.stdout.write("\n");
-
-  const buffer = new Uint8Array(receivedLength);
-  let position = 0;
-  for (const chunk of chunks) {
-    buffer.set(chunk, position);
-    position += chunk.length;
-  }
-
-  if (!existsSync(CACHE_DIR)) {
-    mkdirSync(CACHE_DIR, { recursive: true });
-  }
-  writeFileSync(cachePath, Buffer.from(buffer));
-
-  return buffer.buffer;
-}
 
 /**
  * PaddleOcrService - Provides OCR functionality using PaddleOCR models.
@@ -245,7 +182,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
       (msg) => this.log(msg),
       (next) => (this.options.session = next)
     );
-    // Rebuild the detector against the new session; the old one is now released.
     this.detector = new DetectionService(
       this.detectionSession,
       this.options.detection,
@@ -272,7 +208,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
       (msg) => this.log(msg),
       (next) => (this.options.session = next)
     );
-    // Rebuild the recognitor against the new session; the old one is now released.
     this.recognitor = new RecognitionService(
       this.recognitionSession,
       this.options.recognition,
@@ -405,8 +340,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
       strategy
     );
 
-    // Grouping the recognition result logic to build lines
-    const processed = this.processRecognition(recognition);
+    const processed = groupRecognitionResultsByLine(recognition);
 
     const result = options?.flatten
       ? {
@@ -421,57 +355,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
     }
 
     return result as PaddleOcrResult | FlattenedPaddleOcrResult;
-  }
-
-  private processRecognition(recognition: RecognitionResult[]): PaddleOcrResult {
-    const result: PaddleOcrResult = {
-      text: "",
-      lines: [],
-      confidence: 0,
-    };
-
-    if (!recognition.length) {
-      return result;
-    }
-
-    const totalConfidence = recognition.reduce((sum, r) => sum + r.confidence, 0);
-    result.confidence = totalConfidence / recognition.length;
-
-    const firstRec = recognition[0];
-    if (!firstRec) return result;
-    let currentLine: RecognitionResult[] = [firstRec];
-    let fullText = firstRec.text;
-    let avgHeight = firstRec.box.height;
-
-    for (let i = 1; i < recognition.length; i++) {
-      const current = recognition[i];
-      const previous = recognition[i - 1];
-      if (!current || !previous) continue;
-
-      const verticalGap = Math.abs(current.box.y - previous.box.y);
-      const threshold = avgHeight * 0.5;
-
-      if (verticalGap <= threshold) {
-        currentLine.push(current);
-        fullText += ` ${current.text}`;
-
-        avgHeight = currentLine.reduce((sum, r) => sum + r.box.height, 0) / currentLine.length;
-      } else {
-        result.lines.push([...currentLine]);
-
-        fullText += `\n${current.text}`;
-
-        currentLine = [current];
-        avgHeight = current.box.height;
-      }
-    }
-
-    if (currentLine.length > 0) {
-      result.lines.push([...currentLine]);
-    }
-
-    result.text = fullText;
-    return result;
   }
 
   /**

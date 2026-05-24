@@ -68,6 +68,16 @@
     // General — Use template literals over string concatenation.
     "prefer-template": "error"
   },
+  "overrides": [
+    {
+      // §file-size — Cap TypeScript files at 300 lines of code (blanks and
+      // comments excluded). Split into focused modules when a file crosses it.
+      "files": ["**/*.ts"],
+      "rules": {
+        "max-lines": ["error", { "max": 300, "skipBlankLines": true, "skipComments": true }]
+      }
+    }
+  ],
   "env": {
     "builtin": true
   },

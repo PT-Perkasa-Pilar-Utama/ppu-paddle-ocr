@@ -105,6 +105,17 @@ All of the following must pass before a PR can be merged. CI enforces them autom
 | Auto-fix format | `bun run fmt:fix`    |
 | Type check      | `bun run type-check` |
 
+### File size
+
+No TypeScript file may exceed **300 lines of code** (blank lines and comments
+excluded). The `max-lines` oxlint rule enforces this as an error, so
+`bun run lint` fails on any `.ts` file that crosses the cap. When a file grows
+past it, split the logic into focused modules — extract pure helpers into a
+sibling file (e.g. the recognition service's CTC decoding, image-tensor, and
+line-grouping helpers live under `src/core/recognition/`). Keep the public class
+API unchanged; move only internal helpers, and give each exported symbol a
+concise JSDoc comment.
+
 If your change touches the hot path (detection, recognition, preprocessing), run the benchmark and include before/after numbers in your PR:
 
 ```bash
