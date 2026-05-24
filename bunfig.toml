@@ -1,7 +1,7 @@
 [test]
-# Scope `bun test` discovery to tests/ so it doesn't sweep in apps/serve (which
-# has its own deps + its own CI test step). Keeps plain `bun test` working.
-root = "tests"
-# Enforce the coverage we already hold (~94% line / ~94% function) so it can
-# only go up. CI runs `bun test --coverage`, which fails below these floors.
+# `bun test` discovers the whole repo — the main suite AND apps/serve — so
+# coverage spans src, src/cli, and apps/serve/src. apps/serve resolves its own
+# deps from apps/serve/node_modules, so those must be installed first (CI does
+# it before the test step; locally run `bun install` in apps/serve once).
+# Enforce the coverage we already hold (~94%) so it can only go up.
 coverageThreshold = { line = 0.9, function = 0.9 }

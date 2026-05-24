@@ -34,6 +34,12 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # apps/serve is a standalone package with its own deps. Install them
+      # before the test step so the root `bun test` (which scans the whole repo)
+      # can resolve them and cover apps/serve/src.
+      - name: Install serve dependencies
+        run: cd apps/serve && bun install --frozen-lockfile
+
       - name: Formatter check
         run: bun run fmt
 
@@ -43,9 +49,9 @@ jobs:
       - name: TypeScript type check
         run: bun run type-check
 
-      # Runs the whole suite in one process (web tests isolate their platform
-      # via setPlatform save/restore) and gates on coverage (>= 90% line +
-      # function, enforced by bunfig.toml's coverageThreshold).
+      # Runs the whole repo (main suite, CLI, and apps/serve) in one process
+      # (web tests isolate their platform via setPlatform save/restore) and gates
+      # on combined coverage (>= 90% line + function, per bunfig.toml).
       - name: Run tests with coverage
         run: bun run test:coverage
 
@@ -74,15 +80,10 @@ jobs:
           head -1 lib/cli/index.js | grep -q '^#!/usr/bin/env node'
           node lib/cli/index.js --version
 
-      # apps/serve is a standalone package (its own deps); check it separately.
-      - name: Serve — install
-        run: cd apps/serve && bun install --frozen-lockfile
-
+      # apps/serve tests run as part of the root suite above; type-check it
+      # separately here (deps already installed before the test step).
       - name: Serve — type check
         run: cd apps/serve && bun run type-check
-
-      - name: Serve — tests
-        run: cd apps/serve && bun test
 
   sca:
     name: SCA (dependency vulnerabilities)
