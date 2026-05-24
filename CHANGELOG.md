@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.7.1] - 2026-05-24
+
+### Fixed
+
+- **`bunx ppu-paddle-ocr` / `npx ppu-paddle-ocr` now work out of the box.** `onnxruntime-node` is an optional _peer_ dependency, which package managers never auto-install, so a zero-install CLI run crashed with `ERR_MODULE_NOT_FOUND: onnxruntime-node`. It is now also declared in `optionalDependencies`, so `bunx`/`npx` pull it automatically. SDK consumers are unaffected (the optional peer is still honored); web-only installs can skip it with `--no-optional`.
+
 ## [5.7.0] - 2026-05-24
 
 ### Added
