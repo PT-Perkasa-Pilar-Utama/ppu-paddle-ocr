@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Opt-in COOP/COEP service worker.** The package now ships
+  `coi-serviceworker.js` and exposes it via the `ppu-paddle-ocr/coi-serviceworker.js`
+  export. On static hosts that can't set headers (e.g. GitHub Pages), copy it to
+  the served root and load it before anything else to unlock cross-origin
+  isolation → `SharedArrayBuffer` → multithreaded WASM inference. Not registered
+  automatically and not needed when WebGPU is used or headers are set
+  server-side. See the README's "Multithreaded WASM" section.
+
 ## [5.8.0] - 2026-05-25
 
 ### Added

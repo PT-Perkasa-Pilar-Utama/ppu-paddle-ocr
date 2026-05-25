@@ -91,6 +91,7 @@
     "*.lock",
     "private-tests",
     "lib",
-    "out"
+    "out",
+    "coi-serviceworker.js"
   ]
 }

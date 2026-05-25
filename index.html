@@ -8,6 +8,9 @@
       content="Interactive demo of ppu-paddle-ocr — a lightweight PaddleOCR implementation for the browser."
     />
     <title>ppu-paddle-ocr — Interactive Demo</title>
+    <!-- Cross-origin isolation → SharedArrayBuffer → multithreaded WASM in
+         onnxruntime-web. Reloads once on first visit to apply COOP/COEP. -->
+    <script src="coi-serviceworker.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -139,6 +142,32 @@
       .topbar-links svg {
         width: 18px;
         height: 18px;
+      }
+
+      .topbar-compare {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.3rem 0.7rem;
+        border: 1px solid var(--text-primary);
+        border-radius: var(--radius-sm);
+        background: var(--bg-card);
+        color: var(--text-primary);
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-decoration: none;
+        box-shadow: 2px 2px 0 0 var(--text-primary);
+        transition: all var(--transition);
+      }
+      .topbar-compare:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: 3px 3px 0 0 var(--text-primary);
+        background: var(--bg-card-hover);
+        color: var(--text-primary);
+      }
+      .topbar-compare svg {
+        width: 14px;
+        height: 14px;
       }
 
       .status-indicator {
@@ -801,6 +830,27 @@
               />
             </svg>
           </a>
+          <a
+            class="topbar-compare"
+            href="https://snowfluke.github.io/paddle-ocr-comparison/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Speed & accuracy vs other OCR engines"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="18" y1="20" x2="18" y2="10" />
+              <line x1="12" y1="20" x2="12" y2="4" />
+              <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+            Compare OCRs ↗
+          </a>
         </div>
       </div>
 
@@ -958,10 +1008,9 @@
           <div class="input-group">
             <label class="input-label">Strategy</label>
             <select id="cfg-rec-strategy" class="input-field">
-              <option value="">Default (per-line)</option>
               <option value="per-box">per-box (most accurate)</option>
               <option value="per-line">per-line</option>
-              <option value="cross-line">cross-line (fewest inferences)</option>
+              <option value="cross-line" selected>cross-line (fastest, default)</option>
             </select>
           </div>
           <div class="input-group">
@@ -1159,6 +1208,10 @@
       const btnCopyJson = document.getElementById("btn-copy-json");
       const copyJsonLabel = document.getElementById("copy-json-label");
 
+      // cross-line packs crops into uniform-width batches across lines (fewest
+      // inferences) for the fastest recognition; overridable in the sidebar.
+      const DEFAULT_OPTIONS = { recognition: { strategy: "cross-line" } };
+
       let loadedImage = null;
       let ocrService = null;
       let fallbackCdn = false;
@@ -1202,8 +1255,8 @@
           console.error("❌ Service failed to initialize:", err.message);
         }
       }
-      // Initial boot without options
-      initService().then(() => {
+      // Initial boot with the fast default strategy
+      initService(DEFAULT_OPTIONS).then(() => {
         // Perform a hidden warmup inference to initialize WASM backend efficiently
         setStatus("loading", "Warming up engines...");
         const dummyCanvas = document.createElement("canvas");

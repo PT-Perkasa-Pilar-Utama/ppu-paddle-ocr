@@ -40,6 +40,7 @@ await service.destroy();
   - [Using a Bundler](#using-a-bundler-vite-webpack-etc)
   - [CDN (No Bundler)](#cdn-no-bundler)
   - [WebGPU Acceleration](#webgpu-acceleration)
+  - [Multithreaded WASM (Cross-Origin Isolation)](#multithreaded-wasm-cross-origin-isolation)
 - [Models and Language Support](#models-and-language-support)
   - [Default Models](#default-models)
   - [Cache Location](#cache-location-node--bun)
@@ -369,6 +370,27 @@ const service = new PaddleOcrService({
 ```
 
 > The WASM binaries are still required even when WebGPU is the primary provider (used for graph optimization and fallback ops). Set `ort.env.wasm.wasmPaths` before `initialize()` if you self-host them.
+
+### Multithreaded WASM (Cross-Origin Isolation)
+
+When the WASM backend is used (no WebGPU, or `executionProviders: ["wasm"]`), ONNX Runtime only runs multithreaded if the page is [cross-origin isolated](https://developer.mozilla.org/en-US/docs/Web/API/Window/crossOriginIsolated) — otherwise `numThreads` is pinned to 1. Cross-origin isolation requires the `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` response headers.
+
+**If you can set those headers server-side, do that** — it's the correct fix and needs nothing from this package. WebGPU does not need isolation at all, so this only matters on the WASM fallback path.
+
+For static hosts that can't set headers (e.g. GitHub Pages), the package ships an opt-in [coi-serviceworker](https://github.com/gzuidhof/coi-serviceworker) that injects the headers client-side. Copy it to your served root and load it from your page **before** anything else:
+
+```html
+<script src="/coi-serviceworker.js"></script>
+```
+
+Resolve the shipped copy from the package, e.g. in a build step:
+
+```ts
+// path on disk: node_modules/ppu-paddle-ocr/coi-serviceworker.js
+const swPath = import.meta.resolve("ppu-paddle-ocr/coi-serviceworker.js");
+```
+
+> The service worker reloads the page once on first visit to apply the headers and rewrites all fetch responses. Don't use it if you already control your headers or run another service worker that conflicts.
 
 ## Models and Language Support
 

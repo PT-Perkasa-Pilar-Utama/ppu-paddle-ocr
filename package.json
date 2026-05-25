@@ -56,7 +56,8 @@
     "./web": {
       "types": "./web/index.d.ts",
       "default": "./web/index.js"
-    }
+    },
+    "./coi-serviceworker.js": "./coi-serviceworker.js"
   },
   "scripts": {
     "task": "bun scripts/task.ts",
