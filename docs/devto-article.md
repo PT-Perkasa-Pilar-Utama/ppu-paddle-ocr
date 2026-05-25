@@ -185,7 +185,7 @@ Accuracy on receipt.jpg (ground truth: 383 chars):
   [canvas-native] per-box=97.65%  per-line=98.43%  cross-line=97.65%
 ```
 
-Run the same benchmark on your own hardware with `bun task bench`. I also publish a side-by-side comparison against the official SDK at [paddle-ocr-comparison](https://snowfluke.github.io/paddle-ocr-comparison/).
+Run the same benchmark on your own hardware with `bun task bench`. I also publish a side-by-side comparison against the official SDK at [paddle-ocr-comparison](https://paddle-ocr-comparison.snowfluke.workers.dev/).
 
 ## What's next: React Native and beyond
 
