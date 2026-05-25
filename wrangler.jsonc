@@ -1,0 +1,12 @@
+{
+  // Static-asset-only Worker for the playground demo. Kept at the repo root so
+  // the Worker build runs here and can build the library; `bun run build:pages`
+  // produces playground/dist (index.html + _headers + lib/web) and wrangler
+  // uploads only that. The _headers file sets COOP/COEP so the page is
+  // cross-origin isolated (multithreaded WASM) without a service worker.
+  "name": "ppu-paddle-ocr",
+  "compatibility_date": "2026-05-25",
+  "assets": {
+    "directory": "./playground/dist"
+  }
+}

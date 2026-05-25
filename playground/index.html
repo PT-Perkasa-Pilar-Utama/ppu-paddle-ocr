@@ -5,12 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Interactive demo of ppu-paddle-ocr — a lightweight PaddleOCR implementation for the browser."
+      content="Free interactive demo of ppu-paddle-ocr: run PaddleOCR (PP-OCRv5) text detection and recognition entirely in your browser with onnxruntime-web and WebGPU — no server, no upload. Lightweight, multilingual, TypeScript-first."
     />
-    <title>ppu-paddle-ocr — Interactive Demo</title>
-    <!-- Cross-origin isolation → SharedArrayBuffer → multithreaded WASM in
-         onnxruntime-web. Reloads once on first visit to apply COOP/COEP. -->
-    <script src="coi-serviceworker.js"></script>
+    <meta
+      name="keywords"
+      content="ppu-paddle-ocr, PaddleOCR, PP-OCRv5, OCR, browser OCR, WebGPU OCR, ONNX Runtime Web, text detection, text recognition, JavaScript OCR, TypeScript OCR, client-side OCR, receipt OCR, document OCR"
+    />
+    <meta name="author" content="PT Perkasa Pilar Utama" />
+    <meta name="robots" content="index, follow" />
+    <link
+      rel="canonical"
+      href="https://pt-perkasa-pilar-utama.github.io/ppu-paddle-ocr/"
+    />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="ppu-paddle-ocr — PaddleOCR in the Browser (Interactive Demo)"
+    />
+    <meta
+      property="og:description"
+      content="Run PaddleOCR (PP-OCRv5) detection + recognition fully client-side with WebGPU/WASM. Try it on your own images — no upload, no server."
+    />
+    <meta
+      property="og:url"
+      content="https://pt-perkasa-pilar-utama.github.io/ppu-paddle-ocr/"
+    />
+    <meta property="og:site_name" content="ppu-paddle-ocr" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary" />
+    <meta
+      name="twitter:title"
+      content="ppu-paddle-ocr — PaddleOCR in the Browser"
+    />
+    <meta
+      name="twitter:description"
+      content="In-browser PaddleOCR (PP-OCRv5) with WebGPU. Detection + recognition, no server."
+    />
+
+    <title>
+      ppu-paddle-ocr — PaddleOCR (PP-OCRv5) in the Browser · Interactive Demo
+    </title>
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "ppu-paddle-ocr",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Web",
+        "description": "Lightweight PaddleOCR (PP-OCRv5) implementation that runs text detection and recognition in the browser via onnxruntime-web and WebGPU.",
+        "url": "https://pt-perkasa-pilar-utama.github.io/ppu-paddle-ocr/",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -195,6 +246,26 @@
       }
       .status-dot.error {
         background: var(--error);
+      }
+
+      .brave-notice {
+        margin: 1rem 1.5rem 0;
+        padding: 0.7rem 1rem;
+        font-size: 0.82rem;
+        line-height: 1.55;
+        color: var(--text-secondary);
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--warning);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+      .brave-notice strong {
+        color: var(--accent);
+      }
+      .brave-notice a {
+        color: var(--accent);
+        text-decoration: underline;
       }
       @keyframes pulse {
         0%,
@@ -832,7 +903,7 @@
           </a>
           <a
             class="topbar-compare"
-            href="https://snowfluke.github.io/paddle-ocr-comparison/"
+            href="https://paddle-ocr-comparison.snowfluke.workers.dev/"
             target="_blank"
             rel="noopener noreferrer"
             title="Speed & accuracy vs other OCR engines"
@@ -881,6 +952,14 @@
         <span id="status-text">Loading Models…</span>
       </div>
     </nav>
+
+    <!-- Shown only on Brave, which farbles CPU core count per-origin -->
+    <div class="brave-notice" id="brave-notice" hidden>
+      ⚠️ <strong>Brave detected.</strong> Brave randomizes the reported CPU core
+      count per site, which caps WASM threads and makes ppu-paddle-ocr/web run
+      slower here than it really is. For accurate speed, lower the Brave Shield
+      for this site (🦁 → Shields down) or use Chrome/Firefox.
+    </div>
 
     <!-- App Layout -->
     <div class="app">
@@ -1255,6 +1334,18 @@
           console.error("❌ Service failed to initialize:", err.message);
         }
       }
+      // Brave farbles navigator.hardwareConcurrency per-origin, capping ORT's
+      // WASM thread count and making recognition look slower than it is.
+      (async () => {
+        try {
+          if (await navigator.brave?.isBrave?.()) {
+            document.getElementById("brave-notice")?.removeAttribute("hidden");
+          }
+        } catch {
+          /* not Brave — leave notice hidden */
+        }
+      })();
+
       // Initial boot with the fast default strategy
       initService(DEFAULT_OPTIONS).then(() => {
         // Perform a hidden warmup inference to initialize WASM backend efficiently
