@@ -8,6 +8,7 @@ dist/*
 
 *.traineddata
 .DS_Store
+.vscode/
 
 private-tests
 # coverage output (scripts/coverage.ts)
