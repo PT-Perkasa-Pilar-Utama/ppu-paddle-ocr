@@ -249,8 +249,12 @@
       }
 
       .brave-notice {
-        margin: 1rem 1.5rem 0;
-        padding: 0.7rem 1rem;
+        position: fixed;
+        bottom: 1.25rem;
+        right: 1.25rem;
+        z-index: 1000;
+        max-width: 360px;
+        padding: 0.9rem 2rem 0.9rem 1.1rem;
         font-size: 0.82rem;
         line-height: 1.55;
         color: var(--text-secondary);
@@ -259,6 +263,10 @@
         border-left: 3px solid var(--warning);
         border-radius: var(--radius);
         box-shadow: var(--shadow);
+        animation: brave-slide-in 0.3s ease;
+      }
+      .brave-notice[hidden] {
+        display: none;
       }
       .brave-notice strong {
         color: var(--accent);
@@ -266,6 +274,33 @@
       .brave-notice a {
         color: var(--accent);
         text-decoration: underline;
+      }
+      .brave-notice-close {
+        position: absolute;
+        top: 0.35rem;
+        right: 0.45rem;
+        padding: 0.1rem 0.35rem;
+        font-size: 1.1rem;
+        line-height: 1;
+        color: var(--text-muted);
+        background: none;
+        border: none;
+        border-radius: var(--radius-xs);
+        cursor: pointer;
+      }
+      .brave-notice-close:hover {
+        color: var(--accent);
+        background: var(--bg-card-hover);
+      }
+      @keyframes brave-slide-in {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
       @keyframes pulse {
         0%,
@@ -953,8 +988,16 @@
       </div>
     </nav>
 
-    <!-- Shown only on Brave, which farbles CPU core count per-origin -->
+    <!-- Dismissible popup shown only on Brave, which farbles CPU core count per-origin -->
     <div class="brave-notice" id="brave-notice" hidden>
+      <button
+        class="brave-notice-close"
+        id="brave-notice-close"
+        type="button"
+        aria-label="Dismiss"
+      >
+        ×
+      </button>
       ⚠️ <strong>Brave detected.</strong> Brave randomizes the reported CPU core
       count per site, which caps WASM threads and makes ppu-paddle-ocr/web run
       slower here than it really is. For accurate speed, lower the Brave Shield
@@ -1335,12 +1378,24 @@
         }
       }
       // Brave farbles navigator.hardwareConcurrency per-origin, capping ORT's
-      // WASM thread count and making recognition look slower than it is.
+      // WASM thread count and making recognition look slower than it is. Show a
+      // dismissible popup once; remember dismissal like a cookie banner.
       (async () => {
         try {
-          if (await navigator.brave?.isBrave?.()) {
-            document.getElementById("brave-notice")?.removeAttribute("hidden");
-          }
+          if (!(await navigator.brave?.isBrave?.())) return;
+          if (localStorage.getItem("brave-notice-dismissed")) return;
+          const notice = document.getElementById("brave-notice");
+          notice?.removeAttribute("hidden");
+          document
+            .getElementById("brave-notice-close")
+            ?.addEventListener("click", () => {
+              notice?.setAttribute("hidden", "");
+              try {
+                localStorage.setItem("brave-notice-dismissed", "1");
+              } catch {
+                /* storage blocked — popup just won't persist dismissal */
+              }
+            });
         } catch {
           /* not Brave — leave notice hidden */
         }
