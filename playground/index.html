@@ -13,10 +13,7 @@
     />
     <meta name="author" content="PT Perkasa Pilar Utama" />
     <meta name="robots" content="index, follow" />
-    <link
-      rel="canonical"
-      href="https://ppu-paddle-ocr.snowfluke.workers.dev/"
-    />
+    <link rel="canonical" href="https://ppu-paddle-ocr.snowfluke.workers.dev/" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -28,26 +25,18 @@
       property="og:description"
       content="Run PaddleOCR (PP-OCRv5) detection + recognition fully client-side with WebGPU/WASM. Try it on your own images — no upload, no server."
     />
-    <meta
-      property="og:url"
-      content="https://ppu-paddle-ocr.snowfluke.workers.dev/"
-    />
+    <meta property="og:url" content="https://ppu-paddle-ocr.snowfluke.workers.dev/" />
     <meta property="og:site_name" content="ppu-paddle-ocr" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary" />
-    <meta
-      name="twitter:title"
-      content="ppu-paddle-ocr — PaddleOCR in the Browser"
-    />
+    <meta name="twitter:title" content="ppu-paddle-ocr — PaddleOCR in the Browser" />
     <meta
       name="twitter:description"
       content="In-browser PaddleOCR (PP-OCRv5) with WebGPU. Detection + recognition, no server."
     />
 
-    <title>
-      ppu-paddle-ocr — PaddleOCR (PP-OCRv5) in the Browser · Interactive Demo
-    </title>
+    <title>ppu-paddle-ocr — PaddleOCR (PP-OCRv5) in the Browser · Interactive Demo</title>
 
     <!-- Structured data -->
     <script type="application/ld+json">
@@ -990,18 +979,13 @@
 
     <!-- Dismissible popup shown only on Brave, which farbles CPU core count per-origin -->
     <div class="brave-notice" id="brave-notice" hidden>
-      <button
-        class="brave-notice-close"
-        id="brave-notice-close"
-        type="button"
-        aria-label="Dismiss"
-      >
+      <button class="brave-notice-close" id="brave-notice-close" type="button" aria-label="Dismiss">
         ×
       </button>
-      ⚠️ <strong>Brave detected.</strong> Brave randomizes the reported CPU core
-      count per site, which caps WASM threads and makes ppu-paddle-ocr/web run
-      slower here than it really is. For accurate speed, lower the Brave Shield
-      for this site (🦁 → Shields down) or use Chrome/Firefox.
+      ⚠️ <strong>Brave detected.</strong> Brave randomizes the reported CPU core count per site,
+      which caps WASM threads and makes ppu-paddle-ocr/web run slower here than it really is. For
+      accurate speed, lower the Brave Shield for this site (🦁 → Shields down) or use
+      Chrome/Firefox.
     </div>
 
     <!-- App Layout -->
@@ -1386,16 +1370,14 @@
           if (localStorage.getItem("brave-notice-dismissed")) return;
           const notice = document.getElementById("brave-notice");
           notice?.removeAttribute("hidden");
-          document
-            .getElementById("brave-notice-close")
-            ?.addEventListener("click", () => {
-              notice?.setAttribute("hidden", "");
-              try {
-                localStorage.setItem("brave-notice-dismissed", "1");
-              } catch {
-                /* storage blocked — popup just won't persist dismissal */
-              }
-            });
+          document.getElementById("brave-notice-close")?.addEventListener("click", () => {
+            notice?.setAttribute("hidden", "");
+            try {
+              localStorage.setItem("brave-notice-dismissed", "1");
+            } catch {
+              /* storage blocked — popup just won't persist dismissal */
+            }
+          });
         } catch {
           /* not Brave — leave notice hidden */
         }
