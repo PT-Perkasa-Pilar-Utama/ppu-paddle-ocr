@@ -82,7 +82,7 @@ The same package, the same API, every JavaScript runtime:
 | **Node.js**           | `npm install ppu-paddle-ocr onnxruntime-node`                           | [npm package](https://www.npmjs.com/package/ppu-paddle-ocr)                                  |
 | **Bun**               | `bun add ppu-paddle-ocr onnxruntime-node`                               | [npm package](https://www.npmjs.com/package/ppu-paddle-ocr)                                  |
 | **Deno**              | `deno add jsr:@snowfluke/ppu-paddle-ocr`                                | [JSR package](https://jsr.io/@snowfluke/ppu-paddle-ocr)                                      |
-| **Web browser**       | `npm install ppu-paddle-ocr onnxruntime-web` (import `/web` subpath)    | [Live demo](https://ppu-paddle-ocr.snowfluke.workers.dev/)                        |
+| **Web browser**       | `npm install ppu-paddle-ocr onnxruntime-web` (import `/web` subpath)    | [Live demo](https://ppu-paddle-ocr.snowfluke.workers.dev/)                                   |
 | **Browser extension** | Same as web; bundle `ppu-paddle-ocr/web` with your extension's bundler. | [Example extension repo](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-extension) |
 
 ## Installation
