@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.8.1] - 2026-05-25
+
 ### Added
 
 - **Opt-in COOP/COEP service worker.** The package now ships
@@ -16,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   isolation → `SharedArrayBuffer` → multithreaded WASM inference. Not registered
   automatically and not needed when WebGPU is used or headers are set
   server-side. See the README's "Multithreaded WASM" section.
+- Update outdated link to Cloudflare deployment
 
 ## [5.8.0] - 2026-05-25
 
