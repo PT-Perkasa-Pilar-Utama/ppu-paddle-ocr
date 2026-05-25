@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.8.2] - 2026-05-25
+
+### Fixed
+
+- **JSR was missing the `coi-serviceworker.js` export.** The npm package exposed
+  `ppu-paddle-ocr/coi-serviceworker.js`, but `jsr.json` declared neither the
+  export nor the file in its publish allowlist, so the JSR build omitted it. Both
+  are now added.
+
 ## [5.8.1] - 2026-05-25
 
 ### Added
