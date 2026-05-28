@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Model downloads no longer hang on a stalled connection.** Both the Node
+  (`fetchAndCacheResource`) and Web (`_loadResource`) model fetches used a bare
+  `fetch()` with no timeout, so a stalled GitHub connection during
+  `initialize()` would hang until the caller's timeout (and flaked CI). Both now
+  go through a shared `fetchArrayBufferWithRetry` helper with a per-attempt
+  abort deadline (30s) and bounded retries.
 - **Restored the JSR score (regressed to 58% in 5.8.2).** Exposing
   `coi-serviceworker.js` as a JSR module export forced a plain-JS file to be
   treated as a scored entrypoint — JSR can't derive types from it, so it flagged
