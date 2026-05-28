@@ -5,6 +5,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import * as os from "os";
 import * as path from "path";
 
+import { fetchArrayBufferWithRetry } from "../utils.js";
+
 /** On-disk directory for cached model and dictionary files. */
 export const CACHE_DIR: string = path.join(os.homedir(), ".cache", "ppu-paddle-ocr");
 
@@ -28,47 +30,12 @@ export async function fetchAndCacheResource(url: string, verbose?: boolean): Pro
   );
   if (verbose) console.log(`[PaddleOcrService] Fetching resource from URL: ${url}`);
 
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch resource from ${url}`);
-  }
-  if (!response.body) {
-    throw new Error("Response body is null or undefined");
-  }
-
-  const contentLength = response.headers.get("Content-Length");
-  const totalLength = contentLength ? parseInt(contentLength, 10) : 0;
-  let receivedLength = 0;
-  const chunks: Uint8Array[] = [];
-
-  const reader = response.body.getReader();
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
-    chunks.push(value);
-    receivedLength += value.length;
-
-    if (totalLength > 0) {
-      const percentage = ((receivedLength / totalLength) * 100).toFixed(2);
-      process.stdout.write(`\rDownloading... ${percentage}%`);
-    }
-  }
-  process.stdout.write("\n");
-
-  const buffer = new Uint8Array(receivedLength);
-  let position = 0;
-  for (const chunk of chunks) {
-    buffer.set(chunk, position);
-    position += chunk.length;
-  }
+  const arrayBuffer = await fetchArrayBufferWithRetry(url);
 
   if (!existsSync(CACHE_DIR)) {
     mkdirSync(CACHE_DIR, { recursive: true });
   }
-  writeFileSync(cachePath, Buffer.from(buffer));
+  writeFileSync(cachePath, Buffer.from(arrayBuffer));
 
-  return buffer.buffer;
+  return arrayBuffer;
 }

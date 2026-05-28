@@ -9,7 +9,7 @@ import { BasePaddleOcrService, DEFAULT_MODEL_URLS } from "../core/base-paddle-oc
 import type { CoreCanvas } from "../core/platform.js";
 import { createSessionWithFallback } from "../core/session-factory.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
-import { parseDictionary } from "../utils.js";
+import { fetchArrayBufferWithRetry, parseDictionary } from "../utils.js";
 import { DetectionService } from "./detection.service.web.js";
 import { getDefaultWebExecutionProviders, WebPlatformProvider } from "./platform.web.js";
 import { RecognitionService } from "./recognition.service.web.js";
@@ -71,12 +71,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
     const sourceUrl = typeof source === "string" ? source : defaultUrl;
     this.log(`Fetching resource from URL: ${sourceUrl}`);
 
-    const response = await fetch(sourceUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch resource from ${sourceUrl}`);
-    }
-
-    return response.arrayBuffer();
+    return fetchArrayBufferWithRetry(sourceUrl);
   }
 
   /** Resolve execution providers, preferring WebGPU when the browser supports it. */
