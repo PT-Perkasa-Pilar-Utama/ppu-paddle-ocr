@@ -14,6 +14,8 @@ export type { RecognitionResult };
  */
 export class RecognitionService extends BaseRecognitionService {
   /**
+   * Creates a Node recognition service bound to a loaded ONNX session.
+   *
    * @param session - Loaded ONNX recognition model session.
    * @param options - Recognition tuning options.
    * @param debugging - Logging and image-dump options.

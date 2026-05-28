@@ -12,6 +12,8 @@ import { WebPlatformProvider } from "./platform.web.js";
  */
 export class DetectionService extends BaseDetectionService {
   /**
+   * Creates a web detection service bound to a loaded ONNX session.
+   *
    * @param session - Loaded ONNX detection model session (`onnxruntime-web`).
    * @param options - Detection tuning options.
    * @param debugging - Logging and image-dump options.

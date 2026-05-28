@@ -67,6 +67,10 @@ export class PaddleOcrService extends BasePaddleOcrService {
     return this._fetchAndCache(defaultUrl);
   }
 
+  /**
+   * Not used by the Node service — initialization runs in {@link initialize}.
+   * @throws Always; call {@link initialize} instead.
+   */
   protected async initSessions(): Promise<void> {
     throw new Error(
       "Initialization is handled proactively in PaddleOcrService. Call initialize() instead."

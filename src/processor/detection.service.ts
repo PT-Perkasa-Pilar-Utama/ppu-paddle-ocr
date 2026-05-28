@@ -11,6 +11,8 @@ import { NodePlatformProvider } from "./platform.node.js";
  */
 export class DetectionService extends BaseDetectionService {
   /**
+   * Creates a Node detection service bound to a loaded ONNX session.
+   *
    * @param session - Loaded ONNX detection model session.
    * @param options - Detection tuning options.
    * @param debugging - Logging and image-dump options.
