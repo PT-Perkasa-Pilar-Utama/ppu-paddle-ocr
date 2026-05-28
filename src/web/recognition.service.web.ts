@@ -15,6 +15,8 @@ export type { RecognitionResult };
  */
 export class RecognitionService extends BaseRecognitionService {
   /**
+   * Creates a web recognition service bound to a loaded ONNX session.
+   *
    * @param session - Loaded ONNX recognition model session (`onnxruntime-web`).
    * @param options - Recognition tuning options.
    * @param debugging - Logging and image-dump options.

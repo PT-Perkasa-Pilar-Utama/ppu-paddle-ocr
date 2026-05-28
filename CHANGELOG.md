@@ -17,8 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   allowlist, so it still ships and is fetchable at its JSR file URL (and the npm
   `ppu-paddle-ocr/coi-serviceworker.js` export is unchanged) — it is simply no
   longer scored as a documented module.
-- Added JSDoc to the Node/Web detection, recognition, and web OCR service
-  constructors to raise exported-symbol documentation coverage.
+- Documented every remaining exported symbol — the Node/Web service
+  constructors and the Web `PaddleOcrService` public methods (`isInitialized`,
+  `changeDetectionModel`, `changeRecognitionModel`, `changeTextDictionary`,
+  `recognize`) — bringing `deno doc --lint` to zero `missing-jsdoc` (100%
+  documented-symbol coverage).
 
 ## [5.8.2] - 2026-05-25
 

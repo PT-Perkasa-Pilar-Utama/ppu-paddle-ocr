@@ -46,6 +46,10 @@ export class PaddleOcrService extends BasePaddleOcrService {
     }
   }
 
+  /**
+   * Creates the detection and recognition ONNX sessions from the configured
+   * models using `onnxruntime-web`.
+   */
   protected async initSessions(): Promise<void> {
     throw new Error(
       "Initialization is handled proactively in PaddleOcrService. Call initialize() instead."
@@ -168,10 +172,17 @@ export class PaddleOcrService extends BasePaddleOcrService {
     }
   }
 
+  /**
+   * Returns `true` once both detection and recognition sessions are loaded.
+   */
   public isInitialized(): boolean {
     return this.detectionSession !== null && this.recognitionSession !== null;
   }
 
+  /**
+   * Swaps the detection model at runtime, releasing the previous session.
+   * @param model - ONNX detection model as a buffer, file path, or URL.
+   */
   public async changeDetectionModel(model: ArrayBuffer | string): Promise<void> {
     this.log("Changing detection model...");
     const modelBuffer = await this._loadResource(model, DEFAULT_MODEL_URLS.detection);
@@ -188,6 +199,10 @@ export class PaddleOcrService extends BasePaddleOcrService {
     this.log("Detection model changed successfully.");
   }
 
+  /**
+   * Swaps the recognition model at runtime, releasing the previous session.
+   * @param model - ONNX recognition model as a buffer, file path, or URL.
+   */
   public async changeRecognitionModel(model: ArrayBuffer | string): Promise<void> {
     this.log("Changing recognition model...");
     const modelBuffer = await this._loadResource(model, DEFAULT_MODEL_URLS.recognition);
@@ -204,6 +219,10 @@ export class PaddleOcrService extends BasePaddleOcrService {
     this.log("Recognition model changed successfully.");
   }
 
+  /**
+   * Replaces the character dictionary used to decode recognition output.
+   * @param dictionary - Dictionary as a buffer, file path, or URL.
+   */
   public async changeTextDictionary(dictionary: ArrayBuffer | string): Promise<void> {
     this.log("Changing text dictionary...");
     const dictBuffer = await this._loadResource(
@@ -225,11 +244,23 @@ export class PaddleOcrService extends BasePaddleOcrService {
     );
   }
 
+  /**
+   * Run the full OCR pipeline (detection → recognition) on an image.
+   * @param image - Source image as an `ArrayBuffer` or canvas.
+   * @param options - Per-call options such as `flatten` and `strategy`.
+   * @returns Grouped or flattened OCR results depending on `options.flatten`.
+   */
   public override recognize(
     image: ArrayBuffer | CanvasLike,
     options: RecognizeOptions & { flatten: true }
   ): Promise<FlattenedPaddleOcrResult>;
 
+  /**
+   * Run the full OCR pipeline (detection → recognition) on an image.
+   * @param image - Source image as an `ArrayBuffer` or canvas.
+   * @param options - Per-call options; omit `flatten` for line-grouped results.
+   * @returns OCR results grouped by line.
+   */
   public override recognize(
     image: ArrayBuffer | CanvasLike,
     options?: RecognizeOptions & { flatten?: false }
