@@ -1,0 +1,416 @@
+# Instincts generated from https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+# Generated: 2026-05-28T07:33:00.306Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: ppu-paddle-ocr-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: chore, fix, docs
+
+## Evidence
+
+- 4 commits analyzed
+- Detected conventional commit pattern
+- Examples: fix: recover JSR score by unlisting coi entrypoint, add constructor docs, docs: document web service methods for full JSR symbol coverage
+
+---
+id: ppu-paddle-ocr-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Commit Length
+
+## Action
+
+Write moderate-length commit messages (~50 characters)
+
+## Evidence
+
+- Average commit message length: 50 chars
+- Based on 4 commits
+
+---
+id: ppu-paddle-ocr-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: ppu-paddle-ocr-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: ppu-paddle-ocr-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: ppu-paddle-ocr-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: ppu-paddle-ocr-workflow-update-web-and-processor-service-methods-and-docs
+trigger: "when doing update web and processor service methods and docs"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Workflow Update Web And Processor Service Methods And Docs
+
+## Action
+
+Follow the update-web-and-processor-service-methods-and-docs workflow:
+1. Edit service implementation files in src/processor (e.g., detection.service.ts, recognition.service.ts, paddle-ocr.service.ts)
+2. Edit corresponding service files in src/web (e.g., detection.service.web.ts, recognition.service.web.ts, paddle-ocr.service.web.ts)
+3. Update documentation/comments in those files
+4. Update CHANGELOG.md to record the changes
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: src/processor/detection.service.ts, src/processor/recognition.service.ts, src/processor/paddle-ocr.service.ts
+
+---
+id: ppu-paddle-ocr-workflow-release-version-bump
+trigger: "when doing release version bump"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Workflow Release Version Bump
+
+## Action
+
+Follow the release-version-bump workflow:
+1. Update CHANGELOG.md with release notes
+2. Update jsr.json and package.json with new version
+3. Optionally bump version in sub-package (e.g., apps/serve/package.json)
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: CHANGELOG.md, jsr.json, package.json
+
+---
+id: ppu-paddle-ocr-instinct-file-naming
+trigger: "When creating or renaming a file"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Instinct File Naming
+
+## Action
+
+Use camelCase for file names
+
+## Evidence
+
+- Pattern in naming conventions: files use camelCase
+- Examples in src/processor/detection.service.ts
+
+---
+id: ppu-paddle-ocr-instinct-function-naming
+trigger: "When defining a function"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Instinct Function Naming
+
+## Action
+
+Use camelCase for function names
+
+## Evidence
+
+- Pattern in naming conventions: functions use camelCase
+- TypeScript code style settings
+
+---
+id: ppu-paddle-ocr-instinct-class-naming
+trigger: "When defining a class"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Instinct Class Naming
+
+## Action
+
+Use PascalCase for class names
+
+## Evidence
+
+- Pattern in naming conventions: classes use PascalCase
+- TypeScript code style settings
+
+---
+id: ppu-paddle-ocr-instinct-constant-naming
+trigger: "When defining a constant"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Instinct Constant Naming
+
+## Action
+
+Use SCREAMING_SNAKE_CASE for constant names
+
+## Evidence
+
+- Pattern in naming conventions: constants use SCREAMING_SNAKE_CASE
+- TypeScript code style settings
+
+---
+id: ppu-paddle-ocr-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in importStyle: relative
+- Examples in service files
+
+---
+id: ppu-paddle-ocr-instinct-export-style
+trigger: "When exporting modules or functions"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in exportStyle: named
+- Examples in service files
+
+---
+id: ppu-paddle-ocr-instinct-try-catch-errors
+trigger: "When handling errors in code"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Instinct Try Catch Errors
+
+## Action
+
+Use try-catch blocks for error handling
+
+## Evidence
+
+- Pattern in errorHandling: try-catch
+- No custom error classes or global handlers
+
+---
+id: ppu-paddle-ocr-instinct-test-location
+trigger: "When adding or updating tests"
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Instinct Test Location
+
+## Action
+
+Place tests in a separate directory from source code
+
+## Evidence
+
+- Architecture: testLocation is separate
+- Monorepo structure with src and apps folders
+
+---
+id: ppu-paddle-ocr-instinct-commit-format
+trigger: "When making a git commit"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Instinct Commit Format
+
+## Action
+
+Use conventional commit prefixes: chore, fix, docs
+
+## Evidence
+
+- Pattern in commits: conventional type
+- Examples: 'fix: recover JSR score...', 'docs: document web service methods...'
+
+---
+id: ppu-paddle-ocr-instinct-commit-length
+trigger: "When writing a commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Instinct Commit Length
+
+## Action
+
+Keep commit message length around 50 characters
+
+## Evidence
+
+- Pattern in commits: averageLength 50
+- Commit examples
+
+---
+id: ppu-paddle-ocr-instinct-update-service-docs
+trigger: "When updating or documenting service methods across processor and web layers"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Instinct Update Service Docs
+
+## Action
+
+Edit both src/processor and src/web service files, update documentation/comments, and update CHANGELOG.md
+
+## Evidence
+
+- Workflow: update-web-and-processor-service-methods-and-docs
+- Commit sequence and file patterns in workflow definition
+
+---
+id: ppu-paddle-ocr-instinct-release-version-bump
+trigger: "When preparing to release a new version"
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+---
+
+# Ppu Paddle Ocr Instinct Release Version Bump
+
+## Action
+
+Update CHANGELOG.md, jsr.json, package.json, and optionally apps/serve/package.json with new version information
+
+## Evidence
+
+- Workflow: release-version-bump
+- Commit sequence and file patterns in workflow definition
+
