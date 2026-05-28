@@ -14,6 +14,11 @@ export type { RecognitionResult };
  * Web always uses canvas-native engine (no OpenCV available in browser).
  */
 export class RecognitionService extends BaseRecognitionService {
+  /**
+   * @param session - Loaded ONNX recognition model session (`onnxruntime-web`).
+   * @param options - Recognition tuning options.
+   * @param debugging - Logging and image-dump options.
+   */
   constructor(
     session: ort.InferenceSession,
     options: Partial<RecognitionOptions> = {},

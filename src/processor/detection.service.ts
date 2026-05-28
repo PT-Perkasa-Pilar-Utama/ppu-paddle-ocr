@@ -10,6 +10,12 @@ import { NodePlatformProvider } from "./platform.node.js";
  * Service for detecting text regions in images using Node.js implementation
  */
 export class DetectionService extends BaseDetectionService {
+  /**
+   * @param session - Loaded ONNX detection model session.
+   * @param options - Detection tuning options.
+   * @param debugging - Logging and image-dump options.
+   * @param engine - Image processing engine; falls back to `canvas-native` when OpenCV is unavailable.
+   */
   constructor(
     session: ort.InferenceSession,
     options: Partial<DetectionOptions> = {},
