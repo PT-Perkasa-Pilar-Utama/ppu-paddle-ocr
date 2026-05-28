@@ -33,6 +33,10 @@ const DEFAULT_WEB_SESSION_OPTIONS: ort.InferenceSession.SessionOptions = {
  * Uses onnxruntime-web and ppu-ocv/web instead of their Node counterparts.
  */
 export class PaddleOcrService extends BasePaddleOcrService {
+  /**
+   * Creates a web PaddleOcrService instance.
+   * @param options - Configuration options for the service.
+   */
   public constructor(options?: PaddleOptions) {
     super(new WebPlatformProvider(), options);
 

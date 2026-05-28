@@ -13,6 +13,12 @@ export type { RecognitionResult };
  * Service for detecting and recognizing text in images using Node.js implementation
  */
 export class RecognitionService extends BaseRecognitionService {
+  /**
+   * @param session - Loaded ONNX recognition model session.
+   * @param options - Recognition tuning options.
+   * @param debugging - Logging and image-dump options.
+   * @param engine - Image processing engine; falls back to `canvas-native` when OpenCV is unavailable.
+   */
   constructor(
     session: ort.InferenceSession,
     options: Partial<RecognitionOptions> = {},

@@ -4,8 +4,7 @@
   "license": "MIT",
   "exports": {
     ".": "./src/index.ts",
-    "./web": "./src/web/index.ts",
-    "./coi-serviceworker.js": "./coi-serviceworker.js"
+    "./web": "./src/web/index.ts"
   },
   "publish": {
     "include": [

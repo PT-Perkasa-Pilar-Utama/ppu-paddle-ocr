@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Restored the JSR score (regressed to 58% in 5.8.2).** Exposing
+  `coi-serviceworker.js` as a JSR module export forced a plain-JS file to be
+  treated as a scored entrypoint — JSR can't derive types from it, so it flagged
+  the whole public API as using "slow types" and as missing module docs. The
+  file is now removed from `jsr.json` `exports` but kept in the publish
+  allowlist, so it still ships and is fetchable at its JSR file URL (and the npm
+  `ppu-paddle-ocr/coi-serviceworker.js` export is unchanged) — it is simply no
+  longer scored as a documented module.
+- Added JSDoc to the Node/Web detection, recognition, and web OCR service
+  constructors to raise exported-symbol documentation coverage.
+
 ## [5.8.2] - 2026-05-25
 
 ### Fixed

@@ -11,6 +11,11 @@ import { WebPlatformProvider } from "./platform.web.js";
  * Web always uses canvas-native engine (no OpenCV available in browser).
  */
 export class DetectionService extends BaseDetectionService {
+  /**
+   * @param session - Loaded ONNX detection model session (`onnxruntime-web`).
+   * @param options - Detection tuning options.
+   * @param debugging - Logging and image-dump options.
+   */
   constructor(
     session: ort.InferenceSession,
     options: Partial<DetectionOptions> = {},
