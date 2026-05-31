@@ -22,6 +22,7 @@ export function groupBoxesIntoLines(
   const firstSorted = sorted[0];
   if (!firstSorted) return [];
   let currentLine = [firstSorted];
+  let currentLineHeightSum = firstSorted.box.height;
   let avgHeight = firstSorted.box.height;
 
   for (let i = 1; i < sorted.length; i++) {
@@ -33,11 +34,13 @@ export function groupBoxesIntoLines(
 
     if (verticalGap <= threshold) {
       currentLine.push(current);
-      avgHeight = currentLine.reduce((sum, item) => sum + item.box.height, 0) / currentLine.length;
+      currentLineHeightSum += current.box.height;
+      avgHeight = currentLineHeightSum / currentLine.length;
     } else {
       currentLine.sort((a, b) => a.box.x - b.box.x);
       lines.push(currentLine);
       currentLine = [current];
+      currentLineHeightSum = current.box.height;
       avgHeight = current.box.height;
     }
   }

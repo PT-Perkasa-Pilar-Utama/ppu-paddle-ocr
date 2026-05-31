@@ -22,6 +22,7 @@ export function groupRecognitionResultsByLine(recognition: RecognitionResult[]):
   const firstRec = recognition[0];
   if (!firstRec) return result;
   let currentLine: RecognitionResult[] = [firstRec];
+  let currentLineHeightSum = firstRec.box.height;
   let fullText = firstRec.text;
   let avgHeight = firstRec.box.height;
 
@@ -35,12 +36,14 @@ export function groupRecognitionResultsByLine(recognition: RecognitionResult[]):
 
     if (verticalGap <= threshold) {
       currentLine.push(current);
+      currentLineHeightSum += current.box.height;
       fullText += ` ${current.text}`;
-      avgHeight = currentLine.reduce((sum, r) => sum + r.box.height, 0) / currentLine.length;
+      avgHeight = currentLineHeightSum / currentLine.length;
     } else {
       result.lines.push([...currentLine]);
       fullText += `\n${current.text}`;
       currentLine = [current];
+      currentLineHeightSum = current.box.height;
       avgHeight = current.box.height;
     }
   }
