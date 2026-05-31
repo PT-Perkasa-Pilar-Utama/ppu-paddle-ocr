@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Improve OCR line grouping scalability by avoiding repeated average-height recomputation.
+
 ## [5.8.3] - 2026-05-28
 
 ### Fixed
