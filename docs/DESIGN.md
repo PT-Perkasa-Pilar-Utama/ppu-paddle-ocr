@@ -7,11 +7,11 @@ and how data flows through it. It complements the API reference in the
 ## What it is
 
 ppu-paddle-ocr is a library (with an optional CLI and HTTP service) that runs
-PaddleOCR PP-OCRv5 models for text detection and recognition. A developer
-imports it into their own Node, Bun, Deno, or browser code and calls it
-in-process. Inference runs locally through ONNX Runtime. The library does not
-phone home; the only outbound traffic is the one-time model download (or none,
-if models are supplied locally).
+PaddleOCR ONNX models for text detection and recognition. A developer imports
+it into their own Node, Bun, Deno, or browser code and calls it in-process.
+Inference runs locally through ONNX Runtime. The library does not phone home;
+the only outbound traffic is the one-time default model download from pinned
+PaddlePaddle upstream URLs (or none, if models are supplied locally).
 
 ## Lifecycle
 

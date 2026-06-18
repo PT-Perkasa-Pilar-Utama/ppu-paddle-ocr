@@ -5,10 +5,10 @@ import type { ProcessingEngine } from "../src/interface.js";
 const imgFile = Bun.file(`${import.meta.dir}/../assets/receipt.jpg`);
 const imageBuffer = await imgFile.arrayBuffer();
 
-// Exercise the library's default models (v5).
+// Exercise the library's default models.
 beforeAll(async () => {
   await PaddleOcrService.downloadModels();
-});
+}, 120000);
 
 /**
  * Regression test suite for engine parity (opencv vs canvas-native).
@@ -33,7 +33,7 @@ describe("Processing engine parity (opencv vs canvas-native)", () => {
 
     await opencvService.initialize();
     await canvasService.initialize();
-  });
+  }, 60000);
 
   afterEach(async () => {
     await opencvService.destroy();

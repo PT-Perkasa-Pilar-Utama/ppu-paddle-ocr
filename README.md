@@ -68,7 +68,7 @@ await service.destroy();
 ## Why ppu-paddle-ocr?
 
 - **Lightweight** — minimal dependencies, optimized for performance.
-- **Pre-packed models** — PP-OCRv5 mobile models (English) are fetched and cached automatically on first run. Supports 40+ languages via [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models).
+- **Pre-packed models** — PP-OCRv6 ONNX models and dictionary are fetched from pinned PaddlePaddle upstream URLs and cached automatically on first run. Supports custom PaddleOCR models and dictionaries.
 - **Runs everywhere** — Node.js, Bun, Deno, web browsers, and browser extensions. The official SDK is browser-only.
 - **Customizable** — custom models, dictionaries, and per-call overrides.
 - **TypeScript** — full type definitions.
@@ -205,7 +205,7 @@ bunx ppu-paddle-ocr models --json
 
 Every `PaddleOptions` / `RecognizeOptions` field maps to a flag: `--strategy`, `--engine`, `--flatten`, `--no-cache`, `--image-height`, `--model-detection/-recognition/-dict`, detection tuning (`--max-side-length`, `--padding-vertical`, `--padding-horizontal`, `--min-area`, `--mean`, `--std`), `--execution-providers`, and for `batch`/`stream` `--concurrency`. Output is controlled by `--json`, `--pretty`, `-o/--output`, `-q/--quiet`, and `--verbose`.
 
-Recognized text goes to **stdout**; progress and logs go to **stderr**, so output pipes cleanly. Exit codes: `0` success, `1` runtime error, `2` usage error. Run `bunx ppu-paddle-ocr help` for the full reference. The CLI uses the default v5 models unless you override the `--model-*` flags.
+Recognized text goes to **stdout**; progress and logs go to **stderr**, so output pipes cleanly. Exit codes: `0` success, `1` runtime error, `2` usage error. Run `bunx ppu-paddle-ocr help` for the full reference. The CLI uses the pinned default PP-OCRv6 models unless you override the `--model-*` flags.
 
 ## Batch Recognition
 
@@ -396,19 +396,19 @@ const swPath = import.meta.resolve("ppu-paddle-ocr/coi-serviceworker.js");
 
 ### Default Models
 
-The default **PP-OCRv5 mobile** models are optimized for English and served in ONNX Runtime's `.ort` FlatBuffers format (3–5× faster session creation than `.onnx`):
+The default **PP-OCRv6** models are fetched from pinned PaddlePaddle upstream sources:
 
-| Component   | File                               |
-| :---------- | :--------------------------------- |
-| Detection   | `PP-OCRv5_mobile_det_infer.ort`    |
-| Recognition | `en_PP-OCRv5_mobile_rec_infer.ort` |
-| Dictionary  | `ppocrv5_en_dict.txt`              |
+| Component   | Source                                                  |
+| :---------- | :------------------------------------------------------ |
+| Detection   | `PaddlePaddle/PP-OCRv6_medium_det_onnx` on Hugging Face |
+| Recognition | `PaddlePaddle/PP-OCRv6_small_rec_onnx` on Hugging Face  |
+| Dictionary  | `ppocrv6_dict.txt` from the official PaddleOCR repo     |
 
-Portable `.onnx` variants are available at [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models) — point `model.detection` / `model.recognition` at the `.onnx` URLs.
+The default URLs are pinned by commit for reproducible output. You can still point `model.detection`, `model.recognition`, and `model.charactersDictionary` at your own paths or URLs.
 
 ### Cache Location (Node / Bun)
 
-Models are cached under `~/.cache/ppu-paddle-ocr`:
+Models are cached under `~/.cache/ppu-paddle-ocr`. Cache filenames include a short hash of the full URL, so official sources with generic names such as `inference.onnx` do not collide:
 
 | OS      | Path                                        |
 | :------ | :------------------------------------------ |
@@ -641,7 +641,7 @@ Absolute timings are thermal-sensitive on fanless hardware (Apple Silicon): sust
 
 ### Batch vs. concurrent `recognize()`
 
-`bench/batch.bench.ts` compares the ways to OCR many images, tracking peak RSS alongside time. Default models (v5), median over 7 rounds of 16 images each, Apple M1 / Bun 1.3.14, opencv, `noCache`:
+`bench/batch.bench.ts` compares the ways to OCR many images, tracking peak RSS alongside time. Benchmark snapshot below used the previous PP-OCRv5 default set, median over 7 rounds of 16 images each, Apple M1 / Bun 1.3.14, opencv, `noCache`:
 
 ```bash
 task                          median      ±stddev        min        max   peak RSS

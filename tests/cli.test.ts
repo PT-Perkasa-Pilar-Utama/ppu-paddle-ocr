@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { DEFAULT_MODEL_URLS } from "../src/core/base-paddle-ocr.service.js";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 import { expandPatterns, isMissingLocalFile, loadImageInput } from "../src/cli/io.js";
 import {
@@ -42,7 +43,7 @@ beforeAll(async () => {
   workdir = mkdtempSync(join(tmpdir(), "ppu-cli-"));
   badImage = join(workdir, "not-an-image.png");
   writeFileSync(badImage, "this is not a PNG");
-});
+}, 120000);
 
 afterAll(() => {
   if (workdir && existsSync(workdir)) rmSync(workdir, { recursive: true, force: true });
@@ -257,7 +258,7 @@ describe("utility commands", () => {
     const { code, out } = await run(["models", "--json"]);
     expect(code).toBe(0);
     const info = JSON.parse(out) as { models: { detection: string }; engine: string };
-    expect(info.models.detection).toContain("PP-OCRv5");
+    expect(info.models.detection).toBe(DEFAULT_MODEL_URLS.detection);
     expect(info.engine).toBe("opencv");
   });
 

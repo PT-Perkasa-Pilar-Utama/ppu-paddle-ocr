@@ -10,11 +10,11 @@ let single: string;
 
 beforeAll(async () => {
   await PaddleOcrService.downloadModels();
-  // Uses the library's default models (v5).
+  // Uses the library's default models.
   service = new PaddleOcrService();
   await service.initialize();
   single = (await service.recognize(imageBuffer)).text;
-});
+}, 120000);
 
 afterAll(async () => {
   await service?.destroy();

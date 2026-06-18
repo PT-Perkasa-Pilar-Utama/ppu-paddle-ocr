@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 PT Perkasa Pilar Utama
 
+import { createHash } from "crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import * as os from "os";
 import * as path from "path";
@@ -11,11 +12,25 @@ import { fetchArrayBufferWithRetry } from "../utils.js";
 export const CACHE_DIR: string = path.join(os.homedir(), ".cache", "ppu-paddle-ocr");
 
 /**
+ * Returns a deterministic cache filename for a remote resource.
+ *
+ * Some official model repos publish generic names such as `inference.onnx`;
+ * including a short hash of the full URL avoids collisions while keeping the
+ * original filename readable for humans inspecting the cache directory.
+ */
+export function getCachedResourceFileName(url: string): string {
+  const parsed = new URL(url);
+  const fileName = path.basename(parsed.pathname);
+  const hash = createHash("sha256").update(url).digest("hex").slice(0, 12);
+  return `${hash}-${fileName}`;
+}
+
+/**
  * Downloads a resource from `url` and writes it to {@link CACHE_DIR}, or reads
  * from the cache if the file already exists.
  */
 export async function fetchAndCacheResource(url: string, verbose?: boolean): Promise<ArrayBuffer> {
-  const fileName = path.basename(new URL(url).pathname);
+  const fileName = getCachedResourceFileName(url);
   const cachePath = path.join(CACHE_DIR, fileName);
 
   if (existsSync(cachePath)) {

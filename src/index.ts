@@ -28,7 +28,7 @@ export type {
   FlattenedPaddleOcrResult,
   PaddleOcrResult,
 } from "./core/base-paddle-ocr.service.js";
-export { DEFAULT_MODEL_URLS } from "./core/base-paddle-ocr.service.js";
+export { DEFAULT_MODEL_REFS, DEFAULT_MODEL_URLS } from "./core/base-paddle-ocr.service.js";
 export type { BatchItemResult } from "./core/batch.js";
 export { PaddleOcrService } from "./processor/paddle-ocr.service.js";
 

@@ -2,9 +2,10 @@
 // Copyright (c) 2026 PT Perkasa Pilar Utama
 
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 
 import { DEFAULT_MODEL_URLS } from "../src/core/base-paddle-ocr.service.js";
+import { CACHE_DIR, getCachedResourceFileName } from "../src/processor/model-cache.js";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 
 const imgFile = Bun.file(`${import.meta.dir}/../assets/receipt.jpg`);
@@ -12,7 +13,7 @@ const imageBuffer = await imgFile.arrayBuffer();
 
 beforeAll(async () => {
   await PaddleOcrService.downloadModels();
-});
+}, 120000);
 
 describe("recognition strategies", () => {
   let service: PaddleOcrService;
@@ -121,7 +122,7 @@ describe("batch streaming, concurrency, and cancellation", () => {
   beforeAll(async () => {
     service = new PaddleOcrService();
     await service.initialize();
-  });
+  }, 60000);
 
   afterAll(async () => {
     if (service) await service.destroy();
@@ -174,7 +175,7 @@ describe("input forms and caching", () => {
   beforeAll(async () => {
     service = new PaddleOcrService();
     await service.initialize();
-  });
+  }, 60000);
 
   afterAll(async () => {
     if (service) await service.destroy();
@@ -190,11 +191,13 @@ describe("input forms and caching", () => {
   }, 30000);
 
   test("accepts a per-call dictionary as an ArrayBuffer", async () => {
-    // v5 dictionary (437 entries → 438 with the CTC blank) matching the default
-    // v5 recognition model; the stale v4 models/en_dict.txt (96) would mismatch.
-    const dictBuffer = await Bun.file(
-      `${import.meta.dir}/../models/ppocrv5_en_dict.txt`
-    ).arrayBuffer();
+    const dictFile = readFileSync(
+      `${CACHE_DIR}/${getCachedResourceFileName(DEFAULT_MODEL_URLS.charactersDictionary)}`
+    );
+    const dictBuffer = dictFile.buffer.slice(
+      dictFile.byteOffset,
+      dictFile.byteOffset + dictFile.byteLength
+    ) as ArrayBuffer;
     const result = await service.recognize(imageBuffer, { dictionary: dictBuffer });
     expect(result.text).toBeString();
   }, 30000);
@@ -206,7 +209,7 @@ describe("batch over an async iterable", () => {
   beforeAll(async () => {
     service = new PaddleOcrService();
     await service.initialize();
-  });
+  }, 60000);
 
   afterAll(async () => {
     if (service) await service.destroy();
@@ -233,25 +236,21 @@ describe("runtime model and dictionary swapping", () => {
   beforeAll(async () => {
     service = new PaddleOcrService();
     await service.initialize();
-  });
+  }, 60000);
 
   afterAll(async () => {
     if (service) await service.destroy();
   });
 
-  test("swaps the detection model from a buffer (matches default v5)", async () => {
-    const det = await Bun.file(
-      `${import.meta.dir}/../models/PP-OCRv5_mobile_det_infer.onnx`
-    ).arrayBuffer();
+  test("swaps the detection model from a buffer", async () => {
+    const det = await fetch(DEFAULT_MODEL_URLS.detection).then((res) => res.arrayBuffer());
     await service.changeDetectionModel(det);
 
     const result = await service.recognize(imageBuffer, { noCache: true });
     expect(result.text.length).toBeGreaterThan(0);
   }, 40000);
 
-  test("swaps the recognition model from the default v5 URL", async () => {
-    // Use the default v5 recognition model (matches the loaded v5 dictionary);
-    // never the stale v4 fixture.
+  test("swaps the recognition model from the default URL", async () => {
     await service.changeRecognitionModel(DEFAULT_MODEL_URLS.recognition);
     const result = await service.recognize(imageBuffer, { noCache: true });
     expect(result.text.length).toBeGreaterThan(0);

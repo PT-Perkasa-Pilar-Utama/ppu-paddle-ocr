@@ -2,10 +2,17 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:te
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { DEFAULT_MODEL_URLS } from "../src/core/base-paddle-ocr.service.js";
+import { getCachedResourceFileName } from "../src/processor/model-cache.js";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 import { levenshteinDistance, parseDictionary } from "../src/utils.js";
 
-const CACHED_DICT_PATH = join(homedir(), ".cache", "ppu-paddle-ocr", "ppocrv5_en_dict.txt");
+const CACHED_DICT_PATH = join(
+  homedir(),
+  ".cache",
+  "ppu-paddle-ocr",
+  getCachedResourceFileName(DEFAULT_MODEL_URLS.charactersDictionary)
+);
 const imageBuffer = await Bun.file(`${import.meta.dir}/../assets/receipt.jpg`).arrayBuffer();
 const groundTruth = (
   await Bun.file(`${import.meta.dir}/../assets/receipt-ground-truth.txt`).text()
@@ -29,7 +36,7 @@ beforeAll(async () => {
 
   dictBufferWithBlank = new TextEncoder().encode(dictWithBlank).buffer as ArrayBuffer;
   dictBufferWithoutBlank = new TextEncoder().encode(dictWithoutBlank).buffer as ArrayBuffer;
-});
+}, 120000);
 
 describe("parseDictionary", () => {
   test("preserves leading blank line", () => {
@@ -63,7 +70,7 @@ describe("parseDictionary", () => {
   });
 });
 
-describe("Dict load path: initialize() with default v5 model", () => {
+describe("Dict load path: initialize() with default model", () => {
   let service: PaddleOcrService;
 
   afterEach(async () => {
@@ -89,7 +96,7 @@ describe("Dict load path: initialize() with default v5 model", () => {
   }, 30000);
 });
 
-describe("Dict load path: changeTextDictionary() on default v5 model", () => {
+describe("Dict load path: changeTextDictionary() on default model", () => {
   let service: PaddleOcrService;
 
   beforeEach(async () => {
@@ -97,7 +104,7 @@ describe("Dict load path: changeTextDictionary() on default v5 model", () => {
       model: { charactersDictionary: dictBufferWithBlank },
     });
     await service.initialize();
-  });
+  }, 60000);
 
   afterEach(async () => {
     await service.destroy();
@@ -116,7 +123,7 @@ describe("Dict load path: changeTextDictionary() on default v5 model", () => {
   }, 30000);
 });
 
-describe("Dict load path: per-call options.dictionary on default v5 model", () => {
+describe("Dict load path: per-call options.dictionary on default model", () => {
   let service: PaddleOcrService;
 
   beforeAll(async () => {
@@ -124,7 +131,7 @@ describe("Dict load path: per-call options.dictionary on default v5 model", () =
       model: { charactersDictionary: dictBufferWithBlank },
     });
     await service.initialize();
-  });
+  }, 60000);
 
   test("override with dict containing leading blank line", async () => {
     const result = await service.recognize(imageBuffer, {

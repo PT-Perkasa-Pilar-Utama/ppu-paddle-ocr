@@ -4,6 +4,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { getPlatform, setPlatform } from "ppu-ocv";
 
+import { DEFAULT_MODEL_URLS } from "../src/core/base-paddle-ocr.service.js";
 import type { PaddleOcrService } from "../src/web/paddle-ocr.service.web.js";
 import { installWebCanvas, uninstallWebCanvas } from "./web-canvas-polyfill.js";
 
@@ -96,10 +97,8 @@ describe("web OCR service (onnxruntime-web under the polyfilled runtime)", () =>
     service = new WebPaddleOcrService({ processing: { engine: "canvas-native" } });
     await service.initialize();
 
-    const det = await Bun.file(
-      `${import.meta.dir}/../models/PP-OCRv5_mobile_det_infer.onnx`
-    ).arrayBuffer();
-    await service.changeDetectionModel(det); // v5 detection, matches default
+    const det = await fetch(DEFAULT_MODEL_URLS.detection).then((res) => res.arrayBuffer());
+    await service.changeDetectionModel(det);
 
     const result = await service.recognize(imageBuffer, { noCache: true });
     expect(result.text.length).toBeGreaterThan(0);

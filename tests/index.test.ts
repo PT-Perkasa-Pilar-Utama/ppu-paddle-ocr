@@ -15,7 +15,7 @@ const groundTruth = (await gtFile.text()).trim();
 
 beforeAll(async () => {
   await PaddleOcrService.downloadModels();
-});
+}, 120000);
 
 describe("PaddleOcrService Initialization", () => {
   let service: PaddleOcrService | null = null;
@@ -27,7 +27,7 @@ describe("PaddleOcrService Initialization", () => {
     }
   });
 
-  test("should initialize with default models from GitHub", async () => {
+  test("should initialize with default upstream models", async () => {
     // This test will be slow as it downloads models
     service = new PaddleOcrService();
     await service.initialize();
@@ -39,7 +39,7 @@ describe("PaddleOcrService Initialization", () => {
   }, 30000); // Increase timeout for download
 
   test("should initialize and recognize using explicit file paths", async () => {
-    // Uses the library's default models (v5).
+    // Uses the library's default models.
     service = new PaddleOcrService();
     await service.initialize();
 
@@ -80,10 +80,10 @@ describe("PaddleOcrService.recognize()", () => {
   let service: PaddleOcrService;
 
   beforeEach(async () => {
-    // Uses the library's default models (v5).
+    // Uses the library's default models.
     service = new PaddleOcrService();
     await service.initialize();
-  });
+  }, 60000);
 
   afterEach(async () => {
     await service.destroy();
@@ -198,10 +198,10 @@ describe("ImageProcessor try/finally safety", () => {
   let service: PaddleOcrService;
 
   beforeEach(async () => {
-    // Uses the library's default models (v5).
+    // Uses the library's default models.
     service = new PaddleOcrService();
     await service.initialize();
-  });
+  }, 60000);
 
   afterEach(async () => {
     await service.destroy();

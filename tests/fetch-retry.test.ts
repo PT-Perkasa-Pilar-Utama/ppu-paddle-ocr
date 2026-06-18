@@ -3,6 +3,8 @@
 
 import { afterEach, describe, expect, test } from "bun:test";
 
+import { DEFAULT_MODEL_URLS } from "../src/core/base-paddle-ocr.service.js";
+import { getCachedResourceFileName } from "../src/processor/model-cache.js";
 import { fetchArrayBufferWithRetry } from "../src/utils.js";
 
 const realFetch = globalThis.fetch;
@@ -62,5 +64,16 @@ describe("fetchArrayBufferWithRetry", () => {
       fetchArrayBufferWithRetry("https://example.test/model.ort", { retries: 1 })
     ).rejects.toThrow(/network down/);
     expect(calls).toBe(2);
+  });
+});
+
+describe("model cache filenames", () => {
+  test("different official model URLs do not collide when basenames match", () => {
+    const detection = getCachedResourceFileName(DEFAULT_MODEL_URLS.detection);
+    const recognition = getCachedResourceFileName(DEFAULT_MODEL_URLS.recognition);
+
+    expect(detection).not.toBe(recognition);
+    expect(detection).toEndWith("-inference.onnx");
+    expect(recognition).toEndWith("-inference.onnx");
   });
 });

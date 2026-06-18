@@ -49,13 +49,16 @@ export type AnyOcrResult = PaddleOcrResult | FlattenedPaddleOcrResult;
 /** Accepted source for a single image in a batch. */
 export type BatchRecognizeInput = ArrayBuffer | CoreCanvas | string;
 
-/** Base URL for downloading default PaddleOCR model files from GitHub. */
-export const MODEL_BASE_URL =
-  "https://media.githubusercontent.com/media/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main";
-
-/** Base URL for downloading default PaddleOCR dictionary files from GitHub. */
-export const DICT_BASE_URL =
-  "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main";
+/** Pinned upstream refs for the default PaddleOCR model artifacts. */
+export const DEFAULT_MODEL_REFS: Readonly<{
+  detection: string;
+  recognition: string;
+  charactersDictionary: string;
+}> = {
+  detection: "dc79536db3be55f11cd8dfc68493321836f11e75",
+  recognition: "2f0724790c8b57946c89cc45d2fa79e405781f51",
+  charactersDictionary: "ef346e0b402934477489001a4d253a20dbeb72a5",
+};
 
 /** Default model URLs used when no custom paths are provided. */
 export const DEFAULT_MODEL_URLS: Readonly<{
@@ -63,9 +66,9 @@ export const DEFAULT_MODEL_URLS: Readonly<{
   recognition: string;
   charactersDictionary: string;
 }> = {
-  detection: `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.ort`,
-  recognition: `${MODEL_BASE_URL}/recognition/multi/en/v5/en_PP-OCRv5_mobile_rec_infer.ort`,
-  charactersDictionary: `${DICT_BASE_URL}/recognition/multi/en/v5/ppocrv5_en_dict.txt`,
+  detection: `https://huggingface.co/PaddlePaddle/PP-OCRv6_medium_det_onnx/resolve/${DEFAULT_MODEL_REFS.detection}/inference.onnx`,
+  recognition: `https://huggingface.co/PaddlePaddle/PP-OCRv6_small_rec_onnx/resolve/${DEFAULT_MODEL_REFS.recognition}/inference.onnx`,
+  charactersDictionary: `https://raw.githubusercontent.com/PaddlePaddle/PaddleOCR/${DEFAULT_MODEL_REFS.charactersDictionary}/ppocr/utils/dict/ppocrv6_dict.txt`,
 };
 
 /**
@@ -131,7 +134,9 @@ export abstract class BasePaddleOcrService {
         imageBuffer = image;
       } else {
         if (typeof (image as unknown as Record<string, unknown>).toBuffer === "function") {
-          const canvasWithBuffer = image as { toBuffer: (format: string) => Buffer };
+          const canvasWithBuffer = image as {
+            toBuffer: (format: string) => Buffer;
+          };
           const buffer = canvasWithBuffer.toBuffer("image/png");
           imageBuffer = buffer.buffer.slice(
             buffer.byteOffset,
