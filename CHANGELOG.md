@@ -7,9 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.0] - 2026-06-19
+
 ### Changed
 
+- **Default models upgraded from PP-OCRv5 mobile (English) to PP-OCRv6 small (unified
+  multilingual).** On first run after upgrading, the new v6 model files are downloaded and
+  cached; previously cached v5 files remain on disk and are not removed.
+  Pass `model: PP_OCRV5_MODEL_URLS` to keep the previous behaviour without any other code
+  changes.
+- Version bumped to **6.0.0** to signal the default-model generation change and align with
+  the upstream PP-OCRv6 release series. Existing options and API surface are fully backwards
+  compatible.
 - Improve OCR line grouping scalability by avoiding repeated average-height recomputation.
+
+### Added
+
+- `PP_OCRV6_MODEL_URLS` — named constant for the PP-OCRv6 small `.ort` models (detection +
+  recognition + unified dictionary). This is now the same object as `DEFAULT_MODEL_URLS`.
+- `PP_OCRV5_MODEL_URLS` — named constant for the previous PP-OCRv5 English mobile `.ort`
+  models, for easy downgrade without manually constructing URLs.
+- Both constants are exported from both `ppu-paddle-ocr` and `ppu-paddle-ocr/web`.
 
 ## [5.8.3] - 2026-05-28
 
