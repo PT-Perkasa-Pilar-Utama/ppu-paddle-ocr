@@ -43,6 +43,7 @@ await service.destroy();
   - [Multithreaded WASM (Cross-Origin Isolation)](#multithreaded-wasm-cross-origin-isolation)
 - [Models and Language Support](#models-and-language-support)
   - [Default Models](#default-models)
+  - [PP-OCRv6 Models](#pp-ocrv6-models)
   - [Cache Location](#cache-location-node--bun)
   - [Multilingual Support](#multilingual-support)
   - [Switching Languages](#switching-languages)
@@ -68,7 +69,7 @@ await service.destroy();
 ## Why ppu-paddle-ocr?
 
 - **Lightweight** — minimal dependencies, optimized for performance.
-- **Pre-packed models** — PP-OCRv5 mobile models (English) are fetched and cached automatically on first run. Supports 40+ languages via [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models).
+- **Pre-packed models** — PP-OCRv6 small models (50+ languages, unified) are fetched and cached automatically on first run. Supports additional variants via [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models).
 - **Runs everywhere** — Node.js, Bun, Deno, web browsers, and browser extensions. The official SDK is browser-only.
 - **Customizable** — custom models, dictionaries, and per-call overrides.
 - **TypeScript** — full type definitions.
@@ -205,7 +206,7 @@ bunx ppu-paddle-ocr models --json
 
 Every `PaddleOptions` / `RecognizeOptions` field maps to a flag: `--strategy`, `--engine`, `--flatten`, `--no-cache`, `--image-height`, `--model-detection/-recognition/-dict`, detection tuning (`--max-side-length`, `--padding-vertical`, `--padding-horizontal`, `--min-area`, `--mean`, `--std`), `--execution-providers`, and for `batch`/`stream` `--concurrency`. Output is controlled by `--json`, `--pretty`, `-o/--output`, `-q/--quiet`, and `--verbose`.
 
-Recognized text goes to **stdout**; progress and logs go to **stderr**, so output pipes cleanly. Exit codes: `0` success, `1` runtime error, `2` usage error. Run `bunx ppu-paddle-ocr help` for the full reference. The CLI uses the default v5 models unless you override the `--model-*` flags.
+Recognized text goes to **stdout**; progress and logs go to **stderr**, so output pipes cleanly. Exit codes: `0` success, `1` runtime error, `2` usage error. Run `bunx ppu-paddle-ocr help` for the full reference. The CLI uses the default v6 models unless you override the `--model-*` flags.
 
 ## Batch Recognition
 
@@ -396,13 +397,15 @@ const swPath = import.meta.resolve("ppu-paddle-ocr/coi-serviceworker.js");
 
 ### Default Models
 
-The default **PP-OCRv5 mobile** models are optimized for English and served in ONNX Runtime's `.ort` FlatBuffers format (3–5× faster session creation than `.onnx`):
+The default **PP-OCRv6 small** models cover 50+ languages (Latin, CJK, Arabic, Indic, …) with a
+single unified model and dictionary. They ship in ONNX Runtime's `.ort` FlatBuffers format
+(3–5× faster session creation than `.onnx`):
 
-| Component   | File                               |
-| :---------- | :--------------------------------- |
-| Detection   | `PP-OCRv5_mobile_det_infer.ort`    |
-| Recognition | `en_PP-OCRv5_mobile_rec_infer.ort` |
-| Dictionary  | `ppocrv5_en_dict.txt`              |
+| Component   | File                     |
+| :---------- | :----------------------- |
+| Detection   | `PP-OCRv6_small_det.ort` |
+| Recognition | `PP-OCRv6_small_rec.ort` |
+| Dictionary  | `ppocrv6_dict.txt`       |
 
 Portable `.onnx` variants are available at [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models) — point `model.detection` / `model.recognition` at the `.onnx` URLs.
 
@@ -425,6 +428,44 @@ service.clearModelCache();
 ```
 
 > In the browser, model files are fetched via `fetch()` on every page load and rely on the browser's HTTP cache. For persistent offline caching, use a Service Worker or store the `ArrayBuffer` in IndexedDB.
+
+### PP-OCRv6 Models
+
+PP-OCRv6 is the default since v6.0.0. It ships a **single unified model** covering 50+ languages
+(Simplified/Traditional Chinese, English, Japanese, 46+ Latin-script languages, Arabic, Indic, …) —
+no per-language model files needed.
+
+| Tier     | Detection params | Notes                                                         |
+| :------- | :--------------- | :------------------------------------------------------------ |
+| `small`  | ~5.1M + ~19.9M   | **Default.** Matches PP-OCRv5 mobile latency.                 |
+| `medium` | ~14.6M + ~19.9M  | Server-grade. +5.1% accuracy vs PP-OCRv5 server.              |
+| `tiny`   | ~1.5M + ~19.9M   | Fastest across all platforms (6.1× vs v5 mobile on Apple M4). |
+
+Use the named URL constants to switch between generations without constructing URLs manually:
+
+```ts
+import { PaddleOcrService, PP_OCRV5_MODEL_URLS, PP_OCRV6_MODEL_URLS } from "ppu-paddle-ocr";
+
+// Default (v6 small) — same as passing no model option:
+const v6 = new PaddleOcrService({ model: PP_OCRV6_MODEL_URLS });
+
+// Stay on v5 English mobile:
+const v5 = new PaddleOcrService({ model: PP_OCRV5_MODEL_URLS });
+
+// PP-OCRv6 medium (server-grade):
+const MODEL_BASE =
+  "https://media.githubusercontent.com/media/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main";
+const DICT_BASE =
+  "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main";
+
+const v6medium = new PaddleOcrService({
+  model: {
+    detection: `${MODEL_BASE}/detection/ort/PP-OCRv6_medium_det.ort`,
+    recognition: `${MODEL_BASE}/recognition/ort/PP-OCRv6_medium_rec.ort`,
+    charactersDictionary: `${DICT_BASE}/recognition/ppocrv6_dict.txt`,
+  },
+});
+```
 
 ### Multilingual Support
 
