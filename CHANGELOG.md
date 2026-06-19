@@ -29,6 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   models, for easy downgrade without manually constructing URLs.
 - Both constants are exported from both `ppu-paddle-ocr` and `ppu-paddle-ocr/web`.
 
+### Fixed
+
+- **Model download timeout raised from 30 s to 300 s per attempt.** The PP-OCRv6 small
+  models are ~30 MB combined (vs ~12 MB for PP-OCRv5 mobile), causing the previous
+  30-second `AbortSignal.timeout` to fire on slower connections before the body finished
+  downloading. The new default matches a conservative 1 Mb/s floor across three attempts.
+
 ## [5.8.3] - 2026-05-28
 
 ### Fixed
