@@ -257,7 +257,7 @@ describe("utility commands", () => {
     const { code, out } = await run(["models", "--json"]);
     expect(code).toBe(0);
     const info = JSON.parse(out) as { models: { detection: string }; engine: string };
-    expect(info.models.detection).toContain("PP-OCRv5");
+    expect(info.models.detection).toContain("PP-OCRv6");
     expect(info.engine).toBe("opencv");
   });
 
