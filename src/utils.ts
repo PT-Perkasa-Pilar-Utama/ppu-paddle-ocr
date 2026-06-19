@@ -73,7 +73,7 @@ export function levenshteinDistance(a: string, b: string): number {
  * and is retried instead of hanging indefinitely.
  *
  * @param url - Resource to download.
- * @param options - `timeoutMs` per-attempt deadline (default 30000) and
+ * @param options - `timeoutMs` per-attempt deadline (default 300 000 ms / 5 min) and
  *   `retries` additional attempts after the first (default 2).
  * @returns The downloaded bytes.
  * @throws If every attempt fails (network error, timeout, or non-2xx response).
@@ -82,7 +82,7 @@ export async function fetchArrayBufferWithRetry(
   url: string,
   options: { timeoutMs?: number; retries?: number } = {}
 ): Promise<ArrayBuffer> {
-  const { timeoutMs = 30000, retries = 2 } = options;
+  const { timeoutMs = 300_000, retries = 2 } = options;
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
