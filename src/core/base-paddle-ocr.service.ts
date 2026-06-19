@@ -5,11 +5,10 @@ import type { InferenceSession } from "onnxruntime-common";
 import { DEFAULT_PADDLE_OPTIONS } from "../constants.js";
 import type { BatchRecognizeOptions, Box, PaddleOptions, RecognizeOptions } from "../interface.js";
 import { deepMerge, parseDictionary } from "../utils.js";
+import type { BaseDetectionService } from "./base-detection.service.js";
+import type { BaseRecognitionService, RecognitionResult } from "./base-recognition.service.js";
 import type { BatchItemResult } from "./batch.js";
 import { createAsyncQueue, runPool } from "./batch.js";
-import type { BaseDetectionService } from "./base-detection.service.js";
-import type { BaseRecognitionService } from "./base-recognition.service.js";
-import type { RecognitionResult } from "./base-recognition.service.js";
 import { globalImageCache, ImageCache } from "./image-cache.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
 
@@ -48,71 +47,6 @@ export type AnyOcrResult = PaddleOcrResult | FlattenedPaddleOcrResult;
 
 /** Accepted source for a single image in a batch. */
 export type BatchRecognizeInput = ArrayBuffer | CoreCanvas | string;
-
-/** Base URL for downloading default PaddleOCR model files from GitHub. */
-export const MODEL_BASE_URL =
-  "https://media.githubusercontent.com/media/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main";
-
-/** Base URL for downloading default PaddleOCR dictionary files from GitHub. */
-export const DICT_BASE_URL =
-  "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main";
-
-/**
- * Model URLs for the PP-OCRv5 English mobile models.
- *
- * Use these if you need to stay on PP-OCRv5 after upgrading to a version that
- * defaults to PP-OCRv6:
- *
- * ```ts
- * import { PaddleOcrService, PP_OCRV5_MODEL_URLS } from "ppu-paddle-ocr";
- * const service = new PaddleOcrService({ model: PP_OCRV5_MODEL_URLS });
- * ```
- */
-export const PP_OCRV5_MODEL_URLS: Readonly<{
-  detection: string;
-  recognition: string;
-  charactersDictionary: string;
-}> = {
-  detection: `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.ort`,
-  recognition: `${MODEL_BASE_URL}/recognition/multi/en/v5/en_PP-OCRv5_mobile_rec_infer.ort`,
-  charactersDictionary: `${DICT_BASE_URL}/recognition/multi/en/v5/ppocrv5_en_dict.txt`,
-};
-
-/**
- * Model URLs for the PP-OCRv6 small models (default since v5.9.0).
- *
- * PP-OCRv6 small covers 50+ languages (Latin, CJK, Arabic, Indic, …) with a
- * single unified model and dictionary — no per-language model files needed.
- * It matches PP-OCRv5 mobile latency while delivering higher recognition
- * accuracy (~1.9× faster than PP-OCRv5 mobile on Apple M4).
- *
- * ```ts
- * import { PaddleOcrService, PP_OCRV6_MODEL_URLS } from "ppu-paddle-ocr";
- * // PP_OCRV6_MODEL_URLS is also the library default:
- * const service = new PaddleOcrService({ model: PP_OCRV6_MODEL_URLS });
- * ```
- */
-export const PP_OCRV6_MODEL_URLS: Readonly<{
-  detection: string;
-  recognition: string;
-  charactersDictionary: string;
-}> = {
-  detection: `${MODEL_BASE_URL}/detection/ort/PP-OCRv6_small_det.ort`,
-  recognition: `${MODEL_BASE_URL}/recognition/ort/PP-OCRv6_small_rec.ort`,
-  charactersDictionary: `${DICT_BASE_URL}/recognition/ppocrv6_dict.txt`,
-};
-
-/**
- * Default model URLs used when no custom paths are provided.
- *
- * Points to the PP-OCRv6 small models since v5.9.0. To pin to v5, pass
- * `model: PP_OCRV5_MODEL_URLS` in your constructor options.
- */
-export const DEFAULT_MODEL_URLS: Readonly<{
-  detection: string;
-  recognition: string;
-  charactersDictionary: string;
-}> = PP_OCRV6_MODEL_URLS;
 
 /**
  * Abstract base class for platform-agnostic PaddleOCR service.

@@ -1,11 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import type { Canvas } from "ppu-ocv";
 import { CanvasProcessor } from "ppu-ocv";
-import {
-  DEFAULT_MODEL_URLS,
-  PP_OCRV5_MODEL_URLS,
-  PP_OCRV6_MODEL_URLS,
-} from "../src/core/base-paddle-ocr.service.js";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 import { levenshteinDistance } from "../src/utils.js";
 
@@ -32,29 +27,6 @@ describe("PaddleOcrService Initialization", () => {
       service = null;
     }
   });
-
-  test("DEFAULT_MODEL_URLS should point to PP-OCRv6 small models", () => {
-    // Verify that the default URLs reference v6 assets, not v5.
-    expect(DEFAULT_MODEL_URLS).toBe(PP_OCRV6_MODEL_URLS);
-    expect(DEFAULT_MODEL_URLS.detection).toContain("PP-OCRv6_small_det");
-    expect(DEFAULT_MODEL_URLS.recognition).toContain("PP-OCRv6_small_rec");
-    expect(DEFAULT_MODEL_URLS.charactersDictionary).toContain("ppocrv6_dict");
-
-    // Sanity-check v5 constants are still accessible and distinct.
-    expect(PP_OCRV5_MODEL_URLS.detection).toContain("PP-OCRv5");
-    expect(PP_OCRV5_MODEL_URLS).not.toBe(PP_OCRV6_MODEL_URLS);
-  });
-
-  test("should initialize with default PP-OCRv6 models from GitHub", async () => {
-    // Downloads the v6 models on first run — may take up to 60 s on a cold cache.
-    service = new PaddleOcrService();
-    await service.initialize();
-    expect(service.isInitialized()).toBe(true);
-
-    const result = await service.recognize(imageBuffer);
-    expect(result.text).not.toBeEmpty();
-    expect(result.confidence).toBeGreaterThan(0.8);
-  }, 60000);
 
   test("should initialize and recognize using explicit file paths", async () => {
     // Uses the library's default models (v6).

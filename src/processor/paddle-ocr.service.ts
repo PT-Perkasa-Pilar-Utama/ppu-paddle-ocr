@@ -8,11 +8,12 @@ import type { Canvas } from "ppu-ocv";
 import { ImageProcessor } from "ppu-ocv";
 import { CanvasProcessor } from "ppu-ocv/canvas";
 
-import { BasePaddleOcrService, DEFAULT_MODEL_URLS } from "../core/base-paddle-ocr.service.js";
+import { BasePaddleOcrService } from "../core/base-paddle-ocr.service.js";
 import { globalImageCache, ImageCache } from "../core/image-cache.js";
 import { groupRecognitionResultsByLine } from "../core/recognition/result-grouping.js";
 import { createSessionWithFallback } from "../core/session-factory.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
+import { DEFAULT_MODEL_URLS } from "../model-catalogue.js";
 import { parseDictionary } from "../utils.js";
 import type { FlattenedPaddleOcrResult, PaddleOcrResult } from "../web/paddle-ocr.service.web.js";
 import { DetectionService } from "./detection.service.js";

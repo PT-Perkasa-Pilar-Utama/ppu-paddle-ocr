@@ -12,7 +12,7 @@ import os from "node:os";
 import path from "node:path";
 
 import type { AnyOcrResult } from "../core/base-paddle-ocr.service.js";
-import { DEFAULT_MODEL_URLS } from "../core/base-paddle-ocr.service.js";
+import { DEFAULT_MODEL_URLS } from "../index.js";
 import { PaddleOcrService } from "../processor/paddle-ocr.service.js";
 import {
   CliError,

@@ -28,12 +28,38 @@ export type {
   FlattenedPaddleOcrResult,
   PaddleOcrResult,
 } from "./core/base-paddle-ocr.service.js";
+
+export type { BatchItemResult } from "./core/batch.js";
 export {
   DEFAULT_MODEL_URLS,
-  PP_OCRV5_MODEL_URLS,
-  PP_OCRV6_MODEL_URLS,
-} from "./core/base-paddle-ocr.service.js";
-export type { BatchItemResult } from "./core/batch.js";
+  DICT_BASE_URL,
+  MODEL_BASE_URL,
+  V3_JAPANESE_MOBILE_MODEL,
+  V3_MOBILE_MODEL,
+  V4_EN_MOBILE_MODEL,
+  V4_MOBILE_MODEL,
+  V4_SERVER_DOC_MODEL,
+  V4_SERVER_MODEL,
+  V5_ARABIC_MOBILE_MODEL,
+  V5_CYRILLIC_MOBILE_MODEL,
+  V5_DEVANAGARI_MOBILE_MODEL,
+  V5_EN_MOBILE_INT8_MODEL,
+  V5_EN_MOBILE_MODEL,
+  V5_EN_SERVER_MODEL,
+  V5_ESLAV_MOBILE_MODEL,
+  V5_GREEK_MOBILE_MODEL,
+  V5_KOREAN_MOBILE_MODEL,
+  V5_LATIN_MOBILE_MODEL,
+  V5_MOBILE_MODEL,
+  V5_SERVER_MODEL,
+  V5_TAMIL_MOBILE_MODEL,
+  V5_TELUGU_MOBILE_MODEL,
+  V5_THAI_MOBILE_MODEL,
+  V6_MEDIUM_MODEL,
+  V6_SMALL_MODEL,
+  V6_TINY_MODEL,
+  type ModelUrls,
+} from "./model-catalogue.js";
 export { PaddleOcrService } from "./processor/paddle-ocr.service.js";
 
 export type {

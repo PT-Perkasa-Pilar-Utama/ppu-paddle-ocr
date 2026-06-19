@@ -2,8 +2,8 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:te
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { V5_EN_MOBILE_MODEL } from "../src/model-catalogue.js";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
-import { PP_OCRV5_MODEL_URLS } from "../src/core/base-paddle-ocr.service.js";
 import { levenshteinDistance, parseDictionary } from "../src/utils.js";
 
 // The v5 EN dict lives in the model cache (downloaded once by the beforeAll below).
@@ -28,9 +28,9 @@ beforeAll(async () => {
   await PaddleOcrService.downloadModels();
 
   // Warm v5 EN model cache so ppocrv5_en_dict.txt exists on disk.
-  // We initialize a throwaway service with PP_OCRV5_MODEL_URLS; the Node
+  // We initialize a throwaway service with V5_EN_MOBILE_MODEL; the Node
   // cache layer writes each file on first fetch and skips it on subsequent runs.
-  const warmup = new PaddleOcrService({ model: PP_OCRV5_MODEL_URLS });
+  const warmup = new PaddleOcrService({ model: V5_EN_MOBILE_MODEL });
   await warmup.initialize();
   await warmup.destroy();
 
@@ -86,7 +86,7 @@ describe("Dict load path: initialize() with v5 model", () => {
 
   test("dict with leading blank line yields correct OCR", async () => {
     service = new PaddleOcrService({
-      model: { ...PP_OCRV5_MODEL_URLS, charactersDictionary: dictBufferWithBlank },
+      model: { ...V5_EN_MOBILE_MODEL, charactersDictionary: dictBufferWithBlank },
     });
     await service.initialize();
     const result = await service.recognize(imageBuffer, { noCache: true });
@@ -95,7 +95,7 @@ describe("Dict load path: initialize() with v5 model", () => {
 
   test("dict without leading blank line yields correct OCR", async () => {
     service = new PaddleOcrService({
-      model: { ...PP_OCRV5_MODEL_URLS, charactersDictionary: dictBufferWithoutBlank },
+      model: { ...V5_EN_MOBILE_MODEL, charactersDictionary: dictBufferWithoutBlank },
     });
     await service.initialize();
     const result = await service.recognize(imageBuffer, { noCache: true });
@@ -108,7 +108,7 @@ describe("Dict load path: changeTextDictionary() on v5 model", () => {
 
   beforeEach(async () => {
     service = new PaddleOcrService({
-      model: { ...PP_OCRV5_MODEL_URLS, charactersDictionary: dictBufferWithBlank },
+      model: { ...V5_EN_MOBILE_MODEL, charactersDictionary: dictBufferWithBlank },
     });
     await service.initialize();
   }, 30000);
@@ -135,7 +135,7 @@ describe("Dict load path: per-call options.dictionary on v5 model", () => {
 
   beforeAll(async () => {
     service = new PaddleOcrService({
-      model: { ...PP_OCRV5_MODEL_URLS, charactersDictionary: dictBufferWithBlank },
+      model: { ...V5_EN_MOBILE_MODEL, charactersDictionary: dictBufferWithBlank },
     });
     await service.initialize();
   }, 30000);
