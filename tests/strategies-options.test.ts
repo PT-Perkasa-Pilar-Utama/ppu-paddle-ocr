@@ -298,5 +298,5 @@ describe("model cache download path", () => {
     } finally {
       logSpy.mockRestore();
     }
-  }, 120000);
+  }, 600000); // cold re-download of ~30 MB v6 models needs ample time
 });
