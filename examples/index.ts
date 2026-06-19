@@ -29,7 +29,7 @@ const v6Service = new PaddleOcrService({
 await v6Service.initialize();
 
 const v6Start = Date.now();
-const v6Result = await v6Service.recognize(fileBuffer);
+const v6Result = await v6Service.recognize(fileBuffer, { noCache: true });
 const v6Time = Date.now() - v6Start;
 
 await v6Service.destroy();
@@ -50,7 +50,7 @@ const v5Service = new PaddleOcrService({
 await v5Service.initialize();
 
 const v5Start = Date.now();
-const v5Result = await v5Service.recognize(fileBuffer);
+const v5Result = await v5Service.recognize(fileBuffer, { noCache: true });
 const v5Time = Date.now() - v5Start;
 
 await v5Service.destroy();
