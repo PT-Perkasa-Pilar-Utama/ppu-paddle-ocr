@@ -28,7 +28,7 @@ describe("web OCR service (onnxruntime-web under the polyfilled runtime)", () =>
     installWebCanvas();
     ({ PaddleOcrService: WebPaddleOcrService } =
       await import("../src/web/paddle-ocr.service.web.js"));
-  });
+  }, 120000); // v6 models may be fetched fresh on first web-path init
   afterAll(() => {
     uninstallWebCanvas();
     setPlatform(savedPlatform);
@@ -50,7 +50,7 @@ describe("web OCR service (onnxruntime-web under the polyfilled runtime)", () =>
     expect(result.text.length).toBeGreaterThan(0);
     expect(result.confidence).toBeGreaterThan(0.8);
     expect(result.lines.length).toBeGreaterThan(0);
-  }, 60000);
+  }, 180000);
 
   test("honors recognition strategies and flatten on the web path", async () => {
     service = new WebPaddleOcrService({ processing: { engine: "canvas-native" } });
