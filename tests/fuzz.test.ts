@@ -19,7 +19,7 @@ describe("fuzz: OCR is robust to malformed image input", () => {
     // canvas-native engine: no @techstark/opencv-js init, faster per run.
     service = new PaddleOcrService({ processing: { engine: "canvas-native" } });
     await service.initialize();
-  });
+  }, 120000); // v6 models may need downloading on first run
 
   afterAll(async () => {
     if (service) await service.destroy();

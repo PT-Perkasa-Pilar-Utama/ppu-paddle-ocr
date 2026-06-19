@@ -3,9 +3,11 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
+import { PP_OCRV5_MODEL_URLS } from "../src/core/base-paddle-ocr.service.js";
 import { levenshteinDistance, parseDictionary } from "../src/utils.js";
 
-const CACHED_DICT_PATH = join(homedir(), ".cache", "ppu-paddle-ocr", "ppocrv5_en_dict.txt");
+// The v5 EN dict lives in the model cache (downloaded once by the beforeAll below).
+const CACHED_V5_DICT_PATH = join(homedir(), ".cache", "ppu-paddle-ocr", "ppocrv5_en_dict.txt");
 const imageBuffer = await Bun.file(`${import.meta.dir}/../assets/receipt.jpg`).arrayBuffer();
 const groundTruth = (
   await Bun.file(`${import.meta.dir}/../assets/receipt-ground-truth.txt`).text()
@@ -22,14 +24,22 @@ let dictBufferWithBlank: ArrayBuffer;
 let dictBufferWithoutBlank: ArrayBuffer;
 
 beforeAll(async () => {
+  // Warm v6 default cache (used by the main test suite).
   await PaddleOcrService.downloadModels();
 
-  const dictWithBlank = readFileSync(CACHED_DICT_PATH, "utf-8");
+  // Warm v5 EN model cache so ppocrv5_en_dict.txt exists on disk.
+  // We initialize a throwaway service with PP_OCRV5_MODEL_URLS; the Node
+  // cache layer writes each file on first fetch and skips it on subsequent runs.
+  const warmup = new PaddleOcrService({ model: PP_OCRV5_MODEL_URLS });
+  await warmup.initialize();
+  await warmup.destroy();
+
+  const dictWithBlank = readFileSync(CACHED_V5_DICT_PATH, "utf-8");
   const dictWithoutBlank = dictWithBlank.startsWith("\n") ? dictWithBlank.slice(1) : dictWithBlank;
 
   dictBufferWithBlank = new TextEncoder().encode(dictWithBlank).buffer as ArrayBuffer;
   dictBufferWithoutBlank = new TextEncoder().encode(dictWithoutBlank).buffer as ArrayBuffer;
-});
+}, 120000); // models may need downloading on first run
 
 describe("parseDictionary", () => {
   test("preserves leading blank line", () => {
@@ -63,7 +73,11 @@ describe("parseDictionary", () => {
   });
 });
 
-describe("Dict load path: initialize() with default v5 model", () => {
+// These three describe blocks test dictionary loading behaviour using the v5
+// English models explicitly. Using v5 ensures the dict size (437 entries)
+// matches the model's output classes, giving a meaningful accuracy signal.
+
+describe("Dict load path: initialize() with v5 model", () => {
   let service: PaddleOcrService;
 
   afterEach(async () => {
@@ -72,7 +86,7 @@ describe("Dict load path: initialize() with default v5 model", () => {
 
   test("dict with leading blank line yields correct OCR", async () => {
     service = new PaddleOcrService({
-      model: { charactersDictionary: dictBufferWithBlank },
+      model: { ...PP_OCRV5_MODEL_URLS, charactersDictionary: dictBufferWithBlank },
     });
     await service.initialize();
     const result = await service.recognize(imageBuffer, { noCache: true });
@@ -81,7 +95,7 @@ describe("Dict load path: initialize() with default v5 model", () => {
 
   test("dict without leading blank line yields correct OCR", async () => {
     service = new PaddleOcrService({
-      model: { charactersDictionary: dictBufferWithoutBlank },
+      model: { ...PP_OCRV5_MODEL_URLS, charactersDictionary: dictBufferWithoutBlank },
     });
     await service.initialize();
     const result = await service.recognize(imageBuffer, { noCache: true });
@@ -89,15 +103,15 @@ describe("Dict load path: initialize() with default v5 model", () => {
   }, 30000);
 });
 
-describe("Dict load path: changeTextDictionary() on default v5 model", () => {
+describe("Dict load path: changeTextDictionary() on v5 model", () => {
   let service: PaddleOcrService;
 
   beforeEach(async () => {
     service = new PaddleOcrService({
-      model: { charactersDictionary: dictBufferWithBlank },
+      model: { ...PP_OCRV5_MODEL_URLS, charactersDictionary: dictBufferWithBlank },
     });
     await service.initialize();
-  });
+  }, 30000);
 
   afterEach(async () => {
     await service.destroy();
@@ -116,15 +130,15 @@ describe("Dict load path: changeTextDictionary() on default v5 model", () => {
   }, 30000);
 });
 
-describe("Dict load path: per-call options.dictionary on default v5 model", () => {
+describe("Dict load path: per-call options.dictionary on v5 model", () => {
   let service: PaddleOcrService;
 
   beforeAll(async () => {
     service = new PaddleOcrService({
-      model: { charactersDictionary: dictBufferWithBlank },
+      model: { ...PP_OCRV5_MODEL_URLS, charactersDictionary: dictBufferWithBlank },
     });
     await service.initialize();
-  });
+  }, 30000);
 
   test("override with dict containing leading blank line", async () => {
     const result = await service.recognize(imageBuffer, {
