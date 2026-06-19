@@ -133,7 +133,38 @@ await service.destroy();
 
 ### Custom Models
 
-Pass file paths, URLs, or `ArrayBuffer`s for the detection model, recognition model, and dictionary:
+**Using preset models** — import constants for quick switching:
+
+```ts
+import { PaddleOcrService, V6_SMALL_MODEL, V5_EN_MOBILE_MODEL } from "ppu-paddle-ocr";
+
+// PP-OCRv6 small (default)
+const service = new PaddleOcrService({ model: V6_SMALL_MODEL });
+
+// Switch to PP-OCRv5 English
+const service = new PaddleOcrService({ model: V5_EN_MOBILE_MODEL });
+```
+
+**Available presets:**
+
+- **v6**: `V6_SMALL_MODEL` (default), `V6_MEDIUM_MODEL`, `V6_TINY_MODEL`
+- **v5**: `V5_EN_MOBILE_MODEL`, `V5_EN_MOBILE_INT8_MODEL`, `V5_EN_SERVER_MODEL`, `V5_MOBILE_MODEL`, `V5_SERVER_MODEL`
+- **v5 languages**: `V5_ARABIC_MOBILE_MODEL`, `V5_CYRILLIC_MOBILE_MODEL`, `V5_DEVANAGARI_MOBILE_MODEL`, `V5_GREEK_MOBILE_MODEL`, `V5_ESLAV_MOBILE_MODEL`, `V5_KOREAN_MOBILE_MODEL`, `V5_LATIN_MOBILE_MODEL`, `V5_TAMIL_MOBILE_MODEL`, `V5_TELUGU_MOBILE_MODEL`, `V5_THAI_MOBILE_MODEL`
+- **v4**: `V4_EN_MOBILE_MODEL`, `V4_MOBILE_MODEL`, `V4_SERVER_MODEL`, `V4_SERVER_DOC_MODEL`
+- **v3**: `V3_MOBILE_MODEL`, `V3_JAPANESE_MOBILE_MODEL`
+
+**Granular override** — mix presets with custom paths:
+
+```ts
+const service = new PaddleOcrService({
+  model: {
+    ...V6_SMALL_MODEL,
+    detection: "./models/custom-det.onnx", // Override just detection
+  },
+});
+```
+
+**Fully custom** — pass file paths, URLs, or `ArrayBuffer`s:
 
 ```ts
 const service = new PaddleOcrService({
@@ -441,30 +472,28 @@ no per-language model files needed.
 | `medium` | ~14.6M + ~19.9M  | Server-grade. +5.1% accuracy vs PP-OCRv5 server.              |
 | `tiny`   | ~1.5M + ~19.9M   | Fastest across all platforms (6.1× vs v5 mobile on Apple M4). |
 
-Use the named URL constants to switch between generations without constructing URLs manually:
+**Quick switching with presets:**
+
+```ts
+import { PaddleOcrService, V6_SMALL_MODEL, V6_MEDIUM_MODEL, V6_TINY_MODEL } from "ppu-paddle-ocr";
+
+// Default (v6 small) — same as passing no model option
+const service = new PaddleOcrService({ model: V6_SMALL_MODEL });
+
+// Server-grade
+const serviceServer = new PaddleOcrService({ model: V6_MEDIUM_MODEL });
+
+// Fastest
+const serviceFast = new PaddleOcrService({ model: V6_TINY_MODEL });
+```
+
+**Legacy URL constants** (still supported):
 
 ```ts
 import { PaddleOcrService, PP_OCRV5_MODEL_URLS, PP_OCRV6_MODEL_URLS } from "ppu-paddle-ocr";
 
-// Default (v6 small) — same as passing no model option:
-const v6 = new PaddleOcrService({ model: PP_OCRV6_MODEL_URLS });
-
-// Stay on v5 English mobile:
+// Stay on v5 English mobile
 const v5 = new PaddleOcrService({ model: PP_OCRV5_MODEL_URLS });
-
-// PP-OCRv6 medium (server-grade):
-const MODEL_BASE =
-  "https://media.githubusercontent.com/media/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main";
-const DICT_BASE =
-  "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main";
-
-const v6medium = new PaddleOcrService({
-  model: {
-    detection: `${MODEL_BASE}/detection/ort/PP-OCRv6_medium_det.ort`,
-    recognition: `${MODEL_BASE}/recognition/ort/PP-OCRv6_medium_rec.ort`,
-    charactersDictionary: `${DICT_BASE}/recognition/ppocrv6_dict.txt`,
-  },
-});
 ```
 
 ### Multilingual Support
@@ -480,6 +509,20 @@ PP-OCRv5 supports 40+ languages across different script systems. Pre-converted O
 
 ### Switching Languages
 
+**Using presets** (easiest):
+
+```ts
+import { PaddleOcrService, V5_THAI_MOBILE_MODEL, V5_ARABIC_MOBILE_MODEL } from "ppu-paddle-ocr";
+
+// Thai
+const service = new PaddleOcrService({ model: V5_THAI_MOBILE_MODEL });
+
+// Arabic
+const service = new PaddleOcrService({ model: V5_ARABIC_MOBILE_MODEL });
+```
+
+**Manual URLs** (advanced):
+
 ```ts
 const MODEL_BASE =
   "https://media.githubusercontent.com/media/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/refs/heads/main";
@@ -490,22 +533,34 @@ const DICT_BASE =
 const service = new PaddleOcrService({
   model: {
     detection: `${MODEL_BASE}/detection/PP-OCRv5_mobile_det_infer.onnx`,
-    recognition: `${MODEL_BASE}/recognition/multi/thai/v5/th_PP-OCRv5_mobile_rec_infer.onnx`,
-    charactersDictionary: `${DICT_BASE}/recognition/multi/thai/v5/ppocrv5_th_dict.txt`,
+    recognition: `${MODEL_BASE}/recognition/multi/th/v5/th_PP-OCRv5_mobile_rec_infer.onnx`,
+    charactersDictionary: `${DICT_BASE}/recognition/multi/th/v5/ppocrv5_th_dict.txt`,
   },
 });
 ```
 
 ### Server Models (Higher Accuracy)
 
-PP-OCRv5 is available in mobile and server variants:
+**Using presets:**
+
+```ts
+import { PaddleOcrService, V5_EN_SERVER_MODEL, V5_SERVER_MODEL } from "ppu-paddle-ocr";
+
+// PP-OCRv5 English server
+const service = new PaddleOcrService({ model: V5_EN_SERVER_MODEL });
+
+// PP-OCRv5 server (multilingual)
+const service = new PaddleOcrService({ model: V5_SERVER_MODEL });
+```
+
+**Manual configuration:**
 
 ```ts
 const service = new PaddleOcrService({
   model: {
     detection: `${MODEL_BASE}/detection/PP-OCRv5_server_det_infer.onnx`,
-    recognition: `${MODEL_BASE}/recognition/multi/en/v5/en_PP-OCRv5_server_rec_infer.onnx`,
-    charactersDictionary: `${DICT_BASE}/recognition/multi/en/v5/ppocrv5_en_dict.txt`,
+    recognition: `${MODEL_BASE}/recognition/PP-OCRv5_server_rec_infer.onnx`,
+    charactersDictionary: `${DICT_BASE}/recognition/ppocrv5_dict.txt`,
   },
 });
 ```
@@ -516,7 +571,15 @@ The recognition model's transformer MatMul operations can be dynamically quantiz
 
 > On Apple Silicon (M-series), INT8 is **not faster** — the FP32 NEON/Accelerate kernels outperform the INT8 MLAS path. Stick with FP32 on macOS ARM64.
 
-Run the quantization helper:
+**Using the preset:**
+
+```ts
+import { PaddleOcrService, V5_EN_MOBILE_INT8_MODEL } from "ppu-paddle-ocr";
+
+const service = new PaddleOcrService({ model: V5_EN_MOBILE_INT8_MODEL });
+```
+
+**Custom quantization** — run the quantization helper:
 
 ```bash
 pip install onnxruntime onnx sympy
