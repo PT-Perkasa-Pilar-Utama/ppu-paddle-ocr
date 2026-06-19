@@ -15,6 +15,22 @@ export type ProcessingEngine = "opencv" | "canvas-native";
 
 /**
  * Paths to the OCR model and dictionary files.
+ *
+ * **Preset models** (import from `"ppu-paddle-ocr"`):
+ *
+ * - **PP-OCRv6**: `V6_SMALL_MODEL` (default), `V6_MEDIUM_MODEL`, `V6_TINY_MODEL`
+ * - **PP-OCRv5**: `V5_EN_MOBILE_MODEL`, `V5_EN_MOBILE_INT8_MODEL`, `V5_EN_SERVER_MODEL`, `V5_MOBILE_MODEL`, `V5_SERVER_MODEL`
+ * - **PP-OCRv5 Languages**: `V5_ARABIC_MOBILE_MODEL`, `V5_CYRILLIC_MOBILE_MODEL`, `V5_DEVANAGARI_MOBILE_MODEL`, `V5_GREEK_MOBILE_MODEL`, `V5_ESLAV_MOBILE_MODEL`, `V5_KOREAN_MOBILE_MODEL`, `V5_LATIN_MOBILE_MODEL`, `V5_TAMIL_MOBILE_MODEL`, `V5_TELUGU_MOBILE_MODEL`, `V5_THAI_MOBILE_MODEL`
+ * - **PP-OCRv4**: `V4_EN_MOBILE_MODEL`, `V4_MOBILE_MODEL`, `V4_SERVER_MODEL`, `V4_SERVER_DOC_MODEL`
+ * - **PP-OCRv3**: `V3_MOBILE_MODEL`, `V3_JAPANESE_MOBILE_MODEL`
+ *
+ * Or provide granular custom paths for `detection`, `recognition`, `charactersDictionary`.
+ *
+ * @example
+ * ```ts
+ * import { PaddleOcrService, V6_SMALL_MODEL } from "ppu-paddle-ocr";
+ * const service = new PaddleOcrService({ model: V6_SMALL_MODEL });
+ * ```
  */
 export type ModelPathOptions = {
   /**

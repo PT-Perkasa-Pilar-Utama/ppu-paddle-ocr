@@ -5,10 +5,11 @@ import * as ort from "onnxruntime-web";
 import type { CanvasLike } from "ppu-ocv/web";
 
 import type { FlattenedPaddleOcrResult, PaddleOcrResult } from "../core/base-paddle-ocr.service.js";
-import { BasePaddleOcrService, DEFAULT_MODEL_URLS } from "../core/base-paddle-ocr.service.js";
+import { BasePaddleOcrService } from "../core/base-paddle-ocr.service.js";
 import type { CoreCanvas } from "../core/platform.js";
 import { createSessionWithFallback } from "../core/session-factory.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
+import { DEFAULT_MODEL_URLS } from "../model-catalogue.js";
 import { fetchArrayBufferWithRetry, parseDictionary } from "../utils.js";
 import { DetectionService } from "./detection.service.web.js";
 import { getDefaultWebExecutionProviders, WebPlatformProvider } from "./platform.web.js";

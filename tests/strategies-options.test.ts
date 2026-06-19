@@ -4,7 +4,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { existsSync, rmSync } from "node:fs";
 
-import { DEFAULT_MODEL_URLS } from "../src/core/base-paddle-ocr.service.js";
+import { DEFAULT_MODEL_URLS } from "../src/model-catalogue.js";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 
 const imgFile = Bun.file(`${import.meta.dir}/../assets/receipt.jpg`);
