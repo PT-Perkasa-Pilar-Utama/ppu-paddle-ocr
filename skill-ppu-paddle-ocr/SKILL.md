@@ -1,35 +1,37 @@
 ---
 name: skill-ppu-paddle-ocr
-description: Use this skill whenever the user is writing TypeScript/JavaScript code that imports `ppu-paddle-ocr` or `ppu-paddle-ocr/web`, or asks about PaddleOCR / PP-OCRv6 / PP-OCRv5 in JavaScript runtimes — text detection, text recognition, OCR on receipts/invoices/documents, ONNX Runtime OCR, multilingual OCR (Latin, Cyrillic, Arabic, Indic, CJK, Thai), WebGPU OCR in browsers, browser-extension OCR, INT8-quantized recognition, custom dictionaries, recognition strategies (`per-box` / `per-line` / `cross-line`), or processing engines (`opencv` / `canvas-native`). Trigger even when the user says "PaddleOCR in Node" or "OCR library that runs in Bun and the browser" without naming the package, as long as the codebase imports it. This skill encodes the two entry points (`ppu-paddle-ocr` vs `ppu-paddle-ocr/web`), the lifecycle (`new` → `initialize` → `recognize` → `destroy`), the strategy/engine trade-offs, the model-cache behaviour on Node/Bun, and the WebGPU fallback path on web. Also covers running OCR as a dockerized REST API via the `apps/serve` service (Hono + Bun) when the user wants OCR-as-a-service or a deployable container instead of embedding the SDK.
+description: Use this skill whenever the user is writing TypeScript/JavaScript code that imports `ppu-paddle-ocr`, `ppu-paddle-ocr/web`, or `ppu-paddle-ocr/mobile`, or asks about PaddleOCR / PP-OCRv6 / PP-OCRv5 in JavaScript runtimes — text detection, text recognition, OCR on receipts/invoices/documents, ONNX Runtime OCR, multilingual OCR (Latin, Cyrillic, Arabic, Indic, CJK, Thai), WebGPU OCR in browsers, browser-extension OCR, React Native / Expo OCR on iOS and Android (Skia + onnxruntime-react-native), INT8-quantized recognition, custom dictionaries, recognition strategies (`per-box` / `per-line` / `cross-line`), or processing engines (`opencv` / `canvas-native`). Trigger even when the user says "PaddleOCR in Node", "OCR library that runs in Bun and the browser", or "OCR in React Native" without naming the package, as long as the codebase imports it. This skill encodes the three entry points (`ppu-paddle-ocr`, `ppu-paddle-ocr/web`, and `ppu-paddle-ocr/mobile`), the lifecycle (`new` → `initialize` → `recognize` → `destroy`), the strategy/engine trade-offs, the model-cache behaviour on Node/Bun, the WebGPU fallback path on web, and the Skia / native-JSI path on React Native. Also covers running OCR as a dockerized REST API via the `apps/serve` service (Hono + Bun) when the user wants OCR-as-a-service or a deployable container instead of embedding the SDK.
 ---
 
 # Writing code with `ppu-paddle-ocr`
 
-`ppu-paddle-ocr` is a TypeScript SDK around the PP-OCR ONNX models (PP-OCRv6 by default; v3–v5 presets available). One package, one API, every JavaScript runtime — Node.js, Bun, Deno, browsers, and browser extensions. It pairs a text-detection model with a text-recognition model and decodes them with a character dictionary; the package ships the PP-OCRv6 small unified multilingual models by default and downloads them on first run.
+`ppu-paddle-ocr` is a TypeScript SDK around the PP-OCR ONNX models (PP-OCRv6 by default; v3–v5 presets available). One package, one API, every JavaScript runtime — Node.js, Bun, Deno, browsers, browser extensions, and React Native (iOS/Android). It pairs a text-detection model with a text-recognition model and decodes them with a character dictionary; the package ships the PP-OCRv6 small unified multilingual models by default and downloads them on first run.
 
 The two things that bite people first are (1) picking the right entry point for the runtime, and (2) understanding that the service has a real lifecycle — you must `await initialize()` before `recognize()`, and call `destroy()` to free ONNX sessions. Everything else is configuration.
 
-## The two entry points
+## The three entry points
 
-| Import path          | Runtime                                 | Canvas backend                          | Processing engine                                                              | Model loading                                                |
-| -------------------- | --------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| `ppu-paddle-ocr`     | **Node.js, Bun, Deno** servers and CLIs | `@napi-rs/canvas` via `ppu-ocv`         | `"opencv"` (default, more accurate) or `"canvas-native"`                       | Cached on disk under `~/.cache/ppu-paddle-ocr`               |
-| `ppu-paddle-ocr/web` | **Browsers and browser extensions**     | `HTMLCanvasElement` / `OffscreenCanvas` | Always `"canvas-native"` — OpenCV.js is **not bundled** in the web entry point | Fetched via `fetch()` every page load (relies on HTTP cache) |
+| Import path             | Runtime                                 | Canvas backend                                           | Processing engine                                                              | Model loading                                                      |
+| ----------------------- | --------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| `ppu-paddle-ocr`        | **Node.js, Bun, Deno** servers and CLIs | `@napi-rs/canvas` via `ppu-ocv`                          | `"opencv"` (default, more accurate) or `"canvas-native"`                       | Cached on disk under `~/.cache/ppu-paddle-ocr`                     |
+| `ppu-paddle-ocr/web`    | **Browsers and browser extensions**     | `HTMLCanvasElement` / `OffscreenCanvas`                  | Always `"canvas-native"` — OpenCV.js is **not bundled** in the web entry point | Fetched via `fetch()` every page load (relies on HTTP cache)       |
+| `ppu-paddle-ocr/mobile` | **React Native (iOS / Android)**        | `@shopify/react-native-skia` via `ppu-ocv/canvas-mobile` | Always `"canvas-native"` — no OpenCV on RN                                     | Fetched via `fetch()` each `initialize()` (no built-in disk cache) |
 
 Hard rules:
 
-- The peer dependency depends on the entry point: install `onnxruntime-node` for `ppu-paddle-ocr`, and `onnxruntime-web` for `ppu-paddle-ocr/web`. Both are listed as **optional** peer deps so the install only pulls what you actually use.
-- Setting `processing.engine = "opencv"` on the `/web` import is silently ignored — `canvas-native` is the only available backend in browsers.
-- `PaddleOcrService.downloadModels()` and `service.clearModelCache()` are Node/Bun-only (they touch the filesystem). On the web build they are not defined.
+- The peer dependency depends on the entry point: install `onnxruntime-node` for `ppu-paddle-ocr`, `onnxruntime-web` for `ppu-paddle-ocr/web`, and `onnxruntime-react-native` **+ `@shopify/react-native-skia`** for `ppu-paddle-ocr/mobile`. All are **optional** peer deps so the install only pulls what you actually use.
+- Setting `processing.engine = "opencv"` on the `/web` or `/mobile` import is silently ignored — `canvas-native` is the only available backend off Node/Bun.
+- `PaddleOcrService.downloadModels()` and `service.clearModelCache()` are Node/Bun-only (they touch the filesystem). On the web and mobile builds they are not defined.
+- The `/mobile` entry needs native modules, so it requires a **dev client or `expo prebuild` — not Expo Go**. Targets RN ≥ 0.74 / Expo SDK ≥ 51 (Hermes). Inference is CPU by default; pass `session: { executionProviders: ["nnapi"] }` (Android) or `["coreml"]` (iOS) to opt into hardware acceleration. There is no WebGPU on RN.
 
-When the user describes their runtime in any concrete way ("Bun CLI", "Cloudflare Workers", "Chrome MV3 service worker", "Vite frontend"), bind the import path to that constraint immediately rather than echoing a generic snippet.
+When the user describes their runtime in any concrete way ("Bun CLI", "Cloudflare Workers", "Chrome MV3 service worker", "Vite frontend", "Expo app"), bind the import path to that constraint immediately rather than echoing a generic snippet.
 
 ## The lifecycle contract
 
 Every program follows the same four beats:
 
 ```ts
-import { PaddleOcrService } from "ppu-paddle-ocr"; // or "ppu-paddle-ocr/web"
+import { PaddleOcrService } from "ppu-paddle-ocr"; // or "ppu-paddle-ocr/web" / "ppu-paddle-ocr/mobile"
 
 const service = new PaddleOcrService(/* PaddleOptions? */);
 await service.initialize(); // 1. download/load models, build ONNX sessions
@@ -48,9 +50,9 @@ await service.destroy(); // 3. release ONNX sessions
 
 `recognize(image, options?)` accepts:
 
-- `string` — must be either an absolute filesystem path (Node/Bun) or an `http(s)://` URL. Relative paths are rejected with an explicit error. In browsers, only URLs work.
-- `ArrayBuffer` — raw image bytes (PNG/JPEG/WEBP, anything `ppu-ocv` can decode). The most universal input.
-- A canvas — `@napi-rs/canvas` `Canvas` on Node/Bun, `HTMLCanvasElement` or `OffscreenCanvas` on web. Useful when you've already preprocessed the image and want to skip a re-decode.
+- `string` — must be either an absolute filesystem path (Node/Bun) or an `http(s)://` URL. Relative paths are rejected with an explicit error. On web and React Native, only URLs work.
+- `ArrayBuffer` — raw image bytes (PNG/JPEG/WEBP, anything `ppu-ocv` can decode). The most universal input, and the usual one on React Native (a captured/bundled frame).
+- A canvas — `@napi-rs/canvas` `Canvas` on Node/Bun, `HTMLCanvasElement` / `OffscreenCanvas` on web, or a Skia-backed canvas on React Native. Useful when you've already preprocessed the image and want to skip a re-decode.
 
 Returns one of:
 
@@ -161,7 +163,7 @@ await service.initialize(); // hits the cache, no network
 
 To clear the cache (e.g. after a model upgrade): `service.clearModelCache()`.
 
-In the browser, there is no on-disk cache. Models are fetched on every page load and rely on HTTP cache headers. For real offline support, the user should download the model once with `fetch`, store the `ArrayBuffer` in IndexedDB, and then pass it explicitly via `model.detection` / `model.recognition` / `model.charactersDictionary`.
+In the browser (and on React Native), there is no on-disk cache. Models are fetched on every page load / `initialize()` and rely on HTTP caching. For real offline support, the user should download the model once with `fetch`, persist the `ArrayBuffer` (IndexedDB on web, the filesystem on RN), and then pass it explicitly via `model.detection` / `model.recognition` / `model.charactersDictionary`.
 
 ## Custom and multilingual models
 
@@ -270,6 +272,29 @@ const service = new PaddleOcrService({
 The WASM binaries are still required even when WebGPU is the primary provider — they're used for graph optimization and fallback ops. If the user is self-hosting onnxruntime-web's WASM files, they must set `ort.env.wasm.wasmPaths` **before** `initialize()`.
 
 For CDN / no-bundler setups, point at the published ESM build directly (see the live demo at https://ppu-paddle-ocr.snowfluke.workers.dev/ for a complete reference).
+
+## The React Native (mobile) entry point
+
+`ppu-paddle-ocr/mobile` runs the same pipeline on iOS/Android via `onnxruntime-react-native` (native JSI) and `ppu-ocv/canvas-mobile` (Skia). Install `onnxruntime-react-native` and `@shopify/react-native-skia`, and use a dev client / `expo prebuild` (Expo Go can't load the native modules). Feed `recognize()` an `ArrayBuffer` — e.g. a bundled asset or a frame from `expo-camera` / `react-native-vision-camera`:
+
+```ts
+import { PaddleOcrService } from "ppu-paddle-ocr/mobile";
+import { Asset } from "expo-asset";
+
+const service = new PaddleOcrService(); // CPU by default; { session: { executionProviders: ["nnapi"] } } on Android
+await service.initialize();
+
+const asset = Asset.fromModule(require("./assets/receipt.jpg"));
+await asset.downloadAsync();
+const bytes = await (await fetch(asset.localUri ?? asset.uri)).arrayBuffer();
+
+const result = await service.recognize(bytes, { flatten: true });
+console.log(result.text, result.confidence);
+
+await service.destroy();
+```
+
+Camera capture is out of scope — the user passes a decoded frame. There is no on-disk model cache on mobile (like web, models are fetched each `initialize()`); pass a lighter preset such as `V5_EN_MOBILE_INT8_MODEL` if first-run download size matters. A runnable Expo example lives at https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-mobile-react-native-demo.
 
 ## Configuration cheat sheet
 
@@ -454,10 +479,11 @@ Rules to remember:
 
 - It's **Node/Bun only** — the `bin` is the `ppu-paddle-ocr` entry point, not `/web`.
 - Every constructor / per-call option has a flag: `--strategy`, `--engine`,
-  `--flatten`, `--no-cache`, `--model-detection/-recognition/-dict`, detection
-  tuning (`--max-side-length`, `--mean`, `--std`, …), `--execution-providers`,
-  and `--concurrency` for batch/stream. Defaults match the SDK (v6 small models,
-  `per-line`, `opencv`).
+  `--flatten`, `--no-cache`, `--model <preset>` (catalogue key like `v6-tiny` /
+  `v5-thai-mobile`; `models --json` lists them), `--model-detection/-recognition/-dict`
+  (raw paths/URLs that override the preset), detection tuning (`--max-side-length`,
+  `--mean`, `--std`, …), `--execution-providers`, and `--concurrency` for
+  batch/stream. Defaults match the SDK (v6 small models, `per-box`, `opencv`).
 - **Recognized text → stdout; progress and logs → stderr.** Pipe stdout safely;
   add `-q` to silence stderr. `--json` emits the full result object (NDJSON for
   `stream`); `-o <file>` writes to disk.
