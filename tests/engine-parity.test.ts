@@ -5,7 +5,7 @@ import type { ProcessingEngine } from "../src/interface.js";
 const imgFile = Bun.file(`${import.meta.dir}/../assets/receipt.jpg`);
 const imageBuffer = await imgFile.arrayBuffer();
 
-// Exercise the library's default models (v5).
+// Exercise the library's default models (v6 small).
 beforeAll(async () => {
   await PaddleOcrService.downloadModels();
 });
