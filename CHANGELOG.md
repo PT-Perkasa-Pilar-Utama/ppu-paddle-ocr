@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version bumped to **6.0.0** to signal the default-model generation change and align with
   the upstream PP-OCRv6 release series. Existing options and API surface are fully backwards
   compatible.
+- Bumped `ppu-ocv` to `^3.3.0` for its new `canvas-mobile` (Skia) entry, and added
+  `onnxruntime-react-native` and `@shopify/react-native-skia` as optional peer dependencies
+  (for the new mobile entry below).
 - **Default recognition strategy changed from `per-line` to `per-box`.** On PP-OCRv6 small,
   `per-box` is the most accurate on the receipt benchmark (96.61% vs 95.56% for `per-line`)
   while the three strategies are within ~1% on speed for sparse pages. Set
@@ -28,6 +31,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **React Native support via a new `ppu-paddle-ocr/mobile` entry.** Runs the same OCR
+  pipeline on iOS and Android using `onnxruntime-react-native` (native JSI) and
+  `ppu-ocv/canvas-mobile` (Skia-backed canvas), mirroring the web entry's platform-provider
+  pattern. Always uses the canvas-native engine (no OpenCV on RN); CPU inference by default
+  with opt-in NNAPI/CoreML. Install with
+  `npm install ppu-paddle-ocr onnxruntime-react-native @shopify/react-native-skia` and import
+  from `ppu-paddle-ocr/mobile`. Requires a dev client / `expo prebuild` (not Expo Go). A
+  runnable Expo example lives in a separate repo, `ppu-paddle-ocr-mobile-react-native-demo`.
+  Closes #17.
 - **Model catalogue** — 27 named preset constants covering PP-OCRv6 (`V6_SMALL_MODEL`,
   `V6_MEDIUM_MODEL`, `V6_TINY_MODEL`), PP-OCRv5 (English, server, multilingual, INT8),
   PP-OCRv4, and PP-OCRv3, each bundling detection + recognition + dictionary URLs. Use them
@@ -38,7 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   retained as a deprecated alias.
 - `ModelUrls` type, plus `MODEL_BASE_URL` / `DICT_BASE_URL` constants, for building custom
   model configurations.
-- All catalogue exports are available from both `ppu-paddle-ocr` and `ppu-paddle-ocr/web`.
+- All catalogue exports are available from `ppu-paddle-ocr`, `ppu-paddle-ocr/web`, and
+  `ppu-paddle-ocr/mobile`.
 
 ### Fixed
 
