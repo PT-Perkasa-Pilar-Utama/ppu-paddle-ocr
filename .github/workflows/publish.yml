@@ -60,6 +60,13 @@ jobs:
       - name: TypeScript type check
         run: bun run type-check
 
+      # Pinned bun 1.2.23 caps lifecycle-hook timeouts at the 5 s default, and
+      # the web tests read the v6 models straight from ~/.cache. Warm the cache
+      # here (default v6 + the v5 EN models the dictionary tests use) so the
+      # in-hook downloads are fast disk hits — mirrors ci.yml.
+      - name: Warm model cache
+        run: bun scripts/warm-test-models.ts
+
       - name: Run tests with coverage
         run: bun run test:coverage
 
