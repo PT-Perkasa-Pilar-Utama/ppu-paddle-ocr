@@ -49,6 +49,8 @@ export function ctcGreedyDecode(
       continue;
     }
 
+    // Out-of-bounds indices are skipped silently; a dictionary/model size
+    // mismatch is reported once by decodeResults() rather than per timestep.
     if (maxIndex >= 0 && maxIndex < dictLen) {
       const char = charDict[maxIndex] ?? "";
       if (maxIndex === lastDictIndex) {
@@ -62,10 +64,6 @@ export function ctcGreedyDecode(
         confidenceSum += maxProb;
         confidenceCount++;
       }
-    } else {
-      console.warn(
-        `Decoded index ${maxIndex} out of bounds for charDict (length ${dictLen}) at t=${t}`
-      );
     }
 
     lastCharIndex = maxIndex;
@@ -80,11 +78,15 @@ export function ctcGreedyDecode(
  *
  * Prepends a blank slot when the dict is one entry shorter than the model's class count
  * (issue #15 compatibility).
+ *
+ * When `verbose` is set, a dictionary/model size mismatch is reported once (such a
+ * mismatch produces garbage output, so it usually signals the wrong dictionary).
  */
 export function decodeResults(
   outputTensor: Tensor,
   charactersDictionary: string[],
-  numClassesFromShape: number
+  numClassesFromShape: number,
+  verbose = false
 ): { text: string; confidence: number } {
   const outputData = outputTensor.data as Float32Array;
   const outputShape = outputTensor.dims;
@@ -99,7 +101,7 @@ export function decodeResults(
   let dict = charactersDictionary;
   if (charactersDictionary.length === numClasses - 1) {
     dict = ["", ...charactersDictionary];
-  } else if (numClasses !== charactersDictionary.length) {
+  } else if (numClasses !== charactersDictionary.length && verbose) {
     console.warn(
       `Warning: Model output classes (${numClasses}) does not match dictionary length (${charactersDictionary.length}).\n Consider using our model & dictionary catalogue at https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models.`
     );
