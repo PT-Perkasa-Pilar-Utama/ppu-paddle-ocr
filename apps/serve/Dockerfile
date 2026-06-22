@@ -28,7 +28,7 @@ WORKDIR /app
 # OCI metadata — without these the ghcr package inherits the base image's
 # (Bun's) description.
 LABEL org.opencontainers.image.title="ppu-paddle-ocr-serve" \
-      org.opencontainers.image.description="Production-grade REST API serving ppu-paddle-ocr (PaddleOCR PP-OCRv5 OCR) — Hono + Bun." \
+      org.opencontainers.image.description="Production-grade REST API serving ppu-paddle-ocr (PaddleOCR PP-OCRv6 OCR) — Hono + Bun." \
       org.opencontainers.image.source="https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr" \
       org.opencontainers.image.licenses="MIT"
 

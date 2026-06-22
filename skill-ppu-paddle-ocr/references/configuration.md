@@ -21,11 +21,11 @@ Constructor merges your options into the defaults via deep-merge — partial ove
 
 ## `ModelPathOptions`
 
-| Property               | Type                    | Default                           | Notes                                                               |
-| ---------------------- | ----------------------- | --------------------------------- | ------------------------------------------------------------------- |
-| `detection`            | `string \| ArrayBuffer` | English mobile `.ort` from GitHub | Path, URL, or buffer. `.ort` is faster to load than `.onnx`.        |
-| `recognition`          | `string \| ArrayBuffer` | English mobile `.ort` from GitHub | Same. INT8 quantized variants accepted.                             |
-| `charactersDictionary` | `string \| ArrayBuffer` | English `ppocrv5_en_dict.txt`     | **Leave a trailing newline** in the file or you drop the last char. |
+| Property               | Type                    | Default                           | Notes                                                                                               |
+| ---------------------- | ----------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `detection`            | `string \| ArrayBuffer` | PP-OCRv6 small `.ort` from GitHub | Path, URL, or buffer. `.ort` is faster to load than `.onnx`. Prefer a preset like `V6_SMALL_MODEL`. |
+| `recognition`          | `string \| ArrayBuffer` | PP-OCRv6 small `.ort` from GitHub | Same. INT8 quantized variants accepted.                                                             |
+| `charactersDictionary` | `string \| ArrayBuffer` | Unified `ppocrv6_dict.txt`        | **Leave a trailing newline** in the file or you drop the last char.                                 |
 
 If you switch language, you must replace **at minimum** the `recognition` model and the `charactersDictionary`. The detection model is largely language-agnostic and the same checkpoint works across most scripts (Arabic and CJK have language-specific detection variants in the model repo if you need them).
 
@@ -35,14 +35,14 @@ If you switch language, you must replace **at minimum** the `recognition` model 
 
 Controls preprocessing and post-filtering for the detection model.
 
-| Property               | Type                       | Default                 | Notes                                                                            |
-| ---------------------- | -------------------------- | ----------------------- | -------------------------------------------------------------------------------- |
-| `mean`                 | `[number, number, number]` | `[0.485, 0.456, 0.406]` | Per-channel mean for input normalization (R, G, B). Don't change without reason. |
-| `stdDeviation`         | `[number, number, number]` | `[0.229, 0.224, 0.225]` | Per-channel std dev. Same — these match PP-OCRv5's training distribution.        |
-| `maxSideLength`        | `number`                   | `640`                   | Longest input side in px. Larger images get scaled down before inference.        |
-| `paddingVertical`      | `number`                   | `0.4`                   | Fractional padding added to each detected box vertically.                        |
-| `paddingHorizontal`    | `number`                   | `0.6`                   | Same, horizontally.                                                              |
-| `minimumAreaThreshold` | `number`                   | `50`                    | Drop detected boxes smaller than this area (px²). Filters noise.                 |
+| Property               | Type                       | Default                 | Notes                                                                                        |
+| ---------------------- | -------------------------- | ----------------------- | -------------------------------------------------------------------------------------------- |
+| `mean`                 | `[number, number, number]` | `[0.485, 0.456, 0.406]` | Per-channel mean for input normalization (R, G, B). Don't change without reason.             |
+| `stdDeviation`         | `[number, number, number]` | `[0.229, 0.224, 0.225]` | Per-channel std dev. Same — these match PP-OCR's training distribution (v5 and v6 share it). |
+| `maxSideLength`        | `number`                   | `640`                   | Longest input side in px. Larger images get scaled down before inference.                    |
+| `paddingVertical`      | `number`                   | `0.4`                   | Fractional padding added to each detected box vertically.                                    |
+| `paddingHorizontal`    | `number`                   | `0.6`                   | Same, horizontally.                                                                          |
+| `minimumAreaThreshold` | `number`                   | `50`                    | Drop detected boxes smaller than this area (px²). Filters noise.                             |
 
 **When to tune:**
 
@@ -57,12 +57,12 @@ Controls preprocessing and post-filtering for the detection model.
 
 Controls the recognition stage's preprocessing and batching strategy.
 
-| Property               | Type                                      | Default      | Notes                                                                          |
-| ---------------------- | ----------------------------------------- | ------------ | ------------------------------------------------------------------------------ |
-| `imageHeight`          | `number`                                  | `48`         | Fixed height (px) for resized text-line crops; widths are proportional.        |
-| `strategy`             | `"per-box" \| "per-line" \| "cross-line"` | `"per-line"` | Batching strategy. See SKILL.md for trade-offs.                                |
-| `crossLineWidthFactor` | `number`                                  | `1.0`        | Width multiplier for `cross-line` bin-packing. Only used with `cross-line`.    |
-| `charactersDictionary` | `string[]`                                | `[]`         | Loaded dict for decoding. Set automatically by `initialize()`; don't override. |
+| Property               | Type                                      | Default     | Notes                                                                          |
+| ---------------------- | ----------------------------------------- | ----------- | ------------------------------------------------------------------------------ |
+| `imageHeight`          | `number`                                  | `48`        | Fixed height (px) for resized text-line crops; widths are proportional.        |
+| `strategy`             | `"per-box" \| "per-line" \| "cross-line"` | `"per-box"` | Batching strategy. See SKILL.md for trade-offs.                                |
+| `crossLineWidthFactor` | `number`                                  | `1.0`       | Width multiplier for `cross-line` bin-packing. Only used with `cross-line`.    |
+| `charactersDictionary` | `string[]`                                | `[]`        | Loaded dict for decoding. Set automatically by `initialize()`; don't override. |
 
 **When to tune:**
 
