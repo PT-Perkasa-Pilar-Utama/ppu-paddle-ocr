@@ -1114,9 +1114,9 @@
           <div class="input-group">
             <label class="input-label">Strategy</label>
             <select id="cfg-rec-strategy" class="input-field">
-              <option value="per-box">per-box (most accurate, SDK default)</option>
+              <option value="per-box" selected>per-box (most accurate, default)</option>
               <option value="per-line">per-line</option>
-              <option value="cross-line" selected>cross-line (fastest)</option>
+              <option value="cross-line">cross-line (fastest)</option>
             </select>
           </div>
           <div class="input-group">
@@ -1316,7 +1316,7 @@
 
       // cross-line packs crops into uniform-width batches across lines (fewest
       // inferences) for the fastest recognition; overridable in the sidebar.
-      const DEFAULT_OPTIONS = { recognition: { strategy: "cross-line" } };
+      const DEFAULT_OPTIONS = { recognition: { strategy: "per-box" } };
 
       let loadedImage = null;
       let ocrService = null;
