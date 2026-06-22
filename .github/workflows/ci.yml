@@ -49,6 +49,13 @@ jobs:
       - name: TypeScript type check
         run: bun run type-check
 
+      # Pinned bun 1.2.23 caps lifecycle-hook timeouts at the 5 s default and
+      # rejects a per-hook timeout argument, so the test hooks can't extend it.
+      # Warm the model cache here (default v6 + the v5 EN models the dictionary
+      # tests use) so the in-hook downloads are fast disk hits well under 5 s.
+      - name: Warm model cache
+        run: bun scripts/warm-test-models.ts
+
       # Runs the whole repo (main suite, CLI, and apps/serve) in one process
       # (web tests isolate their platform via setPlatform save/restore) and gates
       # on combined coverage (>= 90% line + function, per bunfig.toml).

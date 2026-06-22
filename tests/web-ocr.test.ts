@@ -53,7 +53,7 @@ describe("web OCR service (onnxruntime-web under the polyfilled runtime)", () =>
     installWebCanvas();
     ({ PaddleOcrService: WebPaddleOcrService } =
       await import("../src/web/paddle-ocr.service.web.js"));
-  }, 120000); // models may need downloading on first run via the Node path
+  });
 
   afterAll(() => {
     uninstallWebCanvas();

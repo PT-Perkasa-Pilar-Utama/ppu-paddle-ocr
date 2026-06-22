@@ -16,7 +16,7 @@ const groundTruth = (await gtFile.text()).trim();
 
 beforeAll(async () => {
   await PaddleOcrService.downloadModels();
-}, 120000); // v6 models may need downloading on first run
+});
 
 describe("PaddleOcrService Initialization", () => {
   let service: PaddleOcrService | null = null;
