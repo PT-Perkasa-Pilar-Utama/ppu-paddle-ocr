@@ -14,20 +14,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Default models upgraded from PP-OCRv5 mobile (English) to PP-OCRv6 small (unified
   multilingual).** On first run after upgrading, the new v6 model files are downloaded and
   cached; previously cached v5 files remain on disk and are not removed.
-  Pass `model: PP_OCRV5_MODEL_URLS` to keep the previous behaviour without any other code
+  Pass `model: V5_EN_MOBILE_MODEL` to keep the previous behaviour without any other code
   changes.
 - Version bumped to **6.0.0** to signal the default-model generation change and align with
   the upstream PP-OCRv6 release series. Existing options and API surface are fully backwards
   compatible.
+- **Default recognition strategy changed from `per-line` to `per-box`.** On PP-OCRv6 small,
+  `per-box` is the most accurate on the receipt benchmark (96.61% vs 95.56% for `per-line`)
+  while the three strategies are within ~1% on speed for sparse pages. Set
+  `recognition: { strategy: "per-line" }` (or `"cross-line"`) to cut inference calls on
+  dense, multi-word-per-line documents.
 - Improve OCR line grouping scalability by avoiding repeated average-height recomputation.
 
 ### Added
 
-- `PP_OCRV6_MODEL_URLS` — named constant for the PP-OCRv6 small `.ort` models (detection +
-  recognition + unified dictionary). This is now the same object as `DEFAULT_MODEL_URLS`.
-- `PP_OCRV5_MODEL_URLS` — named constant for the previous PP-OCRv5 English mobile `.ort`
-  models, for easy downgrade without manually constructing URLs.
-- Both constants are exported from both `ppu-paddle-ocr` and `ppu-paddle-ocr/web`.
+- **Model catalogue** — 27 named preset constants covering PP-OCRv6 (`V6_SMALL_MODEL`,
+  `V6_MEDIUM_MODEL`, `V6_TINY_MODEL`), PP-OCRv5 (English, server, multilingual, INT8),
+  PP-OCRv4, and PP-OCRv3, each bundling detection + recognition + dictionary URLs. Use them
+  to switch models with autocomplete instead of hand-writing URLs, e.g.
+  `new PaddleOcrService({ model: V6_SMALL_MODEL })`. See `src/model-catalogue.ts` for the
+  full list.
+- `DEFAULT_MODEL` — points to the current default (PP-OCRv6 small). `DEFAULT_MODEL_URLS` is
+  retained as a deprecated alias.
+- `ModelUrls` type, plus `MODEL_BASE_URL` / `DICT_BASE_URL` constants, for building custom
+  model configurations.
+- All catalogue exports are available from both `ppu-paddle-ocr` and `ppu-paddle-ocr/web`.
 
 ### Fixed
 
