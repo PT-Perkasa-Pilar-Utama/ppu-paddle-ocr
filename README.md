@@ -2,7 +2,7 @@
 
 [![Slack](https://img.shields.io/badge/Slack-Community-4A154B?logo=slack&logoColor=white)](https://join.slack.com/t/ppupaddleocrcommunity/shared_invite/zt-3uzp1uuma-lrkEq8OYBYhGdUtzRoVmUg) [![NPM](https://img.shields.io/npm/dw/ppu-paddle-ocr)](https://www.npmjs.com/package/ppu-paddle-ocr) [![npm version](https://img.shields.io/npm/v/ppu-paddle-ocr)](https://www.npmjs.com/package/ppu-paddle-ocr) [![Provenance](https://img.shields.io/badge/npm-signed%20provenance-blue?logo=npm)](https://www.npmjs.com/package/ppu-paddle-ocr#provenance) [![License: MIT](https://img.shields.io/npm/l/ppu-paddle-ocr)](./LICENSE) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/badge)](https://scorecard.dev/viewer/?uri=github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr) [![Socket Badge](https://socket.dev/api/badge/npm/package/ppu-paddle-ocr)](https://socket.dev/npm/package/ppu-paddle-ocr) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/12963/badge)](https://www.bestpractices.dev/projects/12963)
 
-Lightweight, probably the fastest PaddleOCR SDK in TypeScript. Multilingual Support. Runs anywhere JavaScript runs: Node.js, Bun, Deno, web browsers, and browser extensions. Docker & CLI supported. The official SDK is browser-only and significantly slower. [Compare it for yourself](https://paddle-ocr-comparison.snowfluke.workers.dev/).
+Lightweight, probably the fastest PaddleOCR SDK in TypeScript. Multilingual Support. Runs anywhere JavaScript runs: Node.js, Bun, Deno, web browsers, browser extensions, and React Native (iOS/Android). Docker & CLI supported. The official SDK is browser-only and significantly slower. [Compare it for yourself](https://paddle-ocr-comparison.snowfluke.workers.dev/).
 
 Need it as HTTP-service? dockerized? we've got you covered! Quickly spins up ppu-paddle-ocr REST API here: [ppu-paddle-ocr-serve](/apps/serve/README.md). Need a CLI instead? sure here: [ppu-paddle-ocr CLI support](#command-line).
 
@@ -41,6 +41,7 @@ await service.destroy();
   - [CDN (No Bundler)](#cdn-no-bundler)
   - [WebGPU Acceleration](#webgpu-acceleration)
   - [Multithreaded WASM (Cross-Origin Isolation)](#multithreaded-wasm-cross-origin-isolation)
+- [React Native (Mobile)](#react-native-mobile)
 - [Models and Language Support](#models-and-language-support)
   - [Default Models](#default-models)
   - [PP-OCRv6 Models](#pp-ocrv6-models)
@@ -70,7 +71,7 @@ await service.destroy();
 
 - **Lightweight** — minimal dependencies, optimized for performance.
 - **Pre-packed models** — PP-OCRv6 small models (50+ languages, unified) are fetched and cached automatically on first run. Supports additional variants via [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models).
-- **Runs everywhere** — Node.js, Bun, Deno, web browsers, and browser extensions. The official SDK is browser-only.
+- **Runs everywhere** — Node.js, Bun, Deno, web browsers, browser extensions, and React Native (iOS/Android). The official SDK is browser-only.
 - **Customizable** — custom models, dictionaries, and per-call overrides.
 - **TypeScript** — full type definitions.
 
@@ -78,13 +79,14 @@ await service.destroy();
 
 The same package, the same API, every JavaScript runtime:
 
-| Runtime               | How to install                                                          | Try it                                                                                       |
-| --------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **Node.js**           | `npm install ppu-paddle-ocr onnxruntime-node`                           | [npm package](https://www.npmjs.com/package/ppu-paddle-ocr)                                  |
-| **Bun**               | `bun add ppu-paddle-ocr onnxruntime-node`                               | [npm package](https://www.npmjs.com/package/ppu-paddle-ocr)                                  |
-| **Deno**              | `deno add jsr:@snowfluke/ppu-paddle-ocr`                                | [JSR package](https://jsr.io/@snowfluke/ppu-paddle-ocr)                                      |
-| **Web browser**       | `npm install ppu-paddle-ocr onnxruntime-web` (import `/web` subpath)    | [Live demo](https://ppu-paddle-ocr.snowfluke.workers.dev/)                                   |
-| **Browser extension** | Same as web; bundle `ppu-paddle-ocr/web` with your extension's bundler. | [Example extension repo](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-extension) |
+| Runtime                   | How to install                                                                                              | Try it                                                                                           |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Node.js**               | `npm install ppu-paddle-ocr onnxruntime-node`                                                               | [npm package](https://www.npmjs.com/package/ppu-paddle-ocr)                                      |
+| **Bun**                   | `bun add ppu-paddle-ocr onnxruntime-node`                                                                   | [npm package](https://www.npmjs.com/package/ppu-paddle-ocr)                                      |
+| **Deno**                  | `deno add jsr:@snowfluke/ppu-paddle-ocr`                                                                    | [JSR package](https://jsr.io/@snowfluke/ppu-paddle-ocr)                                          |
+| **Web browser**           | `npm install ppu-paddle-ocr onnxruntime-web` (import `/web` subpath)                                        | [Live demo](https://ppu-paddle-ocr.snowfluke.workers.dev/)                                       |
+| **Browser extension**     | Same as web; bundle `ppu-paddle-ocr/web` with your extension's bundler.                                     | [Example extension repo](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-extension)     |
+| **Mobile (React Native)** | `npm install ppu-paddle-ocr onnxruntime-react-native @shopify/react-native-skia` (import `/mobile` subpath) | [Example app](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-mobile-react-native-demo) |
 
 ## Installation
 
@@ -423,6 +425,34 @@ const swPath = import.meta.resolve("ppu-paddle-ocr/coi-serviceworker.js");
 ```
 
 > The service worker reloads the page once on first visit to apply the headers and rewrites all fetch responses. Don't use it if you already control your headers or run another service worker that conflicts.
+
+## React Native (Mobile)
+
+Run the same OCR pipeline on iOS and Android via the `ppu-paddle-ocr/mobile` entry. It uses `onnxruntime-react-native` (native JSI inference) and `ppu-ocv/canvas-mobile` (Skia-backed canvas) instead of their web counterparts.
+
+```bash
+npm install ppu-paddle-ocr onnxruntime-react-native @shopify/react-native-skia
+```
+
+```ts
+import { PaddleOcrService } from "ppu-paddle-ocr/mobile";
+
+const service = new PaddleOcrService();
+await service.initialize();
+
+// `imageBuffer` is an ArrayBuffer — e.g. from a captured frame or a bundled asset.
+const result = await service.recognize(imageBuffer, { flatten: true });
+console.log(result.text);
+
+await service.destroy();
+```
+
+Notes:
+
+- **Native modules required.** Both `onnxruntime-react-native` and `@shopify/react-native-skia` ship native code, so you need a dev client or `expo prebuild` — **Expo Go is not supported**. Targets RN ≥ 0.74 / Expo SDK ≥ 51 (Hermes).
+- **CPU inference.** Mobile runs on CPU by default; pass `session: { executionProviders: ["nnapi"] }` (Android) or `["coreml"]` (iOS) to opt into hardware acceleration. There is no WebGPU on React Native.
+- **Camera capture is out of scope.** Pass a decoded frame from `react-native-vision-camera` or `expo-camera` as an `ArrayBuffer`.
+- A runnable Expo example lives in a separate repo: [ppu-paddle-ocr-mobile-react-native-demo](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-mobile-react-native-demo).
 
 ## Models and Language Support
 
