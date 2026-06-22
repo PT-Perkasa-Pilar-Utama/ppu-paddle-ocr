@@ -57,7 +57,7 @@ async function recognizeText(
     ]);
     const result = await ctx.runInference(inputTensor);
     const dict = charactersDictionary ?? ctx.options.charactersDictionary ?? [];
-    return decodeResults(result, dict, tensorWidth);
+    return decodeResults(result, dict, tensorWidth, ctx.debugging.verbose);
   } finally {
     inputTensor?.dispose();
   }
