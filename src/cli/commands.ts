@@ -173,7 +173,7 @@ export function runModels(values: CliValues): void {
       charactersDictionary:
         built.model?.charactersDictionary ?? DEFAULT_MODEL_URLS.charactersDictionary,
     },
-    strategy: built.recognition?.strategy ?? "per-line",
+    strategy: built.recognition?.strategy ?? "per-box",
     engine: built.processing?.engine ?? "opencv",
     executionProviders: built.session?.executionProviders ?? ["cpu"],
   };

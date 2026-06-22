@@ -12,7 +12,7 @@ services:
       API_ENV: "production"
       PORT: "8080"
       EXECUTION_PROVIDERS: "cpu"
-      DEFAULT_STRATEGY: "per-line"
+      DEFAULT_STRATEGY: "per-box"
       DEFAULT_ENGINE: "opencv"
       MAX_UPLOAD_BYTES: "10485760"
       MAX_QUEUE_DEPTH: "100"
