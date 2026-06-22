@@ -38,6 +38,8 @@ export {
   DEFAULT_MODEL_URLS,
   DICT_BASE_URL,
   MODEL_BASE_URL,
+  MODEL_PRESETS,
+  type ModelPreset,
   type ModelUrls,
   V3_JAPANESE_MOBILE_MODEL,
   V3_MOBILE_MODEL,
