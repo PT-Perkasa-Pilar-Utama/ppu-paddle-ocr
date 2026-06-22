@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Free interactive demo of ppu-paddle-ocr: run PaddleOCR (PP-OCRv5) text detection and recognition entirely in your browser with onnxruntime-web and WebGPU — no server, no upload. Lightweight, multilingual, TypeScript-first."
+      content="Free interactive demo of ppu-paddle-ocr: run PaddleOCR (PP-OCRv6) text detection and recognition entirely in your browser with onnxruntime-web and WebGPU — no server, no upload. Lightweight, multilingual, TypeScript-first."
     />
     <meta
       name="keywords"
-      content="ppu-paddle-ocr, PaddleOCR, PP-OCRv5, OCR, browser OCR, WebGPU OCR, ONNX Runtime Web, text detection, text recognition, JavaScript OCR, TypeScript OCR, client-side OCR, receipt OCR, document OCR"
+      content="ppu-paddle-ocr, PaddleOCR, PP-OCRv6, PP-OCRv5, OCR, browser OCR, WebGPU OCR, ONNX Runtime Web, text detection, text recognition, JavaScript OCR, TypeScript OCR, client-side OCR, receipt OCR, document OCR"
     />
     <meta name="author" content="PT Perkasa Pilar Utama" />
     <meta name="robots" content="index, follow" />
@@ -23,7 +23,7 @@
     />
     <meta
       property="og:description"
-      content="Run PaddleOCR (PP-OCRv5) detection + recognition fully client-side with WebGPU/WASM. Try it on your own images — no upload, no server."
+      content="Run PaddleOCR (PP-OCRv6) detection + recognition fully client-side with WebGPU/WASM. Try it on your own images — no upload, no server."
     />
     <meta property="og:url" content="https://ppu-paddle-ocr.snowfluke.workers.dev/" />
     <meta property="og:site_name" content="ppu-paddle-ocr" />
@@ -33,10 +33,10 @@
     <meta name="twitter:title" content="ppu-paddle-ocr — PaddleOCR in the Browser" />
     <meta
       name="twitter:description"
-      content="In-browser PaddleOCR (PP-OCRv5) with WebGPU. Detection + recognition, no server."
+      content="In-browser PaddleOCR (PP-OCRv6) with WebGPU. Detection + recognition, no server."
     />
 
-    <title>ppu-paddle-ocr — PaddleOCR (PP-OCRv5) in the Browser · Interactive Demo</title>
+    <title>ppu-paddle-ocr — PaddleOCR (PP-OCRv6) in the Browser · Interactive Demo</title>
 
     <!-- Structured data -->
     <script type="application/ld+json">
@@ -46,7 +46,7 @@
         "name": "ppu-paddle-ocr",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Web",
-        "description": "Lightweight PaddleOCR (PP-OCRv5) implementation that runs text detection and recognition in the browser via onnxruntime-web and WebGPU.",
+        "description": "Lightweight PaddleOCR (PP-OCRv6) implementation that runs text detection and recognition in the browser via onnxruntime-web and WebGPU.",
         "url": "https://ppu-paddle-ocr.snowfluke.workers.dev/",
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
       }
@@ -1114,9 +1114,9 @@
           <div class="input-group">
             <label class="input-label">Strategy</label>
             <select id="cfg-rec-strategy" class="input-field">
-              <option value="per-box">per-box (most accurate)</option>
+              <option value="per-box">per-box (most accurate, SDK default)</option>
               <option value="per-line">per-line</option>
-              <option value="cross-line" selected>cross-line (fastest, default)</option>
+              <option value="cross-line" selected>cross-line (fastest)</option>
             </select>
           </div>
           <div class="input-group">
@@ -1225,8 +1225,8 @@
       {
         "imports": {
           "onnxruntime-web": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/ort.all.bundle.min.mjs",
-          "ppu-ocv/web": "https://cdn.jsdelivr.net/npm/ppu-ocv@3.2.2/index.web.js",
-          "ppu-ocv/canvas-web": "https://cdn.jsdelivr.net/npm/ppu-ocv@3.2.2/index.canvas-web.js"
+          "ppu-ocv/web": "https://cdn.jsdelivr.net/npm/ppu-ocv@3.3.0/index.web.js",
+          "ppu-ocv/canvas-web": "https://cdn.jsdelivr.net/npm/ppu-ocv@3.3.0/index.canvas-web.js"
         }
       }
     </script>
@@ -1240,7 +1240,7 @@
         // Fallback to npm CDN
         console.warn("Local build failed to load:", e);
         console.log("Falling back to CDN...");
-        const cdn = await import("https://cdn.jsdelivr.net/npm/ppu-paddle-ocr@5.8.0/web/index.js");
+        const cdn = await import("https://cdn.jsdelivr.net/npm/ppu-paddle-ocr@6.0.0/web/index.js");
         PaddleOcrService = cdn.PaddleOcrService;
       }
 
