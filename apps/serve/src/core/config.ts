@@ -39,7 +39,7 @@ const EnvSchema = z.object({
 
   // OCR engine / models
   EXECUTION_PROVIDERS: z.string().default("cpu"),
-  DEFAULT_STRATEGY: z.enum(["per-box", "per-line", "cross-line"]).default("per-line"),
+  DEFAULT_STRATEGY: z.enum(["per-box", "per-line", "cross-line"]).default("per-box"),
   DEFAULT_ENGINE: z.enum(["opencv", "canvas-native"]).default("opencv"),
   MODEL_DETECTION: z.string().optional(),
   MODEL_RECOGNITION: z.string().optional(),

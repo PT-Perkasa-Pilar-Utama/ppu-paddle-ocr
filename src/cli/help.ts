@@ -22,7 +22,7 @@ Commands:
   version                Show the installed version
 
 Recognition flags (recognize / batch / stream):
-  --strategy <s>                 per-box | per-line | cross-line  (default per-line)
+  --strategy <s>                 per-box | per-line | cross-line  (default per-box)
   --cross-line-width-factor <n>  bin-pack width multiplier for cross-line (default 1.0)
   --engine <e>                   opencv | canvas-native  (default opencv)
   --image-height <n>             recognition input height in px (default 48)
