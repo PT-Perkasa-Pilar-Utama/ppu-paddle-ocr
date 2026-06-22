@@ -75,6 +75,12 @@ status check**: a pull request cannot merge until it passes. Coverage is
 collected on each run (`bun run test --coverage`). Run the tests locally before
 pushing so CI only confirms what you already know.
 
+On a cold cache the suite downloads the default PP-OCRv6 models (~30 MB) on
+first run and caches them under `~/.cache/ppu-paddle-ocr`; later runs read from
+disk. The long per-test timeouts (up to 600 s on the model-download specs) exist
+to cover that first download on a slow connection — they are expected, not a
+hang.
+
 ## Developer Certificate of Origin
 
 Every commit must be signed off under the [Developer Certificate of Origin
@@ -116,10 +122,11 @@ line-grouping helpers live under `src/core/recognition/`). Keep the public class
 API unchanged; move only internal helpers, and give each exported symbol a
 concise JSDoc comment.
 
-If your change touches the hot path (detection, recognition, preprocessing), run the benchmark and include before/after numbers in your PR:
+If your change touches the hot path (detection, recognition, preprocessing), run the benchmarks and include before/after numbers in your PR:
 
 ```bash
-bun task bench
+bun bench/index.bench.ts   # recognition strategies + accuracy
+bun bench/batch.bench.ts   # batch vs concurrent recognize(), peak RSS
 ```
 
 ## Submitting a Pull Request
@@ -130,7 +137,9 @@ bun task bench
 4. CI will run automatically. Fix any failures before requesting review.
 5. A maintainer will review your PR. Address feedback, then request a re-review.
 
-PRs are squash-merged. Write a clean commit message for the squash — the PR title becomes the commit subject.
+PRs are rebase-merged to keep each logically distinct commit on `main`. Keep your
+commit history clean — squash fixup commits locally before review, and make every
+commit message follow the project's Conventional Commits format.
 
 ## Reporting Issues
 

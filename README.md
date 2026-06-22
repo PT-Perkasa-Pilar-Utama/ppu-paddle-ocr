@@ -294,7 +294,7 @@ Recognition strategies control how detected text regions are cropped from the ca
 | `per-line`   | Boxes on the same line are merged into a single crop — fewer inferences.     |
 | `cross-line` | Crops are bin-packed across lines into uniform-width batches — fewest calls. |
 
-**Default**: `per-line` (best accuracy/speed trade-off).
+**Default**: `per-box` (highest accuracy; on PP-OCRv6 small it leads the receipt benchmark at 96.61% vs 95.56% for `per-line`, with the strategies within ~1% on speed). Switch to `per-line` or `cross-line` to cut inference calls on dense, multi-word-per-line documents.
 
 Strategies are set in `RecognitionOptions`:
 
@@ -487,14 +487,18 @@ const serviceServer = new PaddleOcrService({ model: V6_MEDIUM_MODEL });
 const serviceFast = new PaddleOcrService({ model: V6_TINY_MODEL });
 ```
 
-**Legacy URL constants** (still supported):
+**Staying on the previous v5 English default:**
 
 ```ts
-import { PaddleOcrService, PP_OCRV5_MODEL_URLS, PP_OCRV6_MODEL_URLS } from "ppu-paddle-ocr";
+import { PaddleOcrService, V5_EN_MOBILE_MODEL } from "ppu-paddle-ocr";
 
-// Stay on v5 English mobile
-const v5 = new PaddleOcrService({ model: PP_OCRV5_MODEL_URLS });
+// Keep the pre-6.0.0 default (PP-OCRv5 English mobile)
+const v5 = new PaddleOcrService({ model: V5_EN_MOBILE_MODEL });
 ```
+
+> `DEFAULT_MODEL` (alias: the deprecated `DEFAULT_MODEL_URLS`) always points to the
+> current default — PP-OCRv6 small — so `new PaddleOcrService()` and
+> `new PaddleOcrService({ model: DEFAULT_MODEL })` are equivalent.
 
 ### Multilingual Support
 
@@ -675,12 +679,12 @@ Controls preprocessing and filtering during text detection.
 
 Controls recognition preprocessing and strategy.
 
-| Property               |                   Type                    |   Default    | Description                                       |
-| :--------------------- | :---------------------------------------: | :----------: | :------------------------------------------------ |
-| `imageHeight`          |                 `number`                  |     `48`     | Fixed height for resized text line images (px).   |
-| `strategy`             | `"per-box" \| "per-line" \| "cross-line"` | `"per-line"` | Recognition strategy (see above).                 |
-| `crossLineWidthFactor` |                 `number`                  |    `1.0`     | Batch width multiplier for `cross-line` strategy. |
-| `charactersDictionary` |                `string[]`                 |     `[]`     | Loaded character dictionary for result decoding.  |
+| Property               |                   Type                    |   Default   | Description                                       |
+| :--------------------- | :---------------------------------------: | :---------: | :------------------------------------------------ |
+| `imageHeight`          |                 `number`                  |    `48`     | Fixed height for resized text line images (px).   |
+| `strategy`             | `"per-box" \| "per-line" \| "cross-line"` | `"per-box"` | Recognition strategy (see above).                 |
+| `crossLineWidthFactor` |                 `number`                  |    `1.0`    | Batch width multiplier for `cross-line` strategy. |
+| `charactersDictionary` |                `string[]`                 |    `[]`     | Loaded character dictionary for result decoding.  |
 
 ### `DebuggingOptions`
 
@@ -737,15 +741,20 @@ task                                   median      ±stddev        min        ma
 [cross-line][canvas-native][noCache]   223.3 ms      14.4 ms   198.3 ms   248.6 ms
 
 === Accuracy on receipt.jpg (ground truth: 383 chars) ===
-  [opencv]       per-box=97.91%  per-line=99.22%  cross-line=96.34%
-  [canvas-native] per-box=97.65% per-line=98.43%  cross-line=97.65%
+  [opencv]        per-box=96.61%  per-line=95.56%  cross-line=94.52%
+  [canvas-native] per-box=96.61%  per-line=95.82%  cross-line=94.52%
 ```
 
-Absolute timings are thermal-sensitive on fanless hardware (Apple Silicon): sustained benching warms the chip and drags the **median** up, while the **min** column tracks the unthrottled per-call cost (~195 ms here). Treat these as relative, same-run comparisons, not cross-machine absolutes.
+Accuracy is measured on the default PP-OCRv6 small model. The unified multilingual
+v6 model trades a few points of English-only accuracy for 50+ language coverage in
+one file; the English-specialized `V5_EN_MOBILE_MODEL` scores higher on Latin-only
+receipts if that is your sole use case.
+
+Absolute timings are thermal-sensitive on fanless hardware (Apple Silicon): sustained benching warms the chip and drags the **median** up, while the **min** column tracks the unthrottled per-call cost. Treat these as relative, same-run comparisons, not cross-machine absolutes. The timing tables above were captured on the previous v5 default; v6 small lands within ~8% on the same hardware.
 
 ### Batch vs. concurrent `recognize()`
 
-`bench/batch.bench.ts` compares the ways to OCR many images, tracking peak RSS alongside time. Default models (v5), median over 7 rounds of 16 images each, Apple M1 / Bun 1.3.14, opencv, `noCache`:
+`bench/batch.bench.ts` compares the ways to OCR many images, tracking peak RSS alongside time. Captured on the previous v5 default (the relative comparison between sequential / `Promise.all` / `batchRecognize` is model-independent), median over 7 rounds of 16 images each, Apple M1 / Bun 1.3.14, opencv, `noCache`:
 
 ```bash
 task                          median      ±stddev        min        max   peak RSS
