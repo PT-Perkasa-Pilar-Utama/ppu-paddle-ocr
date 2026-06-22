@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 COPY --from=oven/bun:1-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 /usr/local/bin/bun /usr/local/bin/bun
 
 LABEL org.opencontainers.image.title="ppu-paddle-ocr-serve" \
-      org.opencontainers.image.description="Production-grade REST API serving ppu-paddle-ocr (PaddleOCR PP-OCRv5 OCR) — Hono + Bun, CUDA." \
+      org.opencontainers.image.description="Production-grade REST API serving ppu-paddle-ocr (PaddleOCR PP-OCRv6 OCR) — Hono + Bun, CUDA." \
       org.opencontainers.image.source="https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr" \
       org.opencontainers.image.licenses="MIT"
 

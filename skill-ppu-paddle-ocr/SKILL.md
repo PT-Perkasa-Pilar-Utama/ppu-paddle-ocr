@@ -1,11 +1,11 @@
 ---
 name: skill-ppu-paddle-ocr
-description: Use this skill whenever the user is writing TypeScript/JavaScript code that imports `ppu-paddle-ocr` or `ppu-paddle-ocr/web`, or asks about PaddleOCR / PP-OCRv5 in JavaScript runtimes — text detection, text recognition, OCR on receipts/invoices/documents, ONNX Runtime OCR, multilingual OCR (Latin, Cyrillic, Arabic, Indic, CJK, Thai), WebGPU OCR in browsers, browser-extension OCR, INT8-quantized recognition, custom dictionaries, recognition strategies (`per-box` / `per-line` / `cross-line`), or processing engines (`opencv` / `canvas-native`). Trigger even when the user says "PaddleOCR in Node" or "OCR library that runs in Bun and the browser" without naming the package, as long as the codebase imports it. This skill encodes the two entry points (`ppu-paddle-ocr` vs `ppu-paddle-ocr/web`), the lifecycle (`new` → `initialize` → `recognize` → `destroy`), the strategy/engine trade-offs, the model-cache behaviour on Node/Bun, and the WebGPU fallback path on web. Also covers running OCR as a dockerized REST API via the `apps/serve` service (Hono + Bun) when the user wants OCR-as-a-service or a deployable container instead of embedding the SDK.
+description: Use this skill whenever the user is writing TypeScript/JavaScript code that imports `ppu-paddle-ocr` or `ppu-paddle-ocr/web`, or asks about PaddleOCR / PP-OCRv6 / PP-OCRv5 in JavaScript runtimes — text detection, text recognition, OCR on receipts/invoices/documents, ONNX Runtime OCR, multilingual OCR (Latin, Cyrillic, Arabic, Indic, CJK, Thai), WebGPU OCR in browsers, browser-extension OCR, INT8-quantized recognition, custom dictionaries, recognition strategies (`per-box` / `per-line` / `cross-line`), or processing engines (`opencv` / `canvas-native`). Trigger even when the user says "PaddleOCR in Node" or "OCR library that runs in Bun and the browser" without naming the package, as long as the codebase imports it. This skill encodes the two entry points (`ppu-paddle-ocr` vs `ppu-paddle-ocr/web`), the lifecycle (`new` → `initialize` → `recognize` → `destroy`), the strategy/engine trade-offs, the model-cache behaviour on Node/Bun, and the WebGPU fallback path on web. Also covers running OCR as a dockerized REST API via the `apps/serve` service (Hono + Bun) when the user wants OCR-as-a-service or a deployable container instead of embedding the SDK.
 ---
 
 # Writing code with `ppu-paddle-ocr`
 
-`ppu-paddle-ocr` is a TypeScript SDK around the PP-OCRv5 ONNX models. One package, one API, every JavaScript runtime — Node.js, Bun, Deno, browsers, and browser extensions. It pairs a text-detection model with a text-recognition model and decodes them with a character dictionary; the package ships the English mobile models by default and downloads them on first run.
+`ppu-paddle-ocr` is a TypeScript SDK around the PP-OCR ONNX models (PP-OCRv6 by default; v3–v5 presets available). One package, one API, every JavaScript runtime — Node.js, Bun, Deno, browsers, and browser extensions. It pairs a text-detection model with a text-recognition model and decodes them with a character dictionary; the package ships the PP-OCRv6 small unified multilingual models by default and downloads them on first run.
 
 The two things that bite people first are (1) picking the right entry point for the runtime, and (2) understanding that the service has a real lifecycle — you must `await initialize()` before `recognize()`, and call `destroy()` to free ONNX sessions. Everything else is configuration.
 
@@ -97,9 +97,11 @@ Three strategies control how detected boxes are batched into recognition inferen
 
 | Strategy     | Inferences                  | Best for                                                                      |
 | :----------- | :-------------------------- | :---------------------------------------------------------------------------- |
-| `per-box`    | One per box (most)          | Maximum accuracy on isolated, sparse text. Slowest.                           |
-| `per-line`   | One per visual line (fewer) | **Default.** Best general accuracy/speed trade-off.                           |
+| `per-box`    | One per box (most)          | **Default.** Highest accuracy; recognizes each region in isolation.           |
+| `per-line`   | One per visual line (fewer) | Dense, multi-word-per-line documents — fewer inferences, line context.        |
 | `cross-line` | Bin-packed batches (fewest) | Throughput-sensitive workloads with dense text. Slight accuracy hit possible. |
+
+On sparse receipts the three strategies are within ~1% on speed (inference count only dominates wall-clock on dense pages), so `per-box` defaults to the most accurate. Switch to `per-line` / `cross-line` when a page has many words per line and throughput matters.
 
 Set globally on construction, or override per call:
 
@@ -115,7 +117,7 @@ const result = await service.recognize(buffer, { strategy: "per-box" });
 
 `crossLineWidthFactor` only matters for `cross-line` — it's a width multiplier on the bin-pack target. Larger packs more lines per batch (faster, slight accuracy loss); smaller keeps lines isolated (slower, closer to `per-line` accuracy). Default `1.0` is a sane starting point.
 
-When the user says "make it faster" without naming a strategy, the right default is to suggest `cross-line` first; when they say "make it more accurate", suggest `per-box` and a server model (see below).
+When the user says "make it faster" without naming a strategy, suggest `per-line` first (then `cross-line` for dense pages); `per-box` is already the default. When they say "make it more accurate", they're already on `per-box` — point them at a server/larger model (see below) or detection tuning instead.
 
 ## Processing engines — `opencv` vs `canvas-native`
 
@@ -136,11 +138,11 @@ The `/web` entry point always uses `canvas-native` regardless of this flag — O
 
 By default, `initialize()` fetches three files from `media.githubusercontent.com` and caches them under `~/.cache/ppu-paddle-ocr` (Node/Bun only):
 
-| Component   | File                               | Purpose                         |
-| :---------- | :--------------------------------- | :------------------------------ |
-| Detection   | `PP-OCRv5_mobile_det_infer.ort`    | Finds text bounding boxes       |
-| Recognition | `en_PP-OCRv5_mobile_rec_infer.ort` | Decodes each crop to a string   |
-| Dictionary  | `ppocrv5_en_dict.txt`              | Character alphabet for decoding |
+| Component   | File                     | Purpose                         |
+| :---------- | :----------------------- | :------------------------------ |
+| Detection   | `PP-OCRv6_small_det.ort` | Finds text bounding boxes       |
+| Recognition | `PP-OCRv6_small_rec.ort` | Decodes each crop to a string   |
+| Dictionary  | `ppocrv6_dict.txt`       | Character alphabet for decoding |
 
 The `.ort` format is ONNX Runtime's FlatBuffers serialization — 3–5× faster session creation than `.onnx`. You only need `.onnx` when you're targeting a runtime that lacks `.ort` support, or when you've manually quantized.
 
@@ -163,7 +165,23 @@ In the browser, there is no on-disk cache. Models are fetched on every page load
 
 ## Custom and multilingual models
 
-The default English mobile bundle is one of dozens. Pre-converted ONNX/`.ort` models for 40+ languages live in [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models). To switch languages, point all three model paths at the language-specific files:
+The default PP-OCRv6 small bundle is a single unified model covering 50+ languages (Simplified/Traditional Chinese, English, Japanese, 46+ Latin-script languages, Arabic, Indic, …) — for most multilingual workloads you don't need to switch models at all.
+
+Prefer the exported preset constants over hand-written URLs — they autocomplete and are validated by the type system. Import from `ppu-paddle-ocr` (or `ppu-paddle-ocr/web`):
+
+```ts
+import {
+  PaddleOcrService,
+  V6_SMALL_MODEL,
+  V6_TINY_MODEL,
+  V5_EN_MOBILE_MODEL,
+} from "ppu-paddle-ocr";
+
+const fast = new PaddleOcrService({ model: V6_TINY_MODEL }); // fastest, smaller dict
+const english = new PaddleOcrService({ model: V5_EN_MOBILE_MODEL }); // English-specialized, higher Latin-only accuracy
+```
+
+The catalogue covers PP-OCRv6 (`V6_SMALL_MODEL` default, `V6_MEDIUM_MODEL`, `V6_TINY_MODEL`), PP-OCRv5 (English/server/INT8 + per-script: `V5_THAI_MOBILE_MODEL`, `V5_ARABIC_MOBILE_MODEL`, `V5_CYRILLIC_MOBILE_MODEL`, …), PP-OCRv4, and PP-OCRv3. `DEFAULT_MODEL` aliases the current default. The pre-converted ONNX/`.ort` files behind every preset live in [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models). To use a script-specific v5 model (or any custom export), point all three model paths at the files:
 
 ```ts
 const MODEL_BASE =
@@ -438,7 +456,7 @@ Rules to remember:
 - Every constructor / per-call option has a flag: `--strategy`, `--engine`,
   `--flatten`, `--no-cache`, `--model-detection/-recognition/-dict`, detection
   tuning (`--max-side-length`, `--mean`, `--std`, …), `--execution-providers`,
-  and `--concurrency` for batch/stream. Defaults match the SDK (v5 models,
+  and `--concurrency` for batch/stream. Defaults match the SDK (v6 small models,
   `per-line`, `opencv`).
 - **Recognized text → stdout; progress and logs → stderr.** Pipe stdout safely;
   add `-q` to silence stderr. `--json` emits the full result object (NDJSON for
