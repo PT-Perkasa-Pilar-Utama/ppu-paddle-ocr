@@ -12,7 +12,7 @@ import os from "node:os";
 import path from "node:path";
 
 import type { AnyOcrResult } from "../core/base-paddle-ocr.service.js";
-import { DEFAULT_MODEL_URLS } from "../index.js";
+import { DEFAULT_MODEL_URLS, MODEL_PRESETS } from "../index.js";
 import { PaddleOcrService } from "../processor/paddle-ocr.service.js";
 import {
   CliError,
@@ -176,6 +176,7 @@ export function runModels(values: CliValues): void {
     strategy: built.recognition?.strategy ?? "per-box",
     engine: built.processing?.engine ?? "opencv",
     executionProviders: built.session?.executionProviders ?? ["cpu"],
+    presets: Object.keys(MODEL_PRESETS),
   };
   writeOutput(stringify(info, values), values.output as string | undefined);
 }

@@ -30,9 +30,11 @@ Recognition flags (recognize / batch / stream):
   --no-cache                     bypass the in-memory result cache
 
 Model overrides:
-  --model-detection <path|url>
-  --model-recognition <path|url>
-  --model-dict <path|url>
+  --model <preset>               catalogue preset, e.g. v6-small (default), v6-tiny,
+                                 v5-en-mobile, v5-thai-mobile (see 'models --json')
+  --model-detection <path|url>   override the preset's detection model
+  --model-recognition <path|url> override the preset's recognition model
+  --model-dict <path|url>        override the preset's dictionary
 
 Detection tuning:
   --max-side-length <n>          longest side before downscale (default 640)

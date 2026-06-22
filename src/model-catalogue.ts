@@ -202,3 +202,62 @@ export const DEFAULT_MODEL: ModelUrls = V6_SMALL_MODEL;
 
 /** @deprecated Use {@link DEFAULT_MODEL} instead. */
 export const DEFAULT_MODEL_URLS: ModelUrls = DEFAULT_MODEL;
+
+/** Valid preset key for {@link MODEL_PRESETS}. */
+export type ModelPreset =
+  | "v6-small"
+  | "v6-medium"
+  | "v6-tiny"
+  | "v5-en-mobile"
+  | "v5-en-mobile-int8"
+  | "v5-en-server"
+  | "v5-mobile"
+  | "v5-server"
+  | "v5-arabic-mobile"
+  | "v5-cyrillic-mobile"
+  | "v5-devanagari-mobile"
+  | "v5-greek-mobile"
+  | "v5-eslav-mobile"
+  | "v5-korean-mobile"
+  | "v5-latin-mobile"
+  | "v5-tamil-mobile"
+  | "v5-telugu-mobile"
+  | "v5-thai-mobile"
+  | "v4-en-mobile"
+  | "v4-mobile"
+  | "v4-server"
+  | "v4-server-doc"
+  | "v3-mobile"
+  | "v3-japanese-mobile";
+
+/**
+ * Kebab-case preset keys mapped to their model URL bundle, for name-based
+ * selection (e.g. the CLI `--model` flag). Mirrors the exported `*_MODEL`
+ * constants one-to-one.
+ */
+export const MODEL_PRESETS: Readonly<Record<ModelPreset, ModelUrls>> = {
+  "v6-small": V6_SMALL_MODEL,
+  "v6-medium": V6_MEDIUM_MODEL,
+  "v6-tiny": V6_TINY_MODEL,
+  "v5-en-mobile": V5_EN_MOBILE_MODEL,
+  "v5-en-mobile-int8": V5_EN_MOBILE_INT8_MODEL,
+  "v5-en-server": V5_EN_SERVER_MODEL,
+  "v5-mobile": V5_MOBILE_MODEL,
+  "v5-server": V5_SERVER_MODEL,
+  "v5-arabic-mobile": V5_ARABIC_MOBILE_MODEL,
+  "v5-cyrillic-mobile": V5_CYRILLIC_MOBILE_MODEL,
+  "v5-devanagari-mobile": V5_DEVANAGARI_MOBILE_MODEL,
+  "v5-greek-mobile": V5_GREEK_MOBILE_MODEL,
+  "v5-eslav-mobile": V5_ESLAV_MOBILE_MODEL,
+  "v5-korean-mobile": V5_KOREAN_MOBILE_MODEL,
+  "v5-latin-mobile": V5_LATIN_MOBILE_MODEL,
+  "v5-tamil-mobile": V5_TAMIL_MOBILE_MODEL,
+  "v5-telugu-mobile": V5_TELUGU_MOBILE_MODEL,
+  "v5-thai-mobile": V5_THAI_MOBILE_MODEL,
+  "v4-en-mobile": V4_EN_MOBILE_MODEL,
+  "v4-mobile": V4_MOBILE_MODEL,
+  "v4-server": V4_SERVER_MODEL,
+  "v4-server-doc": V4_SERVER_DOC_MODEL,
+  "v3-mobile": V3_MOBILE_MODEL,
+  "v3-japanese-mobile": V3_JAPANESE_MOBILE_MODEL,
+};

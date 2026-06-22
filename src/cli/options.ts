@@ -15,6 +15,8 @@ import type {
   RecognitionStrategy,
   RecognizeOptions,
 } from "../interface.js";
+import type { ModelUrls } from "../model-catalogue.js";
+import { MODEL_PRESETS } from "../model-catalogue.js";
 import { usageError } from "./io.js";
 
 /** `parseArgs` option spec shared by every command. */
@@ -25,6 +27,7 @@ export const PARSE_OPTIONS: NonNullable<ParseArgsConfig["options"]> = {
   "image-height": { type: "string" },
   flatten: { type: "boolean" },
   "no-cache": { type: "boolean" },
+  model: { type: "string" },
   "model-detection": { type: "string" },
   "model-recognition": { type: "string" },
   "model-dict": { type: "string" },
@@ -92,15 +95,30 @@ function engine(values: CliValues): ProcessingEngine | undefined {
   return raw as ProcessingEngine;
 }
 
+/** Resolve `--model <preset>` to its URL bundle, or fail with the valid keys. */
+function modelPreset(values: CliValues): ModelUrls | undefined {
+  const raw = values.model;
+  if (raw === undefined) return undefined;
+  const preset = (MODEL_PRESETS as Record<string, ModelUrls>)[String(raw)];
+  if (!preset) {
+    usageError(`--model must be one of: ${Object.keys(MODEL_PRESETS).join(", ")}`);
+  }
+  return preset;
+}
+
 /** Build the constructor `PaddleOptions` from parsed flags. */
 export function buildPaddleOptions(values: CliValues): PaddleOptions {
   const options: PaddleOptions = {};
 
+  // `--model <preset>` selects a catalogue bundle; the granular `--model-*`
+  // flags override individual parts on top of it.
+  const preset = modelPreset(values);
   const detection = values["model-detection"] as string | undefined;
   const recognition = values["model-recognition"] as string | undefined;
   const dict = values["model-dict"] as string | undefined;
-  if (detection || recognition || dict) {
+  if (preset || detection || recognition || dict) {
     options.model = {
+      ...preset,
       ...(detection ? { detection } : {}),
       ...(recognition ? { recognition } : {}),
       ...(dict ? { charactersDictionary: dict } : {}),

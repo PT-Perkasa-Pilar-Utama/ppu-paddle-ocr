@@ -10,6 +10,7 @@ import {
   buildPaddleOptions,
   buildRecognizeOptions,
 } from "../src/cli/options.js";
+import { V6_SMALL_MODEL, V6_TINY_MODEL } from "../src/model-catalogue.js";
 import { main } from "../src/cli/run.js";
 
 const ASSETS = `${import.meta.dir}/../assets`;
@@ -86,6 +87,14 @@ describe("option builders", () => {
     expect(opts.debugging).toEqual({ verbose: true });
   });
 
+  test("buildPaddleOptions resolves --model presets, with --model-* overriding parts", () => {
+    expect(buildPaddleOptions({ model: "v6-tiny" }).model).toEqual(V6_TINY_MODEL);
+
+    // A granular flag overrides only its part of the selected preset.
+    const opts = buildPaddleOptions({ model: "v6-small", "model-detection": "/custom-det.onnx" });
+    expect(opts.model).toEqual({ ...V6_SMALL_MODEL, detection: "/custom-det.onnx" });
+  });
+
   test("buildBatchOptions parses concurrency", () => {
     expect(buildBatchOptions({ concurrency: "auto" }).concurrency).toBe("auto");
     expect(buildBatchOptions({ concurrency: "4" }).concurrency).toBe(4);
@@ -97,6 +106,7 @@ describe("option builders", () => {
     expect(() => buildPaddleOptions({ engine: "nonsense" })).toThrow();
     expect(() => buildPaddleOptions({ "max-side-length": "abc" })).toThrow();
     expect(() => buildPaddleOptions({ mean: "1,2" })).toThrow();
+    expect(() => buildPaddleOptions({ model: "v9-imaginary" })).toThrow();
     expect(() => buildBatchOptions({ concurrency: "0" })).toThrow();
   });
 });

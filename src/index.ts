@@ -35,6 +35,7 @@ export {
   DEFAULT_MODEL_URLS,
   DICT_BASE_URL,
   MODEL_BASE_URL,
+  MODEL_PRESETS,
   V3_JAPANESE_MOBILE_MODEL,
   V3_MOBILE_MODEL,
   V4_EN_MOBILE_MODEL,
@@ -59,6 +60,7 @@ export {
   V6_MEDIUM_MODEL,
   V6_SMALL_MODEL,
   V6_TINY_MODEL,
+  type ModelPreset,
   type ModelUrls,
 } from "./model-catalogue.js";
 export { PaddleOcrService } from "./processor/paddle-ocr.service.js";
