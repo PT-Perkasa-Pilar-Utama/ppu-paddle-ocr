@@ -39,7 +39,7 @@ beforeAll(async () => {
 
   dictBufferWithBlank = new TextEncoder().encode(dictWithBlank).buffer as ArrayBuffer;
   dictBufferWithoutBlank = new TextEncoder().encode(dictWithoutBlank).buffer as ArrayBuffer;
-}, 120000); // models may need downloading on first run
+});
 
 describe("parseDictionary", () => {
   test("preserves leading blank line", () => {
@@ -111,7 +111,7 @@ describe("Dict load path: changeTextDictionary() on v5 model", () => {
       model: { ...V5_EN_MOBILE_MODEL, charactersDictionary: dictBufferWithBlank },
     });
     await service.initialize();
-  }, 30000);
+  });
 
   afterEach(async () => {
     await service.destroy();
@@ -138,7 +138,7 @@ describe("Dict load path: per-call options.dictionary on v5 model", () => {
       model: { ...V5_EN_MOBILE_MODEL, charactersDictionary: dictBufferWithBlank },
     });
     await service.initialize();
-  }, 30000);
+  });
 
   test("override with dict containing leading blank line", async () => {
     const result = await service.recognize(imageBuffer, {

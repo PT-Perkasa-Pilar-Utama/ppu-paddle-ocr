@@ -12,7 +12,7 @@ const imageBuffer = await imgFile.arrayBuffer();
 
 beforeAll(async () => {
   await PaddleOcrService.downloadModels();
-}, 120000); // v6 models may need downloading on first run
+});
 
 describe("recognition strategies", () => {
   let service: PaddleOcrService;
@@ -121,7 +121,7 @@ describe("batch streaming, concurrency, and cancellation", () => {
   beforeAll(async () => {
     service = new PaddleOcrService();
     await service.initialize();
-  }, 120000);
+  });
 
   afterAll(async () => {
     if (service) await service.destroy();
