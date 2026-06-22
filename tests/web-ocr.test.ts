@@ -28,6 +28,12 @@ const CACHE = join(homedir(), ".cache", "ppu-paddle-ocr");
 const imgFile = Bun.file(`${import.meta.dir}/../assets/receipt.jpg`);
 const imageBuffer = await imgFile.arrayBuffer();
 
+// Small image (475×179, 2 text regions vs the receipt's 21) for the plumbing
+// tests that only assert text.length > 0. WASM recognition cost scales with the
+// detected-box count, so this cuts those tests' runtime ~10× without losing
+// coverage of the strategy / batch / stream / model-swap code paths.
+const smallBuffer = await Bun.file(`${import.meta.dir}/../assets/tilted.png`).arrayBuffer();
+
 describe("web OCR service (onnxruntime-web under the polyfilled runtime)", () => {
   let service: PaddleOcrService;
 
@@ -83,11 +89,11 @@ describe("web OCR service (onnxruntime-web under the polyfilled runtime)", () =>
     await service.initialize();
 
     for (const strategy of ["per-box", "per-line", "cross-line"] as const) {
-      const r = await service.recognize(imageBuffer, { strategy, noCache: true });
+      const r = await service.recognize(smallBuffer, { strategy, noCache: true });
       expect(r.text.length).toBeGreaterThan(0);
     }
 
-    const flat = await service.recognize(imageBuffer, { flatten: true, noCache: true });
+    const flat = await service.recognize(smallBuffer, { flatten: true, noCache: true });
     expect(flat.results).toBeArray();
     expect(flat.results.length).toBeGreaterThan(0);
   }, 90000);
@@ -99,11 +105,11 @@ describe("web OCR service (onnxruntime-web under the polyfilled runtime)", () =>
     });
     await service.initialize();
 
-    const results = await service.batchRecognize([imageBuffer, imageBuffer], { noCache: true });
+    const results = await service.batchRecognize([smallBuffer, smallBuffer], { noCache: true });
     expect(results.length).toBe(2);
 
     const streamed: number[] = [];
-    for await (const r of service.batchRecognizeStream([imageBuffer], { noCache: true })) {
+    for await (const r of service.batchRecognizeStream([smallBuffer], { noCache: true })) {
       expect(r.status).toBe("fulfilled");
       if (r.status === "fulfilled") streamed.push(r.value.text.length);
     }
@@ -136,7 +142,7 @@ describe("web OCR service (onnxruntime-web under the polyfilled runtime)", () =>
     ).arrayBuffer();
     await service.changeDetectionModel(det);
 
-    const result = await service.recognize(imageBuffer, { noCache: true });
+    const result = await service.recognize(smallBuffer, { noCache: true });
     expect(result.text.length).toBeGreaterThan(0);
 
     await expect(service.changeTextDictionary("")).rejects.toBeDefined();
