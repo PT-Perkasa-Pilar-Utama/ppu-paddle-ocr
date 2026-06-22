@@ -50,6 +50,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   retained as a deprecated alias.
 - `ModelUrls` type, plus `MODEL_BASE_URL` / `DICT_BASE_URL` constants, for building custom
   model configurations.
+- **CLI `--model <preset>` flag** for selecting a catalogue preset by name (e.g. `v6-tiny`,
+  `v5-thai-mobile`); the granular `--model-detection/-recognition/-dict` flags override parts
+  of it. `models --json` lists the available preset keys. Backed by the new exported
+  `MODEL_PRESETS` map and `ModelPreset` type.
 - All catalogue exports are available from `ppu-paddle-ocr`, `ppu-paddle-ocr/web`, and
   `ppu-paddle-ocr/mobile`.
 
