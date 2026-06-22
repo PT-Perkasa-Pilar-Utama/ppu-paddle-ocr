@@ -31,6 +31,7 @@ export type {
 
 export type { BatchItemResult } from "./core/batch.js";
 export {
+  DEFAULT_MODEL,
   DEFAULT_MODEL_URLS,
   DICT_BASE_URL,
   MODEL_BASE_URL,
