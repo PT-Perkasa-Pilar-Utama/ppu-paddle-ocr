@@ -190,8 +190,10 @@ describe("input forms and caching", () => {
   }, 30000);
 
   test("accepts a per-call dictionary as an ArrayBuffer", async () => {
-    // v5 dictionary (437 entries → 438 with the CTC blank) matching the default
-    // v5 recognition model; the stale v4 models/en_dict.txt (96) would mismatch.
+    // Plumbing check: the per-call `dictionary` override must accept an
+    // ArrayBuffer. The v5 en dict is used purely as a convenient fixture — this
+    // asserts the override is wired through, not recognition accuracy (the dict
+    // need not match the v6 default recognition model for this path).
     const dictBuffer = await Bun.file(
       `${import.meta.dir}/../models/ppocrv5_en_dict.txt`
     ).arrayBuffer();
@@ -239,7 +241,9 @@ describe("runtime model and dictionary swapping", () => {
     if (service) await service.destroy();
   });
 
-  test("swaps the detection model from a buffer (matches default v5)", async () => {
+  test("swaps the detection model from a buffer", async () => {
+    // Detection is generation-agnostic (DB-based), so the v5 mobile detector
+    // works against the v6 default recognition head loaded by initialize().
     const det = await Bun.file(
       `${import.meta.dir}/../models/PP-OCRv5_mobile_det_infer.onnx`
     ).arrayBuffer();
@@ -249,9 +253,9 @@ describe("runtime model and dictionary swapping", () => {
     expect(result.text.length).toBeGreaterThan(0);
   }, 40000);
 
-  test("swaps the recognition model from the default v5 URL", async () => {
-    // Use the default v5 recognition model (matches the loaded v5 dictionary);
-    // never the stale v4 fixture.
+  test("swaps the recognition model from the default URL", async () => {
+    // Use the current default (v6 small) recognition model, which matches the
+    // v6 dictionary loaded by initialize(); never the stale v4 fixture.
     await service.changeRecognitionModel(DEFAULT_MODEL_URLS.recognition);
     const result = await service.recognize(imageBuffer, { noCache: true });
     expect(result.text.length).toBeGreaterThan(0);
