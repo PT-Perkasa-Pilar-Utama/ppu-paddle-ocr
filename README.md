@@ -231,15 +231,19 @@ bunx ppu-paddle-ocr batch "scans/*.png" --strategy cross-line --json -o results.
 # print each result as it finishes
 bunx ppu-paddle-ocr stream "scans/*.png"
 
-# pre-warm / clear the model cache, inspect the active config
+# pick a catalogue preset by name (granular --model-* flags override parts)
+bunx ppu-paddle-ocr recognize receipt.jpg --model v6-tiny
+bunx ppu-paddle-ocr recognize receipt.jpg --model v5-thai-mobile
+
+# pre-warm / clear the model cache, inspect the active config (+ preset list)
 bunx ppu-paddle-ocr download-models
 bunx ppu-paddle-ocr clear-cache
 bunx ppu-paddle-ocr models --json
 ```
 
-Every `PaddleOptions` / `RecognizeOptions` field maps to a flag: `--strategy`, `--engine`, `--flatten`, `--no-cache`, `--image-height`, `--model-detection/-recognition/-dict`, detection tuning (`--max-side-length`, `--padding-vertical`, `--padding-horizontal`, `--min-area`, `--mean`, `--std`), `--execution-providers`, and for `batch`/`stream` `--concurrency`. Output is controlled by `--json`, `--pretty`, `-o/--output`, `-q/--quiet`, and `--verbose`.
+Every `PaddleOptions` / `RecognizeOptions` field maps to a flag: `--strategy`, `--engine`, `--flatten`, `--no-cache`, `--image-height`, `--model <preset>` (catalogue presets like `v6-small`, `v6-tiny`, `v5-en-mobile` — see `models --json`), `--model-detection/-recognition/-dict` (raw paths/URLs that override the preset), detection tuning (`--max-side-length`, `--padding-vertical`, `--padding-horizontal`, `--min-area`, `--mean`, `--std`), `--execution-providers`, and for `batch`/`stream` `--concurrency`. Output is controlled by `--json`, `--pretty`, `-o/--output`, `-q/--quiet`, and `--verbose`.
 
-Recognized text goes to **stdout**; progress and logs go to **stderr**, so output pipes cleanly. Exit codes: `0` success, `1` runtime error, `2` usage error. Run `bunx ppu-paddle-ocr help` for the full reference. The CLI uses the default v6 models unless you override the `--model-*` flags.
+Recognized text goes to **stdout**; progress and logs go to **stderr**, so output pipes cleanly. Exit codes: `0` success, `1` runtime error, `2` usage error. Run `bunx ppu-paddle-ocr help` for the full reference. The CLI uses the default v6 models unless you select a `--model` preset or override the `--model-*` flags.
 
 ## Batch Recognition
 
