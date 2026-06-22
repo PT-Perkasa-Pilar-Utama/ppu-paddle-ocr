@@ -57,6 +57,10 @@
       "types": "./web/index.d.ts",
       "default": "./web/index.js"
     },
+    "./mobile": {
+      "types": "./mobile/index.d.ts",
+      "default": "./mobile/index.js"
+    },
     "./coi-serviceworker.js": "./coi-serviceworker.js"
   },
   "scripts": {
@@ -86,6 +90,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.0.3",
     "onnxruntime-node": "^1.23.2",
+    "onnxruntime-react-native": "^1.24.3",
     "onnxruntime-web": "^1.24.2",
     "oxfmt": "^0.55.0",
     "oxlint": "^1.63.0",
@@ -99,17 +104,25 @@
   },
   "homepage": "https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr#readme",
   "dependencies": {
-    "ppu-ocv": "^3.2.2"
+    "ppu-ocv": "^3.3.0"
   },
   "optionalDependencies": {
     "onnxruntime-node": "^1.23.2"
   },
   "peerDependencies": {
+    "@shopify/react-native-skia": ">=1.0.0",
     "onnxruntime-node": "^1.23.2",
+    "onnxruntime-react-native": "^1.23.2",
     "onnxruntime-web": "^1.23.2"
   },
   "peerDependenciesMeta": {
+    "@shopify/react-native-skia": {
+      "optional": true
+    },
     "onnxruntime-node": {
+      "optional": true
+    },
+    "onnxruntime-react-native": {
       "optional": true
     },
     "onnxruntime-web": {
