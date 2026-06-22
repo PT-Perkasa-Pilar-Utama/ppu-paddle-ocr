@@ -106,15 +106,19 @@ export const V4_SERVER_DOC_MODEL: ModelUrls = {
 };
 
 // ─── PP-OCRv3 Models ──────────────────────────────────────────────────────────
+//
+// No PP-OCRv3 detection model is published, so the v3 recognition models are
+// paired with the PP-OCRv5 mobile detector. Detection is generation-agnostic
+// (DB-based) and works fine across versions; only the recognition head is v3.
 
-/** PP-OCRv3 mobile. */
+/** PP-OCRv3 mobile recognition (paired with the v5 mobile detector — see note above). */
 export const V3_MOBILE_MODEL: ModelUrls = {
   detection: `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.onnx`,
   recognition: `${MODEL_BASE_URL}/recognition/PP-OCRv3_mobile_rec_infer.onnx`,
   charactersDictionary: `${DICT_BASE_URL}/recognition/ppocrv3_dict.txt`,
 };
 
-/** PP-OCRv3 Japanese mobile. */
+/** PP-OCRv3 Japanese mobile recognition (paired with the v5 mobile detector — see note above). */
 export const V3_JAPANESE_MOBILE_MODEL: ModelUrls = {
   detection: `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.onnx`,
   recognition: `${MODEL_BASE_URL}/recognition/multi/japan/v3/japan_PP-OCRv3_mobile_rec_infer.onnx`,
