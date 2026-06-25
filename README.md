@@ -294,8 +294,8 @@ for await (const item of service.batchRecognizeStream(images)) {
 
 Recognition strategies control how detected text regions are cropped from the canvas and fed into the recognition model. Fewer inference calls means faster throughput.
 
-| Strategy     | Description                                                                  |
-| :----------- | :--------------------------------------------------------------------------- |
+| Strategy     | Description                                                                 |
+| :----------- | :-------------------------------------------------------------------------- |
 | `per-box`    | Each detected box is recognized individually, _n_ boxes, _n_ inferences.    |
 | `per-line`   | Boxes on the same line are merged into a single crop, fewer inferences.     |
 | `cross-line` | Crops are bin-packed across lines into uniform-width batches, fewest calls. |
