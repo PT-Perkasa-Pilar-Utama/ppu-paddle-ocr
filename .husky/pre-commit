@@ -6,3 +6,14 @@
 set -e
 
 bunx lint-staged
+
+# Keep package.json and jsr.json versions in lockstep — a mismatch means a
+# release bump touched one manifest but not the other (npm/jsr drift).
+ver() { sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$1" | head -1; }
+pkg_ver=$(ver package.json)
+jsr_ver=$(ver jsr.json)
+if [ "$pkg_ver" != "$jsr_ver" ]; then
+  echo "Error: version mismatch — package.json=$pkg_ver jsr.json=$jsr_ver" >&2
+  echo "Bump both manifests to the same version before committing." >&2
+  exit 1
+fi
