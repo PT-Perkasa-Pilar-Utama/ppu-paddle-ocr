@@ -5,6 +5,10 @@ name: Publish
 on:
   release:
     types: [published]
+  # Manual trigger for re-publishing (e.g. jsr fell behind npm). Runs against
+  # the selected ref; the npm step skips versions already published and the
+  # release-asset steps are skipped when there is no release context.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -92,11 +96,18 @@ jobs:
       # it explicitly makes a misconfigured publisher fail loudly instead of
       # silently shipping without an attestation.
       - name: Publish to npm
-        run: npm publish ./lib --access=public --provenance
+        run: |
+          ver=$(node -p "require('./lib/package.json').version")
+          if npm view "ppu-paddle-ocr@$ver" version >/dev/null 2>&1; then
+            echo "ppu-paddle-ocr@$ver already published to npm, skipping."
+          else
+            npm publish ./lib --access=public --provenance
+          fi
 
       # Generate a CycloneDX SBOM and attach it to the GitHub release so
       # consumers can audit each version's dependency set.
       - name: Generate and attach SBOM
+        if: github.event_name == 'release'
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
           format: cyclonedx-json
@@ -109,15 +120,18 @@ jobs:
       # assets for a signature/provenance file (npm provenance is not visible to
       # it), so we attach a cosign Sigstore bundle per release.
       - name: Pack published tarball
+        if: github.event_name == 'release'
         run: npm pack ./lib --pack-destination "$RUNNER_TEMP"
 
       - name: Install cosign
+        if: github.event_name == 'release'
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
       # Keyless signing via OIDC (Sigstore/Fulcio) — no long-lived keys; uses the
       # id-token: write permission. cosign 3.x emits one .sigstore.json bundle
       # (signature + Fulcio cert + Rekor entry); Scorecard recognizes the suffix.
       - name: Sign the tarball (keyless)
+        if: github.event_name == 'release'
         env:
           COSIGN_YES: "true"
         run: |
@@ -126,9 +140,10 @@ jobs:
           done
 
       - name: Attach signed artifacts to the GitHub release
+        if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "${{ github.event.release.tag_name }}" \
             "$RUNNER_TEMP"/*.tgz "$RUNNER_TEMP"/*.tgz.sigstore.json \
-            --repo "${{ github.repository }}"
+            --repo "${{ github.repository }}" --clobber
