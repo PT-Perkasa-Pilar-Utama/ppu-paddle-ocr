@@ -106,7 +106,7 @@
   },
   "homepage": "https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr#readme",
   "dependencies": {
-    "ppu-ocv": "^3.3.0"
+    "ppu-ocv": "^4.0.0"
   },
   "optionalDependencies": {
     "onnxruntime-node": "^1.23.2"
