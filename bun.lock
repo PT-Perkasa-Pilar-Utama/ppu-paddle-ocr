@@ -5,7 +5,7 @@
     "": {
       "name": "ppu-paddle-ocr",
       "dependencies": {
-        "ppu-ocv": "^3.3.0",
+        "ppu-ocv": "^4.0.0",
       },
       "devDependencies": {
         "@napi-rs/canvas": "^1.0.0",
@@ -286,7 +286,7 @@
 
     "@sinclair/typebox": ["@sinclair/typebox@0.27.10", "", {}, "sha512-MTBk/3jGLNB2tVxv6uLlFh1iu64iYOQ2PbdOSK3NW8JZsmlaOh2q6sdtKowBhfw8QFLmYNzTW4/oK4uATIi6ZA=="],
 
-    "@techstark/opencv-js": ["@techstark/opencv-js@4.10.0-release.1", "", {}, "sha512-S4XELidRiQeA0q1s9VQLo540wCxUo24r1O4C+LqZ6llX+sPCXvZCPv3Ice8dEIr0uavyZ8YZeKXSBdDgMXSXjw=="],
+    "@techstark/opencv-js": ["@techstark/opencv-js@5.0.0-release.1", "", {}, "sha512-PIm+eB0MFtieXoNC2GRao0dv/02sehG+Nv2nSW5D6pQm6J/4WqvDHm0RyoqOmGYQm67jdGiaOdIeTShCY3PIUg=="],
 
     "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
@@ -662,7 +662,7 @@
 
     "platform": ["platform@1.3.6", "", {}, "sha512-fnWVljUchTro6RiCFvCXBbNhJc2NijN7oIQxbwsyL0buWJPG85v81ehlHI9fXrJsMNgTofEoWIQeClKpgxFLrg=="],
 
-    "ppu-ocv": ["ppu-ocv@3.3.0", "", { "dependencies": { "@napi-rs/canvas": "^1.0.0", "@techstark/opencv-js": "^4.10.0-release.1" }, "peerDependencies": { "@shopify/react-native-skia": ">=1.0.0" }, "optionalPeers": ["@shopify/react-native-skia"] }, "sha512-JCuw4LgejJ0APAvekR2JxWKmm2u9r3LFtI/5cJvJk6OscH1ygXet4JUY/u436FIWYP+PDtMJguZxdgYcoq1bxA=="],
+    "ppu-ocv": ["ppu-ocv@4.0.0", "", { "dependencies": { "@napi-rs/canvas": "^1.0.0", "@techstark/opencv-js": "^5.0.0-release.1" }, "peerDependencies": { "@shopify/react-native-skia": ">=1.0.0" }, "optionalPeers": ["@shopify/react-native-skia"] }, "sha512-ol+S9/KLZ0aTV0xbC8+ZB0iM+FYux8ujoULeQoYY2IDBZj4LAuujJUkzHzUA2O3KzHs17KuuIzV/w4/htPdn3w=="],
 
     "prebuild-install": ["prebuild-install@7.1.3", "", { "dependencies": { "detect-libc": "^2.0.0", "expand-template": "^2.0.3", "github-from-package": "0.0.0", "minimist": "^1.2.3", "mkdirp-classic": "^0.5.3", "napi-build-utils": "^2.0.0", "node-abi": "^3.3.0", "pump": "^3.0.0", "rc": "^1.2.7", "simple-get": "^4.0.0", "tar-fs": "^2.0.0", "tunnel-agent": "^0.6.0" }, "bin": { "prebuild-install": "bin.js" } }, "sha512-8Mf2cbV7x1cXPUILADGI3wuhfqWvtiLA1iclTDbFRZkgRQS0NqsPZphna9V+HyTEadheuPmjaJMsbzKQFOzLug=="],
 
