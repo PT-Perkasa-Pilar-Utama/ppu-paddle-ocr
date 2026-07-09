@@ -94,7 +94,7 @@
     "onnxruntime-node": "^1.23.2",
     "onnxruntime-react-native": "^1.24.3",
     "onnxruntime-web": "^1.24.2",
-    "oxfmt": "^0.57.0",
+    "oxfmt": "^0.58.0",
     "oxlint": "^1.63.0",
     "tsx": "latest",
     "typescript": "latest",
