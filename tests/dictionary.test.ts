@@ -6,7 +6,7 @@ import { V5_EN_MOBILE_MODEL } from "../src/model-catalogue.js";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 import { levenshteinDistance, parseDictionary } from "../src/utils.js";
 
-// The v5 EN dict lives in the model cache (downloaded once by the beforeAll below).
+// The v5 EN dict lives in the model cache (downloaded by the top-level warmup below).
 const CACHED_V5_DICT_PATH = join(homedir(), ".cache", "ppu-paddle-ocr", "ppocrv5_en_dict.txt");
 const imageBuffer = await Bun.file(`${import.meta.dir}/../assets/receipt.jpg`).arrayBuffer();
 const groundTruth = (
@@ -20,26 +20,25 @@ function accuracy(text: string): number {
   return ((groundTruth.length - dist) / groundTruth.length) * 100;
 }
 
-let dictBufferWithBlank: ArrayBuffer;
-let dictBufferWithoutBlank: ArrayBuffer;
+// Warm the caches at module level, not in beforeAll: the clearModelCache test
+// in strategies-options.test.ts deletes the v5 files from the shared cache, so
+// any later (or next-run) suite starts cold here, and a cold re-download can
+// blow bun's fixed 5 s lifecycle-hook timeout on slow networks. Top-level
+// await has no such cap.
+await PaddleOcrService.downloadModels(); // v6 default cache (used by the main test suite)
 
-beforeAll(async () => {
-  // Warm v6 default cache (used by the main test suite).
-  await PaddleOcrService.downloadModels();
+// Warm v5 EN model cache so ppocrv5_en_dict.txt exists on disk.
+// We initialize a throwaway service with V5_EN_MOBILE_MODEL; the Node
+// cache layer writes each file on first fetch and skips it on subsequent runs.
+const warmup = new PaddleOcrService({ model: V5_EN_MOBILE_MODEL });
+await warmup.initialize();
+await warmup.destroy();
 
-  // Warm v5 EN model cache so ppocrv5_en_dict.txt exists on disk.
-  // We initialize a throwaway service with V5_EN_MOBILE_MODEL; the Node
-  // cache layer writes each file on first fetch and skips it on subsequent runs.
-  const warmup = new PaddleOcrService({ model: V5_EN_MOBILE_MODEL });
-  await warmup.initialize();
-  await warmup.destroy();
+const dictWithBlank = readFileSync(CACHED_V5_DICT_PATH, "utf-8");
+const dictWithoutBlank = dictWithBlank.startsWith("\n") ? dictWithBlank.slice(1) : dictWithBlank;
 
-  const dictWithBlank = readFileSync(CACHED_V5_DICT_PATH, "utf-8");
-  const dictWithoutBlank = dictWithBlank.startsWith("\n") ? dictWithBlank.slice(1) : dictWithBlank;
-
-  dictBufferWithBlank = new TextEncoder().encode(dictWithBlank).buffer as ArrayBuffer;
-  dictBufferWithoutBlank = new TextEncoder().encode(dictWithoutBlank).buffer as ArrayBuffer;
-});
+const dictBufferWithBlank = new TextEncoder().encode(dictWithBlank).buffer as ArrayBuffer;
+const dictBufferWithoutBlank = new TextEncoder().encode(dictWithoutBlank).buffer as ArrayBuffer;
 
 describe("parseDictionary", () => {
   test("preserves leading blank line", () => {
