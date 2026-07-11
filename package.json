@@ -108,9 +108,6 @@
   "dependencies": {
     "ppu-ocv": "^4.0.0"
   },
-  "optionalDependencies": {
-    "onnxruntime-node": "^1.23.2"
-  },
   "peerDependencies": {
     "@shopify/react-native-skia": ">=1.0.0",
     "onnxruntime-node": "^1.23.2",
