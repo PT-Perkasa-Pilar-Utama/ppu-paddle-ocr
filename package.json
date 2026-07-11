@@ -72,7 +72,7 @@
     "build:publish": "bun task build && bun task report-size && bun task publish",
     "build:pages": "bun task build && bun run playground/build-pages.ts",
     "clear-cache": "bun scripts/clear-cache.ts",
-    "type-check": "bunx tsgo --noEmit",
+    "type-check": "tsc --noEmit",
     "test": "bun test",
     "test:coverage": "bun test --coverage",
     "lint": "oxlint",
@@ -86,7 +86,6 @@
     "@napi-rs/canvas": "^1.0.2",
     "@types/bun": "^1.3.14",
     "@types/uglify-js": "^3.17.5",
-    "@typescript/native-preview": "^7.0.0-dev.20260707.2",
     "canvas": "^3.2.3",
     "fast-check": "^4.9.0",
     "husky": "^9.1.7",
@@ -97,7 +96,7 @@
     "oxfmt": "^0.58.0",
     "oxlint": "^1.73.0",
     "tsx": "^4.23.0",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "uglify-js": "^3.19.3"
   },
   "repository": {

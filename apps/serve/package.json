@@ -8,7 +8,7 @@
     "dev": "bun run --watch src/index.ts",
     "start": "bun run src/index.ts",
     "test": "bun test",
-    "type-check": "bunx tsgo --noEmit"
+    "type-check": "tsc --noEmit"
   },
   "comment": "Standalone app importing ppu-paddle-ocr from source via tsconfig paths. Runtime deps are just hono+zod; the lib's deps (ppu-ocv, onnxruntime) are dev-only here (needed to type-check the imported source) and resolve from the repo-root node_modules at runtime.",
   "dependencies": {
@@ -22,6 +22,6 @@
     "onnxruntime-common": "^1.27.0",
     "onnxruntime-node": "^1.27.0",
     "ppu-ocv": "^4.0.0",
-    "@typescript/native-preview": "^7.0.0-dev.20260707.2"
+    "typescript": "^7.0.2"
   }
 }
