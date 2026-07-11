@@ -35,6 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   all declarations in one native `tsc -p tsconfig.build.json` pass (output is
   byte-identical). The `@typescript/native-preview` (tsgo) dev dependency is
   gone — `type-check` uses the same native `tsc --noEmit`.
+- **CI bun pin bumped from 1.2.23 to 1.3.14.** bun 1.2.23 on Linux mis-handles
+  `@techstark/opencv-js` 5's Promise-based init when the node and web entries
+  load in the same process: `cv` loses its JS helpers (`matFromImageData`) and
+  every opencv-engine OCR silently returns empty results. bun 1.3.14 handles it
+  correctly, and the 1.3.13 SIGILL-on-exit that originally forced the 1.2.23
+  pin no longer reproduces. Consumers on bun 1.2.x Linux that import both
+  `ppu-paddle-ocr` and `ppu-paddle-ocr/web` in one process should upgrade bun.
 
 ## [6.0.0] - 2026-06-19
 

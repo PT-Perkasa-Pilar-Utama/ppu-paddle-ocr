@@ -4,10 +4,10 @@
 /**
  * Warm the on-disk model cache before the test suite runs.
  *
- * CI pins Bun 1.2.23, which caps lifecycle-hook timeouts at the 5 s default and
- * rejects a per-hook timeout argument. The test hooks download models on first
- * use, so a cold cache would blow that 5 s limit. Running this first turns those
- * in-hook downloads into fast disk hits.
+ * Bun caps lifecycle-hook timeouts at the 5 s default and rejects a per-hook
+ * timeout argument. The test hooks download models on first use, so a cold
+ * cache would blow that 5 s limit. Running this first turns those in-hook
+ * downloads into fast disk hits.
  *
  * Downloads the default (PP-OCRv6 small) plus the PP-OCRv5 English models the
  * dictionary tests use.
