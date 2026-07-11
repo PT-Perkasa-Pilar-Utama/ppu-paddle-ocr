@@ -101,11 +101,11 @@ Omit `onnxruntime-node` or `onnxruntime-web` depending on your target environmen
 To use the [command line](#command-line) without `bunx`/`npx`, install globally, this puts a `ppu-paddle-ocr` command on your `PATH`:
 
 ```bash
-npm install -g ppu-paddle-ocr      # or: bun add -g ppu-paddle-ocr
+npm install -g ppu-paddle-ocr onnxruntime-node      # or: bun add -g ppu-paddle-ocr onnxruntime-node
 ppu-paddle-ocr recognize receipt.jpg
 ```
 
-`onnxruntime-node` is pulled automatically (it's an optional dependency), so nothing else is needed. Notes:
+`onnxruntime-node` (~258MB of native binaries) is an optional peer dependency, install it alongside — the CLI needs it. Notes:
 
 - **bun**: ensure `~/.bun/bin` is on your `PATH` (npm's global bin usually already is).
 - **Updates are manual**, re-run the install with `@latest` to upgrade. (`bunx`/`npx` always fetch the latest but can serve a stale cache; a global install pins the version and you own upgrades.)
@@ -216,7 +216,7 @@ const result = await service.recognize("./assets/receipt.jpg", {
 
 ## Command Line
 
-The package ships a `bin`, so you can OCR without writing any code, `bunx`/`npx` resolve it directly (no global install):
+The package ships a `bin`, so you can OCR without writing any code. In a project that has `ppu-paddle-ocr` and `onnxruntime-node` installed, `bunx`/`npx` resolve the local install directly; for zero-install runs use `npx -p onnxruntime-node -p ppu-paddle-ocr ppu-paddle-ocr <args>` or a [global install](#cli-global-install):
 
 ```bash
 # one image → recognized text on stdout
@@ -224,6 +224,9 @@ bunx ppu-paddle-ocr recognize receipt.jpg
 
 # a URL, as structured JSON
 npx ppu-paddle-ocr recognize https://example.com/invoice.png --json --pretty
+
+# zero-install (no local ppu-paddle-ocr): npx can pull both packages
+npx -p onnxruntime-node -p ppu-paddle-ocr ppu-paddle-ocr recognize receipt.jpg
 
 # many images (glob), fastest strategy, written to a file
 bunx ppu-paddle-ocr batch "scans/*.png" --strategy cross-line --json -o results.json

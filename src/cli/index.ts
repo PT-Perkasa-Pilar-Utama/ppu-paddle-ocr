@@ -8,13 +8,24 @@
  * `run.ts` so it stays importable from tests without side effects.
  */
 
-import { main } from "./run.js";
-
 process.on("SIGINT", () => process.exit(130));
 
 try {
+  // Dynamic import: a static one would fail during module-graph resolution,
+  // before this try/catch exists, when the optional onnxruntime-node backend
+  // is absent.
+  const { main } = await import("./run.js");
   process.exit(await main(process.argv.slice(2)));
 } catch (e) {
-  process.stderr.write(`${e instanceof Error ? (e.stack ?? e.message) : String(e)}\n`);
+  const msg = e instanceof Error ? e.message : String(e);
+  if (msg.includes("onnxruntime-node") && /cannot find (module|package)/i.test(msg)) {
+    process.stderr.write(
+      "The 'onnxruntime-node' backend is not installed (optional peer dependency, ~258MB).\n" +
+        "In a project:  npm install ppu-paddle-ocr onnxruntime-node\n" +
+        "Zero-install:  npx -p onnxruntime-node -p ppu-paddle-ocr ppu-paddle-ocr <args>\n"
+    );
+    process.exit(1);
+  }
+  process.stderr.write(`${e instanceof Error ? (e.stack ?? msg) : String(e)}\n`);
   process.exit(1);
 }
