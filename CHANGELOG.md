@@ -7,8 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.0.1] - 2026-07-11
+
+### Fixed
+
+- **Install size back to ~45MB (was ~317MB since 5.7.1).** `onnxruntime-node` is no
+  longer in `optionalDependencies`, so a plain `npm install ppu-paddle-ocr` stops
+  pulling its ~258MB of all-platform native binaries. It stays an optional peer
+  dependency: Node/Bun users install it explicitly alongside the package
+  (`npm install ppu-paddle-ocr onnxruntime-node`); web/mobile/Deno installs no
+  longer pay for it. The CLI now detects the missing backend and prints install
+  instructions instead of a module resolution stack trace — zero-install runs
+  become `npx -p onnxruntime-node -p ppu-paddle-ocr ppu-paddle-ocr <args>`.
+
+### Changed
+
+- Bumped `ppu-ocv` to `^4.0.0` (OpenCV 5.0 via `@techstark/opencv-js` 5.0.0). No API
+  changes; `ImageProcessor.initRuntime()` handles the new Promise-based runtime init
+  internally.
 - Improve docs (README.md) readability
-- Bump dev dependencies
+- Bumped dev dependencies (`oxfmt` 0.58, `oxlint` 1.73, `onnxruntime-*` 1.27,
+  `fast-check` 4.9, `@napi-rs/canvas` 1.0.2, `lint-staged` 17.0.8, `tsx` 4.23) and
+  pinned `typescript` to `^6.0.3` (v7 drops the `transpileDeclaration` API the build
+  uses). Refreshed GitHub Actions pins (`docker/login-action` v4.4.0,
+  `github/codeql-action` v4.37.0).
 
 ## [6.0.0] - 2026-06-19
 
