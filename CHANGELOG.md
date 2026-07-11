@@ -27,10 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   internally.
 - Improve docs (README.md) readability
 - Bumped dev dependencies (`oxfmt` 0.58, `oxlint` 1.73, `onnxruntime-*` 1.27,
-  `fast-check` 4.9, `@napi-rs/canvas` 1.0.2, `lint-staged` 17.0.8, `tsx` 4.23) and
-  pinned `typescript` to `^6.0.3` (v7 drops the `transpileDeclaration` API the build
-  uses). Refreshed GitHub Actions pins (`docker/login-action` v4.4.0,
+  `fast-check` 4.9, `@napi-rs/canvas` 1.0.2, `lint-staged` 17.0.8, `tsx` 4.23).
+  Refreshed GitHub Actions pins (`docker/login-action` v4.4.0,
   `github/codeql-action` v4.37.0).
+- **Moved to TypeScript 7 (native).** `typescript@7` drops the
+  `transpileDeclaration` JS API the build used, so `scripts/build.ts` now emits
+  all declarations in one native `tsc -p tsconfig.build.json` pass (output is
+  byte-identical). The `@typescript/native-preview` (tsgo) dev dependency is
+  gone — `type-check` uses the same native `tsc --noEmit`.
 
 ## [6.0.0] - 2026-06-19
 

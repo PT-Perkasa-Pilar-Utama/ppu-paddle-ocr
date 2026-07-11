@@ -2,7 +2,6 @@
 import { chmodSync, existsSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path/posix";
 
-import { transpileDeclaration } from "typescript";
 import tsconfig from "../tsconfig.json";
 
 // Constants
@@ -12,6 +11,16 @@ const OUTDIR = join(ROOTDIR, tsconfig.compilerOptions.declarationDir);
 
 // Remove old content
 if (existsSync(OUTDIR)) rmSync(OUTDIR, { recursive: true });
+
+// Emit all .d.ts in one native tsc pass (tsconfig.build.json scopes it to
+// src/ rooted at lib/). typescript 7 dropped the transpileDeclaration JS API
+// this script previously used, but its Go tsc emits identical output.
+const tsc = Bun.spawnSync(["bunx", "tsc", "-p", join(ROOTDIR, "tsconfig.build.json")], {
+  cwd: ROOTDIR,
+  stdout: "inherit",
+  stderr: "inherit",
+});
+if (tsc.exitCode !== 0) process.exit(tsc.exitCode ?? 1);
 
 // Transpile files concurrently
 const transpiler = new Bun.Transpiler({
@@ -43,9 +52,4 @@ for (const path of new Bun.Glob("**/*.ts").scanSync(SOURCEDIR)) {
     await Bun.write(outFile, js);
     if (shebang) chmodSync(outFile, 0o755);
   }
-  Bun.write(
-    `${outPathNoExt}.d.ts`,
-    transpileDeclaration(buf, tsconfig as unknown as Parameters<typeof transpileDeclaration>[1])
-      .outputText
-  );
 }
