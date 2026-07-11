@@ -35,13 +35,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   all declarations in one native `tsc -p tsconfig.build.json` pass (output is
   byte-identical). The `@typescript/native-preview` (tsgo) dev dependency is
   gone — `type-check` uses the same native `tsc --noEmit`.
-- **CI bun pin bumped from 1.2.23 to 1.3.14.** bun 1.2.23 on Linux mis-handles
-  `@techstark/opencv-js` 5's Promise-based init when the node and web entries
-  load in the same process: `cv` loses its JS helpers (`matFromImageData`) and
-  every opencv-engine OCR silently returns empty results. bun 1.3.14 handles it
-  correctly, and the 1.3.13 SIGILL-on-exit that originally forced the 1.2.23
-  pin no longer reproduces. Consumers on bun 1.2.x Linux that import both
-  `ppu-paddle-ocr` and `ppu-paddle-ocr/web` in one process should upgrade bun.
+- **CI bun pin bumped from 1.2.23 to 1.3.14.** bun 1.2.23 on Linux can hang
+  `@techstark/opencv-js` 5's Promise-based runtime init when the node and web
+  entries load in the same process; 1.3.14 handles it, and the 1.3.13
+  SIGILL-on-exit that originally forced the 1.2.23 pin no longer reproduces.
+- **Fixed a test-suite bug that emptied all opencv-engine OCR when file order
+  changed.** `tests/canvas-compatibility.test.ts` stubbed
+  `ImageProcessor.initRuntime` with a no-op but its `afterAll` restore omitted
+  the `value` in `defineProperty`, which keeps the stub in place — on runners
+  whose filesystem ordered that file first (CI's ext4), OpenCV never
+  initialized and every later opencv OCR silently returned empty results. The
+  restore now puts the real `initRuntime` back.
 
 ## [6.0.0] - 2026-06-19
 
