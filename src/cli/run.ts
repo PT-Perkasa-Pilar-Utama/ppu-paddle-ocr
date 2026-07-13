@@ -14,6 +14,7 @@ import { parseArgs } from "node:util";
 import {
   runBatch,
   runClearCache,
+  runDetect,
   runDownloadModels,
   runModels,
   runRecognize,
@@ -28,6 +29,8 @@ async function dispatch(command: string, rest: string[], values: CliValues): Pro
   switch (command) {
     case "recognize":
       return runRecognize(rest, values);
+    case "detect":
+      return runDetect(rest, values);
     case "batch":
       return runBatch(rest, values);
     case "stream":

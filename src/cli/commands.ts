@@ -72,6 +72,27 @@ export async function runRecognize(images: string[], values: CliValues): Promise
   }
 }
 
+export async function runDetect(images: string[], values: CliValues): Promise<void> {
+  const [image] = images;
+  if (!image || images.length !== 1) {
+    throw new CliError("detect takes exactly one image", 2);
+  }
+  const service = new PaddleOcrService(buildPaddleOptions(values));
+  try {
+    logStderr("Loading models...", Boolean(values.quiet));
+    await service.initialize();
+    const input = await loadImageInput(image);
+    const saveCropsTo = values["save-crops"] as string | undefined;
+    const { boxes } = await service.detect(input, saveCropsTo ? { saveCropsTo } : undefined);
+    if (saveCropsTo) {
+      logStderr(`Saved ${boxes.length} crop(s) to ${saveCropsTo}`, Boolean(values.quiet));
+    }
+    writeOutput(stringify(boxes, values), values.output as string | undefined);
+  } finally {
+    await service.destroy();
+  }
+}
+
 export async function runBatch(patterns: string[], values: CliValues): Promise<void> {
   const files = expandPatterns(patterns);
   if (files.length === 0) throw new CliError("batch needs at least one image", 2);

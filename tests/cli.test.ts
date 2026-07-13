@@ -219,6 +219,30 @@ describe("recognize", () => {
   });
 });
 
+describe("detect", () => {
+  test("prints boxes as JSON to stdout", async () => {
+    const { code, out } = await run(["detect", RECEIPT, "-q"]);
+    expect(code).toBe(0);
+    const boxes = JSON.parse(out) as Array<{ x: number; y: number; width: number }>;
+    expect(boxes.length).toBeGreaterThan(0);
+    expect(boxes[0]).toHaveProperty("width");
+  });
+
+  test("--save-crops writes one PNG per box", async () => {
+    const cropDir = join(workdir, "crops");
+    const { code, out } = await run(["detect", RECEIPT, "--save-crops", cropDir, "-q"]);
+    expect(code).toBe(0);
+    const boxes = JSON.parse(out) as unknown[];
+    expect(existsSync(join(cropDir, "crop_000.png"))).toBe(true);
+    expect(boxes.length).toBeGreaterThan(0);
+  });
+
+  test("requires exactly one image", async () => {
+    const { code } = await run(["detect", RECEIPT, TILTED, "-q"]);
+    expect(code).toBe(2);
+  });
+});
+
 describe("batch", () => {
   test("--json returns one index-aligned entry per image", async () => {
     const { code, out } = await run(["batch", TILTED, RECEIPT, "--json", "-q"]);

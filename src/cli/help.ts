@@ -13,6 +13,7 @@ Usage:
 
 Commands:
   recognize <image>      OCR one image (file path or http(s) URL)
+  detect <image>         Detect text boxes only, no recognition (JSON to stdout)
   batch <pattern...>     OCR many images (globs or a list of paths/URLs)
   stream <pattern...>    OCR many images, printing each result as it finishes
   download-models        Pre-warm the model cache (~/.cache/ppu-paddle-ocr)
@@ -36,7 +37,8 @@ Model overrides:
   --model-recognition <path|url> override the preset's recognition model
   --model-dict <path|url>        override the preset's dictionary
 
-Detection tuning:
+Detection tuning (also apply to detect):
+  --save-crops <dir>             (detect only) save each region as crop_NNN.png
   --max-side-length <n>          longest side before downscale (default 640)
   --padding-vertical <n>         box padding, fraction of height (default 0.4)
   --padding-horizontal <n>       box padding, fraction of height (default 0.6)
@@ -62,6 +64,7 @@ Output:
 
 Examples:
   ppu-paddle-ocr recognize receipt.jpg
+  ppu-paddle-ocr detect receipt.jpg --save-crops ./regions --pretty
   ppu-paddle-ocr recognize https://example.com/invoice.png --json --pretty
   ppu-paddle-ocr batch "scans/*.png" --strategy cross-line -o results.json --json
   ppu-paddle-ocr download-models --verbose
