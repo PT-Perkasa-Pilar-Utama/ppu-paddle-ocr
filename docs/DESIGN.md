@@ -63,7 +63,7 @@ image bytes / path
   decode + preprocess (ppu-ocv)
         │
         ▼
-  detection model (ONNX)  ──►  text boxes
+  detection model (ONNX)  ──►  text boxes  (detect() returns here)
         │
         ▼
   recognition model (ONNX) per box/line  ──►  text + scores

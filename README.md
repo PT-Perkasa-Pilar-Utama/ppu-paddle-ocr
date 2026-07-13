@@ -233,12 +233,23 @@ await Bun.write("first-region.png", crops![0]!);
 
 // Or write the crops straight to a folder as crop_000.png, crop_001.png, ...
 await service.detect(imageBuffer, { saveCropsTo: "./out/regions" });
+
+// DetectOptions extends DetectionOptions, so any tuning field
+// can be overridden per call:
+const { boxes: bigOnly } = await service.detect(imageBuffer, {
+  minimumAreaThreshold: 500,
+  maxSideLength: 960,
+});
 ```
 
 `detect()` accepts the same inputs as `recognize()` (`ArrayBuffer`, canvas,
 absolute path, or URL) and works on all entry points. `saveCropsTo` is
 Node/Bun only (ignored on web/mobile); `crop: true` is not supported on React
 Native, where the Skia canvas cannot be encoded to PNG.
+
+Also available as the CLI `detect` command and the serve app's
+`POST /v1/detect` — see [Command Line](#command-line) and
+[`apps/serve`](/apps/serve/README.md).
 
 ## Command Line
 
@@ -250,6 +261,9 @@ bunx ppu-paddle-ocr recognize receipt.jpg
 
 # a URL, as structured JSON
 npx ppu-paddle-ocr recognize https://example.com/invoice.png --json --pretty
+
+# detection only: bounding boxes as JSON, optionally saving each region as a PNG
+bunx ppu-paddle-ocr detect receipt.jpg --save-crops ./regions --pretty
 
 # zero-install (no local ppu-paddle-ocr): npx can pull both packages
 npx -p onnxruntime-node -p ppu-paddle-ocr ppu-paddle-ocr recognize receipt.jpg
@@ -270,7 +284,7 @@ bunx ppu-paddle-ocr clear-cache
 bunx ppu-paddle-ocr models --json
 ```
 
-Every `PaddleOptions` / `RecognizeOptions` field maps to a flag: `--strategy`, `--engine`, `--flatten`, `--no-cache`, `--image-height`, `--model <preset>` (catalogue presets like `v6-small`, `v6-tiny`, `v5-en-mobile`, see `models --json`), `--model-detection/-recognition/-dict` (raw paths/URLs that override the preset), detection tuning (`--max-side-length`, `--padding-vertical`, `--padding-horizontal`, `--min-area`, `--mean`, `--std`), `--execution-providers`, and for `batch`/`stream` `--concurrency`. Output is controlled by `--json`, `--pretty`, `-o/--output`, `-q/--quiet`, and `--verbose`.
+Every `PaddleOptions` / `RecognizeOptions` field maps to a flag: `--strategy`, `--engine`, `--flatten`, `--no-cache`, `--image-height`, `--model <preset>` (catalogue presets like `v6-small`, `v6-tiny`, `v5-en-mobile`, see `models --json`), `--model-detection/-recognition/-dict` (raw paths/URLs that override the preset), detection tuning (`--max-side-length`, `--padding-vertical`, `--padding-horizontal`, `--min-area`, `--mean`, `--std` — these also apply to `detect`), `--save-crops <dir>` (detect only), `--execution-providers`, and for `batch`/`stream` `--concurrency`. Output is controlled by `--json`, `--pretty`, `-o/--output`, `-q/--quiet`, and `--verbose`.
 
 Recognized text goes to **stdout**; progress and logs go to **stderr**, so output pipes cleanly. Exit codes: `0` success, `1` runtime error, `2` usage error. Run `bunx ppu-paddle-ocr help` for the full reference. The CLI uses the default v6 models unless you select a `--model` preset or override the `--model-*` flags.
 
@@ -706,7 +720,10 @@ Per-call options for `recognize()`.
 
 ### `DetectOptions`
 
-Per-call options for `detect()`.
+Per-call options for `detect()`. Extends [`DetectionOptions`](#detectionoptions),
+so every detection tuning field (`maxSideLength`, `minimumAreaThreshold`,
+`paddingVertical`, `paddingHorizontal`, `mean`, `stdDeviation`) can also be
+overridden for a single call, plus:
 
 | Property      |   Type    | Default | Description                                                                               |
 | :------------ | :-------: | :-----: | :---------------------------------------------------------------------------------------- |
