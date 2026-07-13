@@ -20,16 +20,16 @@ the release pipeline instead.
 
 ## Trust boundaries
 
-1. **Image input → decoder/inference.** The bytes or path the caller passes are
+1. **Image input -> decoder/inference.** The bytes or path the caller passes are
    untrusted and cross into native code (ONNX Runtime, the canvas/OpenCV
    decoder via ppu-ocv) at decode and inference time.
-2. **Model path / URL → filesystem or network (Node).** Detection, recognition,
+2. **Model path / URL -> filesystem or network (Node).** Detection, recognition,
    and dictionary paths can be caller-supplied. If a host forwards
    attacker-controlled strings, those reach the filesystem (path read) or a
    network fetch (model download).
-3. **CLI / serve input → process.** The CLI reads files named on the command
+3. **CLI / serve input -> process.** The CLI reads files named on the command
    line; the serve app accepts uploaded images over HTTP.
-4. **Dependency code → process.** ONNX Runtime, ppu-ocv, and the canvas/OpenCV
+4. **Dependency code -> process.** ONNX Runtime, ppu-ocv, and the canvas/OpenCV
    builds run inside the host process with its privileges.
 
 ## Critical paths and threats

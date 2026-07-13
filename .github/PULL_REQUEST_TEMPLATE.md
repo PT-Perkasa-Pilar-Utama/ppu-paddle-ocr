@@ -1,6 +1,6 @@
 <!--
 Thanks for opening a PR against ppu-paddle-ocr! Please fill out the three
-sections below. Keep it short — a couple of sentences each is fine for
+sections below. Keep it short - a couple of sentences each is fine for
 small changes. Bigger changes deserve a bit more context.
 -->
 
@@ -26,7 +26,7 @@ root cause turned out to be. If it's a feature, explain the use case that
 motivated it. If it's a performance change, include numbers (see the
 Benchmark section below).
 
-Avoid restating *what* you did — focus on *why* it's worth merging.
+Avoid restating *what* you did - focus on *why* it's worth merging.
 -->
 
 ## How
@@ -54,14 +54,14 @@ note whether accuracy is preserved on the receipt sample.
 
 <!--
 Tick the environments you've verified manually (CI covers the first two).
-Leave the rest unticked if you haven't exercised them — reviewers will
+Leave the rest unticked if you haven't exercised them - reviewers will
 know what still needs checking.
 -->
 
 - [ ] Node.js (via `onnxruntime-node`)
 - [ ] Bun (via `onnxruntime-node`)
-- [ ] Browser — WebAssembly fallback (Safari, older Firefox)
-- [ ] Browser — WebGPU path (Chrome / Edge with a discrete or integrated GPU)
+- [ ] Browser - WebAssembly fallback (Safari, older Firefox)
+- [ ] Browser - WebGPU path (Chrome / Edge with a discrete or integrated GPU)
 - [ ] macOS (Apple Silicon)
 - [ ] Linux (x86-64)
 - [ ] Windows
