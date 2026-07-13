@@ -40,6 +40,7 @@ export const PARSE_OPTIONS: NonNullable<ParseArgsConfig["options"]> = {
   "execution-providers": { type: "string" },
   concurrency: { type: "string" },
   settle: { type: "boolean" },
+  "save-crops": { type: "string" },
   output: { type: "string", short: "o" },
   json: { type: "boolean" },
   pretty: { type: "boolean" },
