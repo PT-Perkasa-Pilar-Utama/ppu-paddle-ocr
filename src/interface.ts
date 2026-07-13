@@ -197,6 +197,26 @@ export type RecognizeOptions = {
 };
 
 /**
+ * Options for individual detect() calls.
+ */
+export type DetectOptions = {
+  /**
+   * Crop each detected region and return it as a PNG-encoded `ArrayBuffer`,
+   * index-aligned with the returned `boxes`.
+   *
+   * Not supported on React Native (the Skia canvas cannot be encoded).
+   * @default false
+   */
+  crop?: boolean;
+
+  /**
+   * Directory where each crop is saved as `crop_NNN.png`.
+   * Node/Bun only; ignored on web and mobile.
+   */
+  saveCropsTo?: string;
+};
+
+/**
  * Options for `batchRecognize()` / `batchRecognizeStream()`.
  *
  * Extends {@link RecognizeOptions} (applied to every image) with controls for

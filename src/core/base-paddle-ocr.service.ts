@@ -3,12 +3,20 @@
 
 import type { InferenceSession } from "onnxruntime-common";
 import { DEFAULT_PADDLE_OPTIONS } from "../constants.js";
-import type { BatchRecognizeOptions, Box, PaddleOptions, RecognizeOptions } from "../interface.js";
+import type {
+  BatchRecognizeOptions,
+  Box,
+  DetectOptions,
+  PaddleOptions,
+  RecognizeOptions,
+} from "../interface.js";
 import { deepMerge, parseDictionary } from "../utils.js";
 import type { BaseDetectionService } from "./base-detection.service.js";
 import type { BaseRecognitionService, RecognitionResult } from "./base-recognition.service.js";
 import type { BatchItemResult } from "./batch.js";
 import { createAsyncQueue, runPool } from "./batch.js";
+import { cropDetectedBoxes } from "./detection/crop-boxes.js";
+import { flattenResults, groupResultsByLine } from "./recognition/line-grouping.js";
 import { globalImageCache, ImageCache } from "./image-cache.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
 
@@ -44,6 +52,14 @@ export type FlattenedPaddleOcrResult = {
 
 /** A single OCR result, grouped or flattened depending on `flatten`. */
 export type AnyOcrResult = PaddleOcrResult | FlattenedPaddleOcrResult;
+
+/** Result of a detection-only run. */
+export type DetectResult = {
+  /** Detected text boxes in original image coordinates. */
+  boxes: Box[];
+  /** PNG-encoded crops, index-aligned with `boxes`. Present when `crop: true`. */
+  crops?: ArrayBuffer[];
+};
 
 /** Accepted source for a single image in a batch. */
 export type BatchRecognizeInput = ArrayBuffer | CoreCanvas | string;
@@ -192,9 +208,9 @@ export abstract class BasePaddleOcrService {
         dict,
         strategy
       );
-      const groupedResult = this.groupResultsByLine(results);
+      const groupedResult = groupResultsByLine(results);
 
-      const finalResult = options?.flatten ? this.flattenResults(results) : groupedResult;
+      const finalResult = options?.flatten ? flattenResults(results) : groupedResult;
 
       if (!options?.noCache && !options?.dictionary) {
         globalImageCache.set(cacheKey, finalResult);
@@ -206,6 +222,51 @@ export abstract class BasePaddleOcrService {
       console.error("recognize: error", err.message, err.stack);
       throw e;
     }
+  }
+
+  /**
+   * Run text detection only (no recognition) on an image.
+   *
+   * @param image - The source image as an `ArrayBuffer`, platform canvas, or URL/path string.
+   * @param options - Set `crop: true` to also return each region as a PNG `ArrayBuffer`,
+   *   and/or `saveCropsTo` to write the crops to a folder (Node/Bun only).
+   * @returns Detected boxes in original image coordinates, plus crops when requested.
+   */
+  public async detect(
+    image: ArrayBuffer | CoreCanvas | string,
+    options?: DetectOptions
+  ): Promise<DetectResult> {
+    if (!this.detector) {
+      await this.initSessions();
+    }
+
+    let canvas: CoreCanvas;
+    if (typeof image === "string") {
+      if (!image.startsWith("http") && !image.startsWith("/")) {
+        throw new Error(
+          "Invalid image string format. Must be an HTTP URL, an absolute path, ArrayBuffer, or Canvas"
+        );
+      }
+      canvas = await this.platform.canvas.prepareCanvas(
+        await this.platform.loadResource(image, image)
+      );
+    } else if (image instanceof ArrayBuffer) {
+      canvas = await this.platform.canvas.prepareCanvas(image);
+    } else {
+      canvas = image;
+    }
+
+    const boxes = (await (this.detector as BaseDetectionService).run(canvas)).filter(
+      (box) => box.width > 0 && box.height > 0
+    );
+
+    if (!options?.crop && !options?.saveCropsTo) {
+      return { boxes };
+    }
+
+    const crops = await cropDetectedBoxes(this.platform, canvas, boxes, options);
+
+    return options.crop ? { boxes, crops } : { boxes };
   }
 
   /**
@@ -308,67 +369,5 @@ export abstract class BasePaddleOcrService {
     });
 
     return usesAccelerator ? 1 : 4;
-  }
-
-  private flattenResults(results: RecognitionResult[]): FlattenedPaddleOcrResult {
-    if (results.length === 0) {
-      return { text: "", results: [], confidence: 0 };
-    }
-
-    const text = results.map((r) => r.text).join(" ");
-    const avgConfidence = results.reduce((sum, r) => sum + r.confidence, 0) / results.length;
-
-    return {
-      text,
-      results,
-      confidence: avgConfidence,
-    };
-  }
-
-  private groupResultsByLine(results: RecognitionResult[]): PaddleOcrResult {
-    if (results.length === 0) {
-      return { text: "", lines: [], confidence: 0 };
-    }
-
-    const lines: RecognitionResult[][] = [];
-    let currentLine: RecognitionResult[] = [];
-    const firstResult = results[0];
-    if (!firstResult) return { text: "", lines: [], confidence: 0 };
-    let currentY = firstResult.box.y;
-    let avgHeight = firstResult.box.height;
-
-    for (const result of results) {
-      const { box } = result;
-
-      if (Math.abs(box.y - currentY) < avgHeight / 2) {
-        currentLine.push(result);
-        avgHeight = (avgHeight * (currentLine.length - 1) + box.height) / currentLine.length;
-      } else {
-        currentLine.sort((a, b) => a.box.x - b.box.x);
-        lines.push(currentLine);
-        currentLine = [result];
-        currentY = box.y;
-        avgHeight = box.height;
-      }
-    }
-
-    if (currentLine.length > 0) {
-      currentLine.sort((a, b) => a.box.x - b.box.x);
-      lines.push(currentLine);
-    }
-
-    const fullText = lines.map((line) => line.map((r) => r.text).join(" ")).join("\n");
-
-    const totalConfidence = lines.reduce(
-      (sum, line) => sum + line.reduce((s, r) => s + r.confidence, 0),
-      0
-    );
-    const totalItems = lines.reduce((sum, line) => sum + line.length, 0);
-
-    return {
-      text: fullText,
-      lines,
-      confidence: totalItems > 0 ? totalConfidence / totalItems : 0,
-    };
   }
 }

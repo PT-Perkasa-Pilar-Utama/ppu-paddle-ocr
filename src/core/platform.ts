@@ -74,6 +74,9 @@ export type PlatformProvider<TCanvas = CoreCanvas> = {
   /** Optionally dump a given Canvas representation directly onto the disk (No-Op on Web context) */
   saveDebugImage: (canvas: TCanvas, filename: string, path: string) => Promise<void>;
 
+  /** Write a canvas as a PNG to an exact file path (undefined on Web/Mobile — no filesystem) */
+  saveImage?: (canvas: TCanvas, filePath: string) => Promise<void>;
+
   /** OpenCV-based image processor (only available in Node/Bun environments) */
   imageProcessor?: ImageProcessorProvider<TCanvas>;
 
