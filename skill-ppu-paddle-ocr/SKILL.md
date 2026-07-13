@@ -1,6 +1,6 @@
 ---
 name: skill-ppu-paddle-ocr
-description: Use this skill whenever the user is writing TypeScript/JavaScript code that imports `ppu-paddle-ocr`, `ppu-paddle-ocr/web`, or `ppu-paddle-ocr/mobile`, or asks about PaddleOCR / PP-OCRv6 / PP-OCRv5 in JavaScript runtimes — text detection, text recognition, OCR on receipts/invoices/documents, ONNX Runtime OCR, multilingual OCR (Latin, Cyrillic, Arabic, Indic, CJK, Thai), WebGPU OCR in browsers, browser-extension OCR, React Native / Expo OCR on iOS and Android (Skia + onnxruntime-react-native), INT8-quantized recognition, custom dictionaries, recognition strategies (`per-box` / `per-line` / `cross-line`), or processing engines (`opencv` / `canvas-native`). Trigger even when the user says "PaddleOCR in Node", "OCR library that runs in Bun and the browser", or "OCR in React Native" without naming the package, as long as the codebase imports it. This skill encodes the three entry points (`ppu-paddle-ocr`, `ppu-paddle-ocr/web`, and `ppu-paddle-ocr/mobile`), the lifecycle (`new` → `initialize` → `recognize` → `destroy`), the strategy/engine trade-offs, the model-cache behaviour on Node/Bun, the WebGPU fallback path on web, and the Skia / native-JSI path on React Native. Also covers running OCR as a dockerized REST API via the `apps/serve` service (Hono + Bun) when the user wants OCR-as-a-service or a deployable container instead of embedding the SDK.
+description: Use this skill whenever the user is writing TypeScript/JavaScript code that imports `ppu-paddle-ocr`, `ppu-paddle-ocr/web`, or `ppu-paddle-ocr/mobile`, or asks about PaddleOCR / PP-OCRv6 / PP-OCRv5 in JavaScript runtimes — text detection, text recognition, OCR on receipts/invoices/documents, ONNX Runtime OCR, multilingual OCR (Latin, Cyrillic, Arabic, Indic, CJK, Thai), WebGPU OCR in browsers, browser-extension OCR, React Native / Expo OCR on iOS and Android (Skia + onnxruntime-react-native), INT8-quantized recognition, custom dictionaries, recognition strategies (`per-box` / `per-line` / `cross-line`), or processing engines (`opencv` / `canvas-native`). Trigger even when the user says "PaddleOCR in Node", "OCR library that runs in Bun and the browser", or "OCR in React Native" without naming the package, as long as the codebase imports it. This skill encodes the three entry points (`ppu-paddle-ocr`, `ppu-paddle-ocr/web`, and `ppu-paddle-ocr/mobile`), the lifecycle (`new` → `initialize` → `recognize` → `destroy`), detection-only inference (`detect()` — bounding boxes, optional PNG crops), the strategy/engine trade-offs, the model-cache behaviour on Node/Bun, the WebGPU fallback path on web, and the Skia / native-JSI path on React Native. Also covers running OCR as a dockerized REST API via the `apps/serve` service (Hono + Bun) when the user wants OCR-as-a-service or a deployable container instead of embedding the SDK.
 ---
 
 # Writing code with `ppu-paddle-ocr`
@@ -79,6 +79,22 @@ type RecognitionResult = {
 Pass `{ flatten: true }` to get the flat shape — useful for search indexing or when you don't care about line structure. Default is grouped (`lines`).
 
 If detection finds zero boxes, `recognize()` returns an empty result (`text: ""`, `lines: []` or `results: []`, `confidence: 0`) — it does not throw. Callers should branch on `result.lines.length === 0` (or `result.text === ""`) rather than wrapping in try/catch.
+
+## Detection-only inference: `detect()`
+
+When the user only needs layout — where the text is, not what it says — point them at `detect(image, options?)` instead of `recognize()`. It runs just the detection model and returns `{ boxes: Box[] }` in original image coordinates. Same accepted inputs as `recognize()`, available on all three entry points, and also exposed as the CLI `detect` command and the serve app's `POST /v1/detect`.
+
+```ts
+const { boxes } = await service.detect(imageBuffer);
+
+// PNG crops of each region, index-aligned with boxes
+const { crops } = await service.detect(imageBuffer, { crop: true });
+
+// Write crops to disk as crop_000.png, crop_001.png, ... (Node/Bun only)
+await service.detect(imageBuffer, { saveCropsTo: "./regions" });
+```
+
+`DetectOptions` extends `DetectionOptions`, so any tuning field (`maxSideLength`, `minimumAreaThreshold`, paddings, `mean`, `stdDeviation`) can be overridden per call without touching the service defaults. Platform limits: `saveCropsTo` is ignored on web/mobile (no filesystem); `crop: true` throws on React Native (the Skia canvas has no PNG encoder). `detect()` results are not cached — the result cache only covers `recognize()`.
 
 ## The result cache
 

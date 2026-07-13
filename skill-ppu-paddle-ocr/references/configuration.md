@@ -149,3 +149,14 @@ These are passed as the second argument to `recognize()`, not on the constructor
 | `noCache`    | `boolean`                                 | `false` | Bypass the in-memory result cache.                          |
 
 `strategy` and `dictionary` overrides do **not** mutate the service's defaults — they only apply to that single call. To swap the service-wide config, use `changeRecognitionModel` / `changeTextDictionary`.
+
+## `DetectOptions` (per-call)
+
+Passed as the second argument to `detect()`. Extends `DetectionOptions`, so every tuning field above (`maxSideLength`, `minimumAreaThreshold`, `paddingVertical`, `paddingHorizontal`, `mean`, `stdDeviation`) may also be set here as a single-call override, plus:
+
+| Property      | Type      | Default | Notes                                                                                      |
+| ------------- | --------- | ------- | ------------------------------------------------------------------------------------------ |
+| `crop`        | `boolean` | `false` | Return each region PNG-encoded as `ArrayBuffer`, index-aligned with `boxes`. Not on RN.    |
+| `saveCropsTo` | `string`  | —       | Folder where each crop is written as `crop_NNN.png`. Node/Bun only; ignored on web/mobile. |
+
+Like `RecognizeOptions`, per-call tuning does not mutate the service defaults.
