@@ -35,7 +35,7 @@ Thank you for taking the time to contribute. This document covers how to set up 
 
 The recommended development environment is Linux-based. macOS works fine too; Windows users may encounter path differences in some scripts.
 
-Bun is the primary runtime and package manager. The CI pipeline pins Bun at **1.2.23** due to a known SIGILL/segfault in the 1.3.x test runner — use the same version locally to avoid false failures:
+Bun is the primary runtime and package manager. The CI pipeline pins Bun at **1.2.23** due to a known SIGILL/segfault in the 1.3.x test runner - use the same version locally to avoid false failures:
 
 ```bash
 curl -fsSL https://bun.sh/install | bash -s "bun-v1.2.23"
@@ -78,7 +78,7 @@ pushing so CI only confirms what you already know.
 On a cold cache the suite downloads the default PP-OCRv6 models (~30 MB) on
 first run and caches them under `~/.cache/ppu-paddle-ocr`; later runs read from
 disk. The long per-test timeouts (up to 600 s on the model-download specs) exist
-to cover that first download on a slow connection — they are expected, not a
+to cover that first download on a slow connection - they are expected, not a
 hang.
 
 ## Developer Certificate of Origin
@@ -116,7 +116,7 @@ All of the following must pass before a PR can be merged. CI enforces them autom
 No TypeScript file may exceed **300 lines of code** (blank lines and comments
 excluded). The `max-lines` oxlint rule enforces this as an error, so
 `bun run lint` fails on any `.ts` file that crosses the cap. When a file grows
-past it, split the logic into focused modules — extract pure helpers into a
+past it, split the logic into focused modules - extract pure helpers into a
 sibling file (e.g. the recognition service's CTC decoding, image-tensor, and
 line-grouping helpers live under `src/core/recognition/`). Keep the public class
 API unchanged; move only internal helpers, and give each exported symbol a
@@ -133,12 +133,12 @@ bun bench/batch.bench.ts   # batch vs concurrent recognize(), peak RSS
 
 1. Push your branch to your fork.
 2. Open a pull request against `main` on the upstream repo.
-3. Fill out the PR template completely — the "What / Why / How" sections and checklist.
+3. Fill out the PR template completely - the "What / Why / How" sections and checklist.
 4. CI will run automatically. Fix any failures before requesting review.
 5. A maintainer will review your PR. Address feedback, then request a re-review.
 
 PRs are rebase-merged to keep each logically distinct commit on `main`. Keep your
-commit history clean — squash fixup commits locally before review, and make every
+commit history clean - squash fixup commits locally before review, and make every
 commit message follow the project's Conventional Commits format.
 
 ## Reporting Issues
@@ -152,7 +152,7 @@ Use the [GitHub issue tracker](https://github.com/PT-Perkasa-Pilar-Utama/ppu-pad
 - Installation issues
 - Documentation gaps
 
-For security vulnerabilities, **do not open a public issue** — see [SECURITY.md](SECURITY.md) instead.
+For security vulnerabilities, **do not open a public issue** - see [SECURITY.md](SECURITY.md) instead.
 
 ## Community
 

@@ -14,7 +14,7 @@ LLMs read text from images now. So why ship a Machine Learning OCR model?
 
 Because the receipt your reconciliation job processed last night will be processed again next quarter, and the totals had better match. A GPT-class vision model can hallucinate a `5` into an `8`, drop a decimal, or reorder line items the second time you ask. Cloud OCR also costs money per page, leaks the document outside your network, and breaks the moment the vendor deprecates a model id.
 
-I maintain [`ppu-paddle-ocr`](https://www.npmjs.com/package/ppu-paddle-ocr), an open-source TypeScript SDK for PaddleOCR. It runs the PP-OCRv6 family — with PP-OCRv3 through v5 still available as presets — directly on ONNX Runtime in Node.js, Bun, Deno, the browser, and browser extensions, with the same package and the same API. This post walks through what that buys you, how it compares against the official PaddleOCR JS SDK, Tesseract.js, and LLM OCR, and what is shipping next.
+I maintain [`ppu-paddle-ocr`](https://www.npmjs.com/package/ppu-paddle-ocr), an open-source TypeScript SDK for PaddleOCR. It runs the PP-OCRv6 family - with PP-OCRv3 through v5 still available as presets - directly on ONNX Runtime in Node.js, Bun, Deno, the browser, and browser extensions, with the same package and the same API. This post walks through what that buys you, how it compares against the official PaddleOCR JS SDK, Tesseract.js, and LLM OCR, and what is shipping next.
 
 ## Why deterministic OCR still matters in the LLM era
 
@@ -117,7 +117,7 @@ Each `recognize()` call walks four stages:
 
 1. **Decode and normalize** the input image through either OpenCV.js (`ppu-ocv`) or canvas-native preprocessing. Browsers default to canvas-native to keep bundles lean; servers default to OpenCV for tighter bounding boxes.
 2. **Run text detection** with `PP-OCRv6_small_det.ort`. Output: a set of quadrilateral boxes around every text region.
-3. **Choose a recognition strategy.** `per-box` (the default) runs one inference per region for the highest accuracy. `per-line` merges regions on the same line into one strip, and `cross-line` bin-packs strips across lines into uniform batches — both cut inference calls on dense, multi-word-per-line pages.
+3. **Choose a recognition strategy.** `per-box` (the default) runs one inference per region for the highest accuracy. `per-line` merges regions on the same line into one strip, and `cross-line` bin-packs strips across lines into uniform batches - both cut inference calls on dense, multi-word-per-line pages.
 4. **Decode characters** with `PP-OCRv6_small_rec.ort` against the unified dictionary.
 
 The strategy knob exists because reducing inference calls dominates wall-clock time on dense documents. On the Apple M1 benchmark in the README, a receipt lands around 190 ms; on sparse pages the three strategies sit within ~1% of each other, so `per-box` defaults to the most accurate. PP-OCRv6 small holds English receipt accuracy in the mid-90s while reading 50+ languages from one model.
@@ -127,7 +127,7 @@ The strategy knob exists because reducing inference calls dominates wall-clock t
 PP-OCR is not one model. It is a family across generations (v3 through v6), and every member has an ONNX export.
 
 - **Mobile vs server.** Mobile models fit in a few megabytes and run on a CPU. Server models trade size for two extra accuracy points on dense or low-quality documents. Swap the URL in your config; the rest of the code is unchanged.
-- **50+ languages, one default model.** The PP-OCRv6 small default reads Simplified/Traditional Chinese, English, Japanese, 46+ Latin-script languages, Arabic, and Indic scripts from a single unified recognition model — no per-language swap needed. When you want a script-specialized head (often a few points more accurate on, say, Thai or Cyrillic), the PP-OCRv5 per-language models still ship as separate recognition + dictionary files. Pre-converted ONNX builds live in [`ppu-paddle-ocr-models`](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models).
+- **50+ languages, one default model.** The PP-OCRv6 small default reads Simplified/Traditional Chinese, English, Japanese, 46+ Latin-script languages, Arabic, and Indic scripts from a single unified recognition model - no per-language swap needed. When you want a script-specialized head (often a few points more accurate on, say, Thai or Cyrillic), the PP-OCRv5 per-language models still ship as separate recognition + dictionary files. Pre-converted ONNX builds live in [`ppu-paddle-ocr-models`](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models).
 - **INT8 quantization.** The recognition transformer's MatMul ops quantize to INT8 with no measured accuracy loss and a 20 to 50 percent speedup on x86-64 CPUs with VNNI and on WebAssembly (shipped for the PP-OCRv5 English model via `V5_EN_MOBILE_INT8_MODEL`). The repo ships a one-line Python script that does the conversion.
 - **PP-DocLayout, PP-Structure, PP-FormulaNet.** Layout, table, and formula models from the same Paddle family export the same way. The library loads any ONNX model whose I/O contract matches.
 
@@ -150,7 +150,7 @@ const ocr = new PaddleOcrService({
 });
 ```
 
-Detection is script-agnostic. Only the recognition head and dictionary change between languages — and with the v6 unified default, many of these scripts already work without switching at all.
+Detection is script-agnostic. Only the recognition head and dictionary change between languages - and with the v6 unified default, many of these scripts already work without switching at all.
 
 ## WebGPU when you can get it, WASM when you can't
 
@@ -171,7 +171,7 @@ Browser extensions feel this difference the most. A receipt-scanner popup that r
 Accuracy (deterministic, hardware-independent) is measured on the PP-OCRv6 small default; timings below were captured on the previous v5 default (Apple M1, Bun 1.3.x) and v6 small lands within roughly 10% on the same hardware:
 
 ```
-benchmark                            avg (min … max)
+benchmark                            avg (min ... max)
 [per-line][opencv][noCache]          188.75 ms/iter
 [cross-line][opencv][noCache]        193.43 ms/iter
 [per-box][opencv][noCache]           206.60 ms/iter

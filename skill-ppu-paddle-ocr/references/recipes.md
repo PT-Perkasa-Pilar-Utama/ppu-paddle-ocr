@@ -4,7 +4,7 @@ Copy-paste recipes for the most common workflows. Each one assumes the matching 
 
 ## 1. Warm the cache in CI / Docker
 
-First-run model downloads can add 5–15 seconds to a cold container. Pre-fetch them at build time so requests don't pay that latency.
+First-run model downloads can add 5-15 seconds to a cold container. Pre-fetch them at build time so requests don't pay that latency.
 
 **Dockerfile:**
 
@@ -31,7 +31,7 @@ await PaddleOcrService.downloadModels({ verbose: true });
 console.log("Models cached. Subsequent initialize() calls hit the cache.");
 ```
 
-`downloadModels` is **static** — call it on the class.
+`downloadModels` is **static** - call it on the class.
 
 ---
 
@@ -67,7 +67,7 @@ process.on("SIGINT", handleShutdown);
 export default app;
 ```
 
-**Don't** call `service.destroy()` per request. Each `initialize()` rebuilds two ONNX sessions from disk — multi-second cost.
+**Don't** call `service.destroy()` per request. Each `initialize()` rebuilds two ONNX sessions from disk - multi-second cost.
 
 ---
 
@@ -84,7 +84,7 @@ const DICT =
 const service = new PaddleOcrService();
 await service.initialize();
 
-// English (default) — process the first batch
+// English (default) - process the first batch
 for (const img of englishBatch) await service.recognize(img);
 
 // Switch to Thai
@@ -96,15 +96,15 @@ await service.changeTextDictionary(`${DICT}/recognition/multi/thai/v5/ppocrv5_th
 for (const img of thaiBatch) await service.recognize(img);
 ```
 
-If the language batch is short and called once, prefer per-call overrides instead — `recognize(img, { dictionary: thaiDict })` — since it doesn't rebuild the recognition session.
+If the language batch is short and called once, prefer per-call overrides instead - `recognize(img, { dictionary: thaiDict })` - since it doesn't rebuild the recognition session.
 
-If the language is known per request and you have many concurrent requests, run **two services** (one per language) instead of swapping — swapping is racy under concurrency.
+If the language is known per request and you have many concurrent requests, run **two services** (one per language) instead of swapping - swapping is racy under concurrency.
 
 ---
 
 ## 4. INT8 quantization for x86-64 / WASM throughput
 
-Recognition matmuls dynamically quantize to INT8 with no measured accuracy loss on receipts (99.22% → 99.22%) and 20–50% speedup on CPUs with VNNI and on WebAssembly.
+Recognition matmuls dynamically quantize to INT8 with no measured accuracy loss on receipts (99.22% -> 99.22%) and 20-50% speedup on CPUs with VNNI and on WebAssembly.
 
 Generate the quantized recognition model once (Python):
 
@@ -125,7 +125,7 @@ const service = new PaddleOcrService({
 });
 ```
 
-**Do not use INT8 on Apple Silicon** — the FP32 NEON/Accelerate kernels outperform the INT8 MLAS path. Restrict INT8 deployment to x86-64 (preferably with VNNI) and to WASM browser builds.
+**Do not use INT8 on Apple Silicon** - the FP32 NEON/Accelerate kernels outperform the INT8 MLAS path. Restrict INT8 deployment to x86-64 (preferably with VNNI) and to WASM browser builds.
 
 INT8 `.ort` variants are also published in [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models).
 
@@ -160,8 +160,8 @@ await bench("wasm", { executionProviders: ["wasm"], graphOptimizationLevel: "all
 Key gotchas:
 
 - Use `noCache: true` in the timing loop, otherwise you're measuring cache hits.
-- Always warm up first — first inference includes graph optimization and kernel compilation.
-- Detection runs once during `initialize()` setup but the session is reused — don't include `initialize()` in the per-iter timing.
+- Always warm up first - first inference includes graph optimization and kernel compilation.
+- Detection runs once during `initialize()` setup but the session is reused - don't include `initialize()` in the per-iter timing.
 
 ---
 
@@ -219,7 +219,7 @@ for (const file of files) {
   const t0 = performance.now();
   const result = await service.recognize(buf, { noCache: true });
   console.log(
-    `${file}: ${(performance.now() - t0).toFixed(0)}ms · conf ${(result.confidence * 100).toFixed(1)}%`
+    `${file}: ${(performance.now() - t0).toFixed(0)}ms / conf ${(result.confidence * 100).toFixed(1)}%`
   );
   await Bun.write(join("./out", file.replace(/\.\w+$/, ".txt")), result.text);
 }
@@ -227,7 +227,7 @@ for (const file of files) {
 await service.destroy();
 ```
 
-`cross-line` is usually the right strategy for batch processing — fewer inferences per image at a small accuracy cost most receipts can absorb.
+`cross-line` is usually the right strategy for batch processing - fewer inferences per image at a small accuracy cost most receipts can absorb.
 
 ---
 
@@ -265,7 +265,7 @@ Or per-call:
 const result = await service.recognize(buf, { dictionary: "./models/sku-dict.txt" });
 ```
 
-Per-call dictionaries disable the result cache — every call re-runs recognition.
+Per-call dictionaries disable the result cache - every call re-runs recognition.
 
 ---
 
@@ -290,12 +290,12 @@ Look at `./out/debug-2026-05-14/` for:
 
 Common fixes once you've inspected:
 
-- Crops too tight → bump `detection.paddingHorizontal` to `0.8` or `paddingVertical` to `0.6`.
-- Whole regions missed → raise `detection.maxSideLength` to `960`+.
-- Image too dark / low contrast → preprocess with `ppu-ocv` (`grayscale().blur().threshold()`) before passing to `recognize()`.
-- Garbled output on non-English text → wrong language model. Switch the recognition model and dictionary (recipe 3).
+- Crops too tight -> bump `detection.paddingHorizontal` to `0.8` or `paddingVertical` to `0.6`.
+- Whole regions missed -> raise `detection.maxSideLength` to `960`+.
+- Image too dark / low contrast -> preprocess with `ppu-ocv` (`grayscale().blur().threshold()`) before passing to `recognize()`.
+- Garbled output on non-English text -> wrong language model. Switch the recognition model and dictionary (recipe 3).
 
-`debug: true` only works on Node/Bun — browsers can't write to disk.
+`debug: true` only works on Node/Bun - browsers can't write to disk.
 
 ---
 
@@ -331,4 +331,4 @@ process.on("unhandledRejection", (e) => {
 });
 ```
 
-Without this, `kill -TERM` leaves the ONNX runtime holding native memory until the process is force-killed — annoying in container orchestrators that wait for clean exits.
+Without this, `kill -TERM` leaves the ONNX runtime holding native memory until the process is force-killed - annoying in container orchestrators that wait for clean exits.

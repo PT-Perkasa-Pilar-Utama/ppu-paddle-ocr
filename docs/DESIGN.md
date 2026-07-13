@@ -40,7 +40,7 @@ await ocr.destroy(); // free sessions and native memory
 | `ppu-paddle-ocr`     | `onnxruntime-node`                              | Node, Bun |
 | `ppu-paddle-ocr/web` | `onnxruntime-web` (WASM, WebGPU when available) | Browser   |
 
-A CLI ships as the package `bin` (`npx ppu-paddle-ocr …`), and `apps/serve`
+A CLI ships as the package `bin` (`npx ppu-paddle-ocr ...`), and `apps/serve`
 wraps the library as an HTTP service.
 
 ## Components
@@ -58,17 +58,17 @@ wraps the library as an HTTP service.
 
 ```
 image bytes / path
-        │
-        ▼
+        |
+        v
   decode + preprocess (ppu-ocv)
-        │
-        ▼
-  detection model (ONNX)  ──►  text boxes  (detect() returns here)
-        │
-        ▼
-  recognition model (ONNX) per box/line  ──►  text + scores
-        │
-        ▼
+        |
+        v
+  detection model (ONNX)  -->  text boxes  (detect() returns here)
+        |
+        v
+  recognition model (ONNX) per box/line  -->  text + scores
+        |
+        v
   assembled result returned to the caller
 ```
 

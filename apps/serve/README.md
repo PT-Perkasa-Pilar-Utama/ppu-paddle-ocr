@@ -1,12 +1,12 @@
 # ppu-paddle-ocr-serve
 
-Production-grade REST API around [`ppu-paddle-ocr`](../../README.md) — Hono + Bun. POST an image, get OCR JSON.
+Production-grade REST API around [`ppu-paddle-ocr`](../../README.md) - Hono + Bun. POST an image, get OCR JSON.
 
 Pick the path that fits you:
 
 ### A) Run the published image (no clone)
 
-For deploying or just trying it — nothing to build, models are pre-baked.
+For deploying or just trying it - nothing to build, models are pre-baked.
 
 ```bash
 docker run -p 8080:8080 ghcr.io/pt-perkasa-pilar-utama/ppu-paddle-ocr/serve:latest
@@ -22,7 +22,7 @@ For developing or self-building. From the repo root:
 ```bash
 cd apps/serve
 bun install
-cp .env.example .env          # optional — sane defaults otherwise
+cp .env.example .env          # optional - sane defaults otherwise
 bun run dev                   # watch mode on http://localhost:8080
 ```
 
@@ -42,18 +42,18 @@ The library is a building block; this wraps it as a service you'd be comfortable
 
 | Method | Path                      | Purpose                                                          |
 | ------ | ------------------------- | ---------------------------------------------------------------- |
-| POST   | `/v1/ocr`                 | Sync OCR — `multipart/form-data` (`file`) or JSON `{ source }`   |
-| POST   | `/v1/detect`              | Detection only — boxes, no recognition (same input as `/v1/ocr`) |
-| POST   | `/v1/ocr/batch`           | Sync batch — JSON `{ sources: string[] }`                        |
-| POST   | `/v1/ocr/stream`          | SSE — one event per image as it finishes                         |
-| POST   | `/v1/ocr/async`           | Enqueue a batch → `202 { taskId }`                               |
+| POST   | `/v1/ocr`                 | Sync OCR - `multipart/form-data` (`file`) or JSON `{ source }`   |
+| POST   | `/v1/detect`              | Detection only - boxes, no recognition (same input as `/v1/ocr`) |
+| POST   | `/v1/ocr/batch`           | Sync batch - JSON `{ sources: string[] }`                        |
+| POST   | `/v1/ocr/stream`          | SSE - one event per image as it finishes                         |
+| POST   | `/v1/ocr/async`           | Enqueue a batch -> `202 { taskId }`                              |
 | GET    | `/v1/tasks/:id`           | Task status                                                      |
 | GET    | `/v1/tasks/:id/result`    | Task result (409 until done)                                     |
 | DELETE | `/v1/tasks/:id`           | Cancel a task                                                    |
 | GET    | `/v1/models`              | Engines, strategies, defaults                                    |
-| GET    | `/health` · `/ready`      | Liveness · readiness (200 once warmed)                           |
+| GET    | `/health` / `/ready`      | Liveness / readiness (200 once warmed)                           |
 | GET    | `/metrics`                | Prometheus                                                       |
-| GET    | `/docs` · `/openapi.json` | Scalar UI · spec                                                 |
+| GET    | `/docs` / `/openapi.json` | Scalar UI / spec                                                 |
 
 ### Input
 
@@ -61,16 +61,16 @@ The library is a building block; this wraps it as a service you'd be comfortable
 
 ```jsonc
 {
-  "source": "data:image/jpeg;base64,…",
+  "source": "data:image/jpeg;base64,...",
   "strategy": "per-line",
   "flatten": false,
   "engine": "opencv",
 }
 ```
 
-`source` must be a `data:` URI or an `https` URL whose host is in `SOURCE_URL_ALLOWLIST` (empty = https disabled). **Local filesystem paths are rejected**, and URL fetches refuse redirects — so the API never reads arbitrary host files or gets steered off-allowlist. Uploads are sniffed by magic bytes; non-images get a `400`, not a `500`.
+`source` must be a `data:` URI or an `https` URL whose host is in `SOURCE_URL_ALLOWLIST` (empty = https disabled). **Local filesystem paths are rejected**, and URL fetches refuse redirects - so the API never reads arbitrary host files or gets steered off-allowlist. Uploads are sniffed by magic bytes; non-images get a `400`, not a `500`.
 
-`POST /v1/detect` takes the same input (`file` or `{ source, engine? }`; `strategy`/`flatten` don't apply) and returns `{ boxes: [{ x, y, width, height }] }` — detection inference only, no recognition. `metadata` carries `speed`, `count`, and `engine`.
+`POST /v1/detect` takes the same input (`file` or `{ source, engine? }`; `strategy`/`flatten` don't apply) and returns `{ boxes: [{ x, y, width, height }] }` - detection inference only, no recognition. `metadata` carries `speed`, `count`, and `engine`.
 
 ### Response format
 
@@ -82,10 +82,10 @@ Every JSON response uses a consistent envelope and carries the request id (also 
   "status": "success",
   "version": "0.2.0",
   "metadata": { "id": "<request-id>", "speed": 0.27, "confidence": 0.95, "engine": "opencv", "strategy": "per-line" },
-  "data": { "text": "…", "lines": [ … ], "confidence": 0.95 }
+  "data": { "text": "...", "lines": [ ... ], "confidence": 0.95 }
 }
 // error
-{ "status": "error", "version": "0.2.0", "data": { "message": "…", "requestId": "<request-id>" } }
+{ "status": "error", "version": "0.2.0", "data": { "message": "...", "requestId": "<request-id>" } }
 ```
 
 `/metrics` is the only exception (Prometheus text). The spec at `/openapi.json` (rendered at `/docs`) is generated from the zod schemas via `@hono/zod-openapi`.
@@ -98,8 +98,8 @@ See [`.env.example`](.env.example) for the full annotated list.
 | ------------------------------------------------------ | ------------------ | ------------------------------------------------------------------- |
 | `API_ENV`                                              | `development`      | `development` \| `production`                                       |
 | `PORT` / `HOST`                                        | `8080` / `0.0.0.0` |                                                                     |
-| `SECRET_KEY`                                           | —                  | If set, `Bearer <key>` required on `/v1/*` (`openssl rand -hex 32`) |
-| `IP_WHITE_LIST` / `IP_DENY_LIST`                       | `*` / —            | Comma lists; `*` allows all (deny still applies)                    |
+| `SECRET_KEY`                                           | -                  | If set, `Bearer <key>` required on `/v1/*` (`openssl rand -hex 32`) |
+| `IP_WHITE_LIST` / `IP_DENY_LIST`                       | `*` / -            | Comma lists; `*` allows all (deny still applies)                    |
 | `CORS_ORIGINS`                                         | `*`                | Comma list or `*`                                                   |
 | `DOCS_ENABLED`                                         | `true`             | Serve `/docs` + `/openapi.json`                                     |
 | `RATE_LIMIT_ENABLED`                                   | `true`             | Fixed-window per client IP on `/v1/*`                               |
@@ -114,7 +114,7 @@ See [`.env.example`](.env.example) for the full annotated list.
 | `MAX_CONCURRENCY`                                      | `0` (auto)         | Auto = 1 on an accelerator, 4 on CPU                                |
 | `MAX_QUEUE_DEPTH`                                      | `100`              | Excess inferences get `429` + `Retry-After`                         |
 | `TASK_TTL_SECONDS`                                     | `600`              | Async task retention                                                |
-| `SOURCE_URL_ALLOWLIST`                                 | —                  | Comma list of allowed https hosts                                   |
+| `SOURCE_URL_ALLOWLIST`                                 | -                  | Comma list of allowed https hosts                                   |
 
 ## Architecture
 

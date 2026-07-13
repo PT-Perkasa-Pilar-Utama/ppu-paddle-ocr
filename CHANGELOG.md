@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **`detect()` — detection-only inference.** Runs the detection model without
+- **`detect()` - detection-only inference.** Runs the detection model without
   recognition and returns the bounding boxes (`{ boxes: Box[] }`). Available on
   all entry points (Node/Bun, web, mobile) and as the CLI `detect` command and
   the serve app's `POST /v1/detect`. Per-call `DetectOptions` extends
@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `minimumAreaThreshold`, paddings, `mean`, `stdDeviation`) can be overridden
   per call, plus:
   - `crop: true` returns each region PNG-encoded as `ArrayBuffer`,
-    index-aligned with `boxes` (not supported on React Native — the Skia
+    index-aligned with `boxes` (not supported on React Native - the Skia
     canvas has no encoder).
   - `saveCropsTo: "some/folder"` writes each crop as `crop_NNN.png` into the
     folder (Node/Bun only; ignored on web/mobile).
@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dependency: Node/Bun users install it explicitly alongside the package
   (`npm install ppu-paddle-ocr onnxruntime-node`); web/mobile/Deno installs no
   longer pay for it. The CLI now detects the missing backend and prints install
-  instructions instead of a module resolution stack trace — zero-install runs
+  instructions instead of a module resolution stack trace - zero-install runs
   become `npx -p onnxruntime-node -p ppu-paddle-ocr ppu-paddle-ocr <args>`.
 
 ### Changed
@@ -49,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `transpileDeclaration` JS API the build used, so `scripts/build.ts` now emits
   all declarations in one native `tsc -p tsconfig.build.json` pass (output is
   byte-identical). The `@typescript/native-preview` (tsgo) dev dependency is
-  gone — `type-check` uses the same native `tsc --noEmit`.
+  gone - `type-check` uses the same native `tsc --noEmit`.
 - **CI bun pin bumped from 1.2.23 to 1.3.14.** bun 1.2.23 on Linux can hang
   `@techstark/opencv-js` 5's Promise-based runtime init when the node and web
   entries load in the same process; 1.3.14 handles it, and the 1.3.13
@@ -57,7 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fixed a test-suite bug that emptied all opencv-engine OCR when file order
   changed.** `tests/canvas-compatibility.test.ts` stubbed
   `ImageProcessor.initRuntime` with a no-op but its `afterAll` restore omitted
-  the `value` in `defineProperty`, which keeps the stub in place — on runners
+  the `value` in `defineProperty`, which keeps the stub in place - on runners
   whose filesystem ordered that file first (CI's ext4), OpenCV never
   initialized and every later opencv OCR silently returned empty results. The
   restore now puts the real `initRuntime` back.
@@ -95,13 +95,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from `ppu-paddle-ocr/mobile`. Requires a dev client / `expo prebuild` (not Expo Go). A
   runnable Expo example lives in a separate repo, `ppu-paddle-ocr-mobile-react-native-demo`.
   Closes #17.
-- **Model catalogue** — 27 named preset constants covering PP-OCRv6 (`V6_SMALL_MODEL`,
+- **Model catalogue** - 27 named preset constants covering PP-OCRv6 (`V6_SMALL_MODEL`,
   `V6_MEDIUM_MODEL`, `V6_TINY_MODEL`), PP-OCRv5 (English, server, multilingual, INT8),
   PP-OCRv4, and PP-OCRv3, each bundling detection + recognition + dictionary URLs. Use them
   to switch models with autocomplete instead of hand-writing URLs, e.g.
   `new PaddleOcrService({ model: V6_SMALL_MODEL })`. See `src/model-catalogue.ts` for the
   full list.
-- `DEFAULT_MODEL` — points to the current default (PP-OCRv6 small). `DEFAULT_MODEL_URLS` is
+- `DEFAULT_MODEL` - points to the current default (PP-OCRv6 small). `DEFAULT_MODEL_URLS` is
   retained as a deprecated alias.
 - `ModelUrls` type, plus `MODEL_BASE_URL` / `DICT_BASE_URL` constants, for building custom
   model configurations.
@@ -131,16 +131,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   abort deadline (30s) and bounded retries.
 - **Restored the JSR score (regressed to 58% in 5.8.2).** Exposing
   `coi-serviceworker.js` as a JSR module export forced a plain-JS file to be
-  treated as a scored entrypoint — JSR can't derive types from it, so it flagged
+  treated as a scored entrypoint - JSR can't derive types from it, so it flagged
   the whole public API as using "slow types" and as missing module docs. The
   file is now removed from `jsr.json` `exports` but kept in the publish
   allowlist, so it still ships and is fetchable at its JSR file URL (and the npm
-  `ppu-paddle-ocr/coi-serviceworker.js` export is unchanged) — it is simply no
+  `ppu-paddle-ocr/coi-serviceworker.js` export is unchanged) - it is simply no
   longer scored as a documented module.
-- Documented every remaining exported symbol — the Node/Web service
+- Documented every remaining exported symbol - the Node/Web service
   constructors and the Web `PaddleOcrService` public methods (`isInitialized`,
   `changeDetectionModel`, `changeRecognitionModel`, `changeTextDictionary`,
-  `recognize`) — bringing `deno doc --lint` to zero `missing-jsdoc` (100%
+  `recognize`) - bringing `deno doc --lint` to zero `missing-jsdoc` (100%
   documented-symbol coverage).
 
 ## [5.8.2] - 2026-05-25
@@ -160,7 +160,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `coi-serviceworker.js` and exposes it via the `ppu-paddle-ocr/coi-serviceworker.js`
   export. On static hosts that can't set headers (e.g. GitHub Pages), copy it to
   the served root and load it before anything else to unlock cross-origin
-  isolation → `SharedArrayBuffer` → multithreaded WASM inference. Not registered
+  isolation -> `SharedArrayBuffer` -> multithreaded WASM inference. Not registered
   automatically and not needed when WebGPU is used or headers are set
   server-side. See the README's "Multithreaded WASM" section.
 - Update outdated link to Cloudflare deployment
@@ -186,7 +186,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The whole suite runs in one `bun test`.** Bumped `ppu-ocv` to `^3.2.2` (its
   structural canvas/Mat detection) and isolated the web suite's platform, so the
-  node, web, CLI, and `apps/serve` tests run in a single process — no split
+  node, web, CLI, and `apps/serve` tests run in a single process - no split
   runner. Combined coverage ~94%, gated at 90% via `bunfig.toml`. Removed the
   `scripts/test.ts` / `scripts/coverage.ts` two-pass runner.
 - **Service layer split under the 300-LOC cap.** The recognition, detection, and
@@ -236,13 +236,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **First-party CLI — `bunx ppu-paddle-ocr …` / `npx ppu-paddle-ocr …`.** Shipped as a `bin` in the package (no extra install), it covers the whole library surface: `recognize` (single image), `batch` and `stream` (globs or lists, with bounded concurrency), plus `download-models`, `clear-cache`, and `models`. Every `PaddleOptions` / `RecognizeOptions` field has a flag — `--strategy`, `--engine`, `--flatten`, `--model-detection/-recognition/-dict`, detection tuning (`--max-side-length`, `--mean`, `--std`, …), `--execution-providers`, `--concurrency`, and output controls (`--json`, `--pretty`, `-o`, `-q`). Recognized text goes to stdout, progress/logs to stderr; exit codes are `0` success / `1` runtime error / `2` usage error. Uses the default v5 models unless overridden. Cross-runtime (Node and Bun); no new runtime dependencies (`node:util.parseArgs`).
+- **First-party CLI - `bunx ppu-paddle-ocr ...` / `npx ppu-paddle-ocr ...`.** Shipped as a `bin` in the package (no extra install), it covers the whole library surface: `recognize` (single image), `batch` and `stream` (globs or lists, with bounded concurrency), plus `download-models`, `clear-cache`, and `models`. Every `PaddleOptions` / `RecognizeOptions` field has a flag - `--strategy`, `--engine`, `--flatten`, `--model-detection/-recognition/-dict`, detection tuning (`--max-side-length`, `--mean`, `--std`, ...), `--execution-providers`, `--concurrency`, and output controls (`--json`, `--pretty`, `-o`, `-q`). Recognized text goes to stdout, progress/logs to stderr; exit codes are `0` success / `1` runtime error / `2` usage error. Uses the default v5 models unless overridden. Cross-runtime (Node and Bun); no new runtime dependencies (`node:util.parseArgs`).
 
 ## [5.6.0] - 2026-05-24
 
 ### Added
 
-- **`apps/serve` — production-grade REST API** (Hono + Bun, dockerized). One warmed `PaddleOcrService` behind a bounded inference queue (429 backpressure, no OOM/VRAM blow-up), graceful shutdown, optional API-key auth, Prometheus `/metrics`, OpenAPI `/docs`. Endpoints: sync/batch/async/SSE OCR, task status/cancel, `/v1/models`, `/health`, `/ready`. Multi-stage CPU + CUDA Dockerfiles (models pre-baked, non-root), compose, and a release workflow that builds, slims (docker-slim), and pushes to ghcr.io. Standalone package — kept out of the library's install/publish path.
+- **`apps/serve` - production-grade REST API** (Hono + Bun, dockerized). One warmed `PaddleOcrService` behind a bounded inference queue (429 backpressure, no OOM/VRAM blow-up), graceful shutdown, optional API-key auth, Prometheus `/metrics`, OpenAPI `/docs`. Endpoints: sync/batch/async/SSE OCR, task status/cancel, `/v1/models`, `/health`, `/ready`. Multi-stage CPU + CUDA Dockerfiles (models pre-baked, non-root), compose, and a release workflow that builds, slims (docker-slim), and pushes to ghcr.io. Standalone package - kept out of the library's install/publish path.
 
 ### Developer experience
 
@@ -253,12 +253,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **`batchRecognize()` and `batchRecognizeStream()`** — run `recognize()` over an array or (async) iterable of images with bounded concurrency, so peak memory stays bounded regardless of batch size. Results are index-aligned to the inputs; supports per-item error isolation (`settle`), `AbortSignal` cancellation, and `onProgress`. Concurrency defaults to `"auto"` — `1` when an accelerator execution provider (CUDA/WebGPU) is configured, a small CPU default otherwise. Inherited by both the Node and Web builds. See the new "Batch Recognition" section in the README.
+- **`batchRecognize()` and `batchRecognizeStream()`** - run `recognize()` over an array or (async) iterable of images with bounded concurrency, so peak memory stays bounded regardless of batch size. Results are index-aligned to the inputs; supports per-item error isolation (`settle`), `AbortSignal` cancellation, and `onProgress`. Concurrency defaults to `"auto"` - `1` when an accelerator execution provider (CUDA/WebGPU) is configured, a small CPU default otherwise. Inherited by both the Node and Web builds. See the new "Batch Recognition" section in the README.
 
 ### Developer experience
 
 - **Replaced mitata with a zero-dependency benchmark harness** (`bench/harness.ts`). mitata crashed intermittently on this suite; the harness measures in-process with `performance.now`, runs tasks round-robin across rounds so thermal/GC drift hits each equally, and reports the median plus optional peak RSS. Both `bench/index.bench.ts` and `bench/batch.bench.ts` use it. Removes the `mitata` devDependency.
-- **Test files are now isolated in worker processes** via `bun test --parallel=N` (where N is the number of `*.test.ts` files under `tests/` and `private-tests/`). Sequential `bun test` on Bun 1.3.13 segfaulted when multiple test files each loaded `@techstark/opencv-js` together with the newly upgraded `@napi-rs/canvas@1.0.0` — an Emscripten/embind multi-load issue that previously surfaced as a recoverable warning under `@napi-rs/canvas@0.1.x`. The workaround is also ~2.4× faster (11s vs 26s on the local suite).
+- **Test files are now isolated in worker processes** via `bun test --parallel=N` (where N is the number of `*.test.ts` files under `tests/` and `private-tests/`). Sequential `bun test` on Bun 1.3.13 segfaulted when multiple test files each loaded `@techstark/opencv-js` together with the newly upgraded `@napi-rs/canvas@1.0.0` - an Emscripten/embind multi-load issue that previously surfaced as a recoverable warning under `@napi-rs/canvas@0.1.x`. The workaround is also ~2.4x faster (11s vs 26s on the local suite).
 - **Upstream fix landed.** Bun 1.3.14 (likely via [oven-sh/bun#30412](https://github.com/oven-sh/bun/pull/30412)) no longer crashes on the same suite without the workaround. Tracking issue: [oven-sh/bun#30716](https://github.com/oven-sh/bun/issues/30716). The `--parallel=N` flag is kept anyway for the speedup and to protect contributors still on 1.3.13.
 - **`bun.lock` is now committed.** Previously gitignored; now part of the repo so CI and contributors install the exact set the maintainers test against. Has no effect on the published package (the publish workflow only ships `./lib`).
 
@@ -272,14 +272,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `.github/dependabot.yml` so npm dependencies and GitHub Actions are kept current automatically (weekly schedule).
 - Hardened CI: tightened `permissions:` on the quality-check workflow.
-- Bumped CI actions to current majors: `actions/checkout` v4 → v6, `actions/setup-node` v4 → v6, `oven-sh/setup-bun` v1 → v2.
-- Bumped `oxfmt` 0.48.0 → 0.49.0 (dev dependency, formatter).
+- Bumped CI actions to current majors: `actions/checkout` v4 -> v6, `actions/setup-node` v4 -> v6, `oven-sh/setup-bun` v1 -> v2.
+- Bumped `oxfmt` 0.48.0 -> 0.49.0 (dev dependency, formatter).
 
 ## [5.4.3] - 2026-05-14
 
 ### Fixed
 
-- **Browser bundlers no longer need to alias `ppu-ocv/canvas`** ([#18](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/issues/18)). Core services previously imported `ppu-ocv/canvas` (the Node variant) at module top level, which forced every browser consumer — including the `web` subpath — to alias or `pnpm patch` the specifier. Canvas access is now routed through `PlatformProvider.canvas` (`prepareCanvas` / `createProcessor` / `getToolkit`); `NodePlatformProvider` wires it to `ppu-ocv/canvas`, `WebPlatformProvider` wires it to `ppu-ocv/canvas-web`. Webpack / Vite / Next.js / esbuild consumers of `ppu-paddle-ocr/web` should now work out of the box.
+- **Browser bundlers no longer need to alias `ppu-ocv/canvas`** ([#18](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/issues/18)). Core services previously imported `ppu-ocv/canvas` (the Node variant) at module top level, which forced every browser consumer - including the `web` subpath - to alias or `pnpm patch` the specifier. Canvas access is now routed through `PlatformProvider.canvas` (`prepareCanvas` / `createProcessor` / `getToolkit`); `NodePlatformProvider` wires it to `ppu-ocv/canvas`, `WebPlatformProvider` wires it to `ppu-ocv/canvas-web`. Webpack / Vite / Next.js / esbuild consumers of `ppu-paddle-ocr/web` should now work out of the box.
 
 ### Developer experience
 
@@ -292,7 +292,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Performance
 
 - **Safe execution provider fallback for Node.js**: Session creation now gracefully handles failures from preferred providers (CUDA, DirectML, TensorRT) by falling back to CPU. Prevents initialization crashes on systems without GPU acceleration.
-- **Default to `.ort` models**: The library now defaults to using pre-optimized ONNX Runtime (`.ort`) models instead of standard ONNX files, providing **~5× faster cold start** time.
+- **Default to `.ort` models**: The library now defaults to using pre-optimized ONNX Runtime (`.ort`) models instead of standard ONNX files, providing **~5x faster cold start** time.
 - **Parallel model loading**: Model file download and session creation now run concurrently during `initialize()`, further reducing initialization latency.
 
 ### Developer experience
@@ -304,9 +304,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **WebGPU execution provider** (web build). `PaddleOcrService` imported from `ppu-paddle-ocr/web` now probes `navigator.gpu` during `initialize()` and prefers `["webgpu", "wasm"]` when available, falling back silently to `["wasm"]` otherwise. WebGPU session creation that errors out (e.g. a model uses an op WebGPU does not support) triggers a transparent retry on WebAssembly. Typical speedup on Chrome/Edge with a compatible GPU is **2–5× faster recognition** with no code changes.
+- **WebGPU execution provider** (web build). `PaddleOcrService` imported from `ppu-paddle-ocr/web` now probes `navigator.gpu` during `initialize()` and prefers `["webgpu", "wasm"]` when available, falling back silently to `["wasm"]` otherwise. WebGPU session creation that errors out (e.g. a model uses an op WebGPU does not support) triggers a transparent retry on WebAssembly. Typical speedup on Chrome/Edge with a compatible GPU is **2-5x faster recognition** with no code changes.
 - `isWebGpuAvailable()` and `getDefaultWebExecutionProviders()` exported from `ppu-paddle-ocr/web` for conditional UI ("GPU-accelerated" indicators) and explicit provider selection.
-- `examples/quantize-onnx.py` — helper script for producing INT8 dynamic quantized recognition models from the FP32 ONNX files in [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models). Quantizes `MatMul` / `Gemm` only (`Conv` is skipped because `ConvInteger` is not implemented in `onnxruntime-node`'s CPU backend). Typically 20–50% faster recognition on x86-64 CPUs with VNNI and on WebAssembly, with no measurable accuracy loss on the receipt sample.
+- `examples/quantize-onnx.py` - helper script for producing INT8 dynamic quantized recognition models from the FP32 ONNX files in [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models). Quantizes `MatMul` / `Gemm` only (`Conv` is skipped because `ConvInteger` is not implemented in `onnxruntime-node`'s CPU backend). Typically 20-50% faster recognition on x86-64 CPUs with VNNI and on WebAssembly, with no measurable accuracy loss on the receipt sample.
 
 ### Changed
 
@@ -316,7 +316,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - README now documents the model-cache folder location per OS (macOS, Linux, Windows).
 - New README section **"WebGPU Acceleration"** covering auto-detection, how to override the provider preference, and how to probe support from user code.
-- New README section **"INT8 Quantized Recognition Models (advanced)"** with platform-specific guidance — explicitly calls out that INT8 is **slower** than FP32 on Apple Silicon, so users on macOS ARM64 should stick with FP32.
+- New README section **"INT8 Quantized Recognition Models (advanced)"** with platform-specific guidance - explicitly calls out that INT8 is **slower** than FP32 on Apple Silicon, so users on macOS ARM64 should stick with FP32.
 
 ### Developer experience
 
@@ -329,24 +329,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Performance
 
-- **Detection preprocessing**: Replaced the OpenCV resize + separate padded-canvas step with a single `drawImage` that scales and places the image into the padded target in one call. Eliminates a `Mat ↔ Canvas` round trip for the OpenCV engine; neutral for canvas-native.
-- **Detection normalization hot loop**: Pre-computed `scale = 1/(255·std)` and `shift = mean/std` so each pixel costs one multiply + one subtract per channel instead of divide → subtract → multiply.
+- **Detection preprocessing**: Replaced the OpenCV resize + separate padded-canvas step with a single `drawImage` that scales and places the image into the padded target in one call. Eliminates a `Mat <-> Canvas` round trip for the OpenCV engine; neutral for canvas-native.
+- **Detection normalization hot loop**: Pre-computed `scale = 1/(255*std)` and `shift = mean/std` so each pixel costs one multiply + one subtract per channel instead of divide -> subtract -> multiply.
 - **Recognition tensor creation**: `createImageTensorFromCanvas` now fills channel 0 once from the grayscale input and uses `Float32Array.copyWithin` to memcpy the block into channels 1 and 2, instead of writing each pixel three times.
 - **CTC decoding**: Inlined the per-timestep argmax and character-append helpers, and replaced the per-character confidence array + final `reduce` with a running sum + count. Largest measurable gain in `cross-line` (longer CTC output sequences).
 
-Net result on the M1 receipt benchmark (vs. v5.2.0, clean machine): 1–3.5% faster across all six (strategy × engine) variants, with identical recognition accuracy on every variant.
+Net result on the M1 receipt benchmark (vs. v5.2.0, clean machine): 1-3.5% faster across all six (strategy x engine) variants, with identical recognition accuracy on every variant.
 
 ## [5.2.0] - 2026-05-09
 
 ### Added
 
 - **Recognition strategies** (`recognition.strategy` option and per-call `recognize(..., { strategy })` override): Choose how detected boxes are fed into the recognition model. Each strategy works by cropping detected regions from the canvas and stitching them side-by-side before running inference, so the number of recognition inferences can be reduced.
-  - `"per-box"` — each detected box produces one separate inference (previous behavior, most accurate).
-  - `"per-line"` (default) — boxes on the same line are merged into a single crop and a single inference.
-  - `"cross-line"` — short lines are bin-packed across batches to minimise total inference calls, improving throughput on images with many text regions.
+  - `"per-box"` - each detected box produces one separate inference (previous behavior, most accurate).
+  - `"per-line"` (default) - boxes on the same line are merged into a single crop and a single inference.
+  - `"cross-line"` - short lines are bin-packed across batches to minimise total inference calls, improving throughput on images with many text regions.
 - `RecognitionStrategy` type, `RecognitionOptions.strategy`, `RecognitionOptions.crossLineWidthFactor`, and `RecognizeOptions.strategy` in the public API.
 - `PaddleOcrService.downloadModels()` static method to pre-download and cache the default model files (useful for CI/CD and warm-up).
-- Multi-engine × multi-strategy benchmark suite under `bench/`.
+- Multi-engine x multi-strategy benchmark suite under `bench/`.
 
 ### Changed
 
@@ -368,7 +368,7 @@ Net result on the M1 receipt benchmark (vs. v5.2.0, clean machine): 1–3.5% fas
 
 ### Fixed
 
-- **Performance regression fix**: Restored eager `ImageProcessor.initRuntime()` call during `initialize()` when using the OpenCV engine. In v5.0.0 this call was removed when OpenCV was dropped; v5.1.0 restored the OpenCV code path but not the runtime initialization, causing the OpenCV WASM module to be lazily compiled on first use — resulting in 3-6x slower first inference and high variance in subsequent calls.
+- **Performance regression fix**: Restored eager `ImageProcessor.initRuntime()` call during `initialize()` when using the OpenCV engine. In v5.0.0 this call was removed when OpenCV was dropped; v5.1.0 restored the OpenCV code path but not the runtime initialization, causing the OpenCV WASM module to be lazily compiled on first use - resulting in 3-6x slower first inference and high variance in subsequent calls.
 
 ## [5.1.0] - 2026-04-11
 

@@ -1,4 +1,4 @@
-# `PaddleOptions` — full configuration reference
+# `PaddleOptions` - full configuration reference
 
 This is the complete option surface of `PaddleOcrService`. Every field is optional; defaults are calibrated for receipts and printed documents at typical phone-camera resolutions.
 
@@ -15,7 +15,7 @@ type PaddleOptions = {
 };
 ```
 
-Constructor merges your options into the defaults via deep-merge — partial overrides work as expected (`{ recognition: { strategy: "per-box" } }` does not wipe the rest of the recognition defaults).
+Constructor merges your options into the defaults via deep-merge - partial overrides work as expected (`{ recognition: { strategy: "per-box" } }` does not wipe the rest of the recognition defaults).
 
 ---
 
@@ -38,11 +38,11 @@ Controls preprocessing and post-filtering for the detection model.
 | Property               | Type                       | Default                 | Notes                                                                                        |
 | ---------------------- | -------------------------- | ----------------------- | -------------------------------------------------------------------------------------------- |
 | `mean`                 | `[number, number, number]` | `[0.485, 0.456, 0.406]` | Per-channel mean for input normalization (R, G, B). Don't change without reason.             |
-| `stdDeviation`         | `[number, number, number]` | `[0.229, 0.224, 0.225]` | Per-channel std dev. Same — these match PP-OCR's training distribution (v5 and v6 share it). |
+| `stdDeviation`         | `[number, number, number]` | `[0.229, 0.224, 0.225]` | Per-channel std dev. Same - these match PP-OCR's training distribution (v5 and v6 share it). |
 | `maxSideLength`        | `number`                   | `640`                   | Longest input side in px. Larger images get scaled down before inference.                    |
 | `paddingVertical`      | `number`                   | `0.4`                   | Fractional padding added to each detected box vertically.                                    |
 | `paddingHorizontal`    | `number`                   | `0.6`                   | Same, horizontally.                                                                          |
-| `minimumAreaThreshold` | `number`                   | `50`                    | Drop detected boxes smaller than this area (px²). Filters noise.                             |
+| `minimumAreaThreshold` | `number`                   | `50`                    | Drop detected boxes smaller than this area (px^2). Filters noise.                            |
 
 **When to tune:**
 
@@ -67,9 +67,9 @@ Controls the recognition stage's preprocessing and batching strategy.
 **When to tune:**
 
 - `imageHeight`: larger (e.g. `64`) can help on very small/dense text at the cost of latency. Most users should leave it at `48`.
-- `strategy`: pick based on workload — see the strategy table in SKILL.md.
-- `crossLineWidthFactor`: only meaningful with `cross-line`. Try `1.2`–`1.5` for slight throughput wins; `2.0+` starts to hurt accuracy on receipts.
-- `charactersDictionary`: this is set internally from `model.charactersDictionary` during `initialize()`. Setting it directly is a footgun — use `model.charactersDictionary` instead, or `recognize(image, { dictionary })` for one-off overrides.
+- `strategy`: pick based on workload - see the strategy table in SKILL.md.
+- `crossLineWidthFactor`: only meaningful with `cross-line`. Try `1.2`-`1.5` for slight throughput wins; `2.0+` starts to hurt accuracy on receipts.
+- `charactersDictionary`: this is set internally from `model.charactersDictionary` during `initialize()`. Setting it directly is a footgun - use `model.charactersDictionary` instead, or `recognize(image, { dictionary })` for one-off overrides.
 
 ---
 
@@ -81,7 +81,7 @@ Controls the recognition stage's preprocessing and batching strategy.
 | `debug`       | `boolean` | `false` | Writes intermediate frames (preprocessed input, detection mask, crops) to disk. **Node/Bun only.** |
 | `debugFolder` | `string`  | `"out"` | Output directory for debug frames, relative to `process.cwd()`.                                    |
 
-`verbose` is cheap and great for first-time setup. `debug` writes a lot of files — only enable when investigating a specific image's accuracy issue, then turn back off.
+`verbose` is cheap and great for first-time setup. `debug` writes a lot of files - only enable when investigating a specific image's accuracy issue, then turn back off.
 
 ---
 
@@ -89,15 +89,15 @@ Controls the recognition stage's preprocessing and batching strategy.
 
 This is `InferenceSession.SessionOptions` from `onnxruntime-common`, plus a couple of typed convenience defaults. Anything ONNX Runtime accepts works here.
 
-| Property                 | Type                                                       | Default                                  | Notes                                              |
-| ------------------------ | ---------------------------------------------------------- | ---------------------------------------- | -------------------------------------------------- |
-| `executionProviders`     | `string[] \| ExecutionProviderConfig[]`                    | `["cpu"]` (Node), auto WebGPU→WASM (web) | Override only with reason.                         |
-| `graphOptimizationLevel` | `"disabled" \| "basic" \| "extended" \| "layout" \| "all"` | `"all"`                                  | Leave at `"all"` unless debugging an ORT bug.      |
-| `enableCpuMemArena`      | `boolean`                                                  | `true`                                   | Memory arena allocator. Disable only on tight RAM. |
-| `enableMemPattern`       | `boolean`                                                  | `true`                                   | Reuse memory patterns across runs.                 |
-| `executionMode`          | `"sequential" \| "parallel"`                               | `"sequential"`                           | Parallel rarely helps for OCR-shaped graphs.       |
-| `interOpNumThreads`      | `number`                                                   | `0`                                      | `0` = ORT picks. Set explicitly only when pinning. |
-| `intraOpNumThreads`      | `number`                                                   | `0`                                      | Same.                                              |
+| Property                 | Type                                                       | Default                                   | Notes                                              |
+| ------------------------ | ---------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------- |
+| `executionProviders`     | `string[] \| ExecutionProviderConfig[]`                    | `["cpu"]` (Node), auto WebGPU->WASM (web) | Override only with reason.                         |
+| `graphOptimizationLevel` | `"disabled" \| "basic" \| "extended" \| "layout" \| "all"` | `"all"`                                   | Leave at `"all"` unless debugging an ORT bug.      |
+| `enableCpuMemArena`      | `boolean`                                                  | `true`                                    | Memory arena allocator. Disable only on tight RAM. |
+| `enableMemPattern`       | `boolean`                                                  | `true`                                    | Reuse memory patterns across runs.                 |
+| `executionMode`          | `"sequential" \| "parallel"`                               | `"sequential"`                            | Parallel rarely helps for OCR-shaped graphs.       |
+| `interOpNumThreads`      | `number`                                                   | `0`                                       | `0` = ORT picks. Set explicitly only when pinning. |
+| `intraOpNumThreads`      | `number`                                                   | `0`                                       | Same.                                              |
 
 **Common patterns:**
 
@@ -133,7 +133,7 @@ This is `InferenceSession.SessionOptions` from `onnxruntime-common`, plus a coup
 | -------- | ----------------------------- | ---------- | ---------------------------------------------------------- |
 | `engine` | `"opencv" \| "canvas-native"` | `"opencv"` | OpenCV is more accurate; canvas-native skips the WASM dep. |
 
-The `/web` build always uses `canvas-native` — this flag is silently ignored there.
+The `/web` build always uses `canvas-native` - this flag is silently ignored there.
 
 ---
 
@@ -148,7 +148,7 @@ These are passed as the second argument to `recognize()`, not on the constructor
 | `dictionary` | `string \| ArrayBuffer`                   | service | Custom dictionary for this call. **Disables result cache.** |
 | `noCache`    | `boolean`                                 | `false` | Bypass the in-memory result cache.                          |
 
-`strategy` and `dictionary` overrides do **not** mutate the service's defaults — they only apply to that single call. To swap the service-wide config, use `changeRecognitionModel` / `changeTextDictionary`.
+`strategy` and `dictionary` overrides do **not** mutate the service's defaults - they only apply to that single call. To swap the service-wide config, use `changeRecognitionModel` / `changeTextDictionary`.
 
 ## `DetectOptions` (per-call)
 
@@ -157,6 +157,6 @@ Passed as the second argument to `detect()`. Extends `DetectionOptions`, so ever
 | Property      | Type      | Default | Notes                                                                                      |
 | ------------- | --------- | ------- | ------------------------------------------------------------------------------------------ |
 | `crop`        | `boolean` | `false` | Return each region PNG-encoded as `ArrayBuffer`, index-aligned with `boxes`. Not on RN.    |
-| `saveCropsTo` | `string`  | —       | Folder where each crop is written as `crop_NNN.png`. Node/Bun only; ignored on web/mobile. |
+| `saveCropsTo` | `string`  | -       | Folder where each crop is written as `crop_NNN.png`. Node/Bun only; ignored on web/mobile. |
 
 Like `RecognizeOptions`, per-call tuning does not mutate the service defaults.

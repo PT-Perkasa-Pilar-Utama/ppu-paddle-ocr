@@ -107,7 +107,7 @@ npm install -g ppu-paddle-ocr onnxruntime-node      # or: bun add -g ppu-paddle-
 ppu-paddle-ocr recognize receipt.jpg
 ```
 
-`onnxruntime-node` (~258MB of native binaries) is an optional peer dependency, install it alongside — the CLI needs it. Notes:
+`onnxruntime-node` (~258MB of native binaries) is an optional peer dependency, install it alongside - the CLI needs it. Notes:
 
 - **bun**: ensure `~/.bun/bin` is on your `PATH` (npm's global bin usually already is).
 - **Updates are manual**, re-run the install with `@latest` to upgrade. (`bunx`/`npx` always fetch the latest but can serve a stale cache; a global install pins the version and you own upgrades.)
@@ -218,7 +218,7 @@ const result = await service.recognize("./assets/receipt.jpg", {
 
 ### Detection Only
 
-`detect()` runs only the detection model — no recognition — and returns the
+`detect()` runs only the detection model - no recognition - and returns the
 bounding boxes of the text regions it finds. Useful when you only need layout
 (where the text is), or want to feed the crops into your own pipeline.
 
@@ -248,7 +248,7 @@ Node/Bun only (ignored on web/mobile); `crop: true` is not supported on React
 Native, where the Skia canvas cannot be encoded to PNG.
 
 Also available as the CLI `detect` command and the serve app's
-`POST /v1/detect` — see [Command Line](#command-line) and
+`POST /v1/detect` - see [Command Line](#command-line) and
 [`apps/serve`](/apps/serve/README.md).
 
 ## Command Line
@@ -256,7 +256,7 @@ Also available as the CLI `detect` command and the serve app's
 The package ships a `bin`, so you can OCR without writing any code. In a project that has `ppu-paddle-ocr` and `onnxruntime-node` installed, `bunx`/`npx` resolve the local install directly; for zero-install runs use `npx -p onnxruntime-node -p ppu-paddle-ocr ppu-paddle-ocr <args>` or a [global install](#cli-global-install):
 
 ```bash
-# one image → recognized text on stdout
+# one image -> recognized text on stdout
 bunx ppu-paddle-ocr recognize receipt.jpg
 
 # a URL, as structured JSON
@@ -284,7 +284,7 @@ bunx ppu-paddle-ocr clear-cache
 bunx ppu-paddle-ocr models --json
 ```
 
-Every `PaddleOptions` / `RecognizeOptions` field maps to a flag: `--strategy`, `--engine`, `--flatten`, `--no-cache`, `--image-height`, `--model <preset>` (catalogue presets like `v6-small`, `v6-tiny`, `v5-en-mobile`, see `models --json`), `--model-detection/-recognition/-dict` (raw paths/URLs that override the preset), detection tuning (`--max-side-length`, `--padding-vertical`, `--padding-horizontal`, `--min-area`, `--mean`, `--std` — these also apply to `detect`), `--save-crops <dir>` (detect only), `--execution-providers`, and for `batch`/`stream` `--concurrency`. Output is controlled by `--json`, `--pretty`, `-o/--output`, `-q/--quiet`, and `--verbose`.
+Every `PaddleOptions` / `RecognizeOptions` field maps to a flag: `--strategy`, `--engine`, `--flatten`, `--no-cache`, `--image-height`, `--model <preset>` (catalogue presets like `v6-small`, `v6-tiny`, `v5-en-mobile`, see `models --json`), `--model-detection/-recognition/-dict` (raw paths/URLs that override the preset), detection tuning (`--max-side-length`, `--padding-vertical`, `--padding-horizontal`, `--min-area`, `--mean`, `--std` - these also apply to `detect`), `--save-crops <dir>` (detect only), `--execution-providers`, and for `batch`/`stream` `--concurrency`. Output is controlled by `--json`, `--pretty`, `-o/--output`, `-q/--quiet`, and `--verbose`.
 
 Recognized text goes to **stdout**; progress and logs go to **stderr**, so output pipes cleanly. Exit codes: `0` success, `1` runtime error, `2` usage error. Run `bunx ppu-paddle-ocr help` for the full reference. The CLI uses the default v6 models unless you select a `--model` preset or override the `--model-*` flags.
 
@@ -426,7 +426,7 @@ See the [live demo](https://ppu-paddle-ocr.snowfluke.workers.dev/) for a complet
 
 ### WebGPU Acceleration
 
-On WebGPU-capable browsers (Chrome/Edge on Windows/Linux/macOS, Firefox Nightly), ONNX inference automatically runs on the GPU, typically **2–5× faster** with no code changes. The library silently falls back to WASM if WebGPU is unavailable or fails.
+On WebGPU-capable browsers (Chrome/Edge on Windows/Linux/macOS, Firefox Nightly), ONNX inference automatically runs on the GPU, typically **2-5x faster** with no code changes. The library silently falls back to WASM if WebGPU is unavailable or fails.
 
 Detection runs once during `initialize()` and is fully transparent.
 
@@ -496,7 +496,7 @@ await service.destroy();
 
 Notes:
 
-- **Native modules required.** Both `onnxruntime-react-native` and `@shopify/react-native-skia` ship native code, so you need a dev client or `expo prebuild`, **Expo Go is not supported**. Targets RN ≥ 0.74 / Expo SDK ≥ 51 (Hermes).
+- **Native modules required.** Both `onnxruntime-react-native` and `@shopify/react-native-skia` ship native code, so you need a dev client or `expo prebuild`, **Expo Go is not supported**. Targets RN >= 0.74 / Expo SDK >= 51 (Hermes).
 - **CPU inference.** Mobile runs on CPU by default; pass `session: { executionProviders: ["nnapi"] }` (Android) or `["coreml"]` (iOS) to opt into hardware acceleration. There is no WebGPU on React Native.
 - **Camera capture is out of scope.** Pass a decoded frame from `react-native-vision-camera` or `expo-camera` as an `ArrayBuffer`.
 - A runnable Expo example lives in a separate repo: [ppu-paddle-ocr-mobile-react-native-demo](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-mobile-react-native-demo).
@@ -505,9 +505,9 @@ Notes:
 
 ### Default Models
 
-The default **PP-OCRv6 small** models cover 50+ languages (Latin, CJK, Arabic, Indic, …) with a
+The default **PP-OCRv6 small** models cover 50+ languages (Latin, CJK, Arabic, Indic, ...) with a
 single unified model and dictionary. They ship in ONNX Runtime's `.ort` FlatBuffers format
-(3–5× faster session creation than `.onnx`):
+(3-5x faster session creation than `.onnx`):
 
 | Component   | File                     |
 | :---------- | :----------------------- |
@@ -540,14 +540,14 @@ service.clearModelCache();
 ### PP-OCRv6 Models
 
 PP-OCRv6 is the default since v6.0.0. It ships a **single unified model** covering 50+ languages
-(Simplified/Traditional Chinese, English, Japanese, 46+ Latin-script languages, Arabic, Indic, …),
+(Simplified/Traditional Chinese, English, Japanese, 46+ Latin-script languages, Arabic, Indic, ...),
 no per-language model files needed.
 
 | Tier     | Detection params | Notes                                                         |
 | :------- | :--------------- | :------------------------------------------------------------ |
 | `small`  | ~5.1M + ~19.9M   | **Default.** Matches PP-OCRv5 mobile latency.                 |
 | `medium` | ~14.6M + ~19.9M  | Server-grade. +5.1% accuracy vs PP-OCRv5 server.              |
-| `tiny`   | ~1.5M + ~19.9M   | Fastest across all platforms (6.1× vs v5 mobile on Apple M4). |
+| `tiny`   | ~1.5M + ~19.9M   | Fastest across all platforms (6.1x vs v5 mobile on Apple M4). |
 
 **Quick switching with presets:**
 
@@ -648,7 +648,7 @@ const service = new PaddleOcrService({
 
 ### INT8 Quantization
 
-The recognition model's transformer MatMul operations can be dynamically quantized to INT8 with **no accuracy loss** (measured 99.22% → 99.22%) and a 20–50% speedup on **x86-64 CPUs with VNNI** and **WebAssembly**.
+The recognition model's transformer MatMul operations can be dynamically quantized to INT8 with **no accuracy loss** (measured 99.22% -> 99.22%) and a 20-50% speedup on **x86-64 CPUs with VNNI** and **WebAssembly**.
 
 > On Apple Silicon (M-series), INT8 is **not faster**, the FP32 NEON/Accelerate kernels outperform the INT8 MLAS path. Stick with FP32 on macOS ARM64.
 
@@ -762,7 +762,7 @@ Controls preprocessing and filtering during text detection.
 | `maxSideLength`        |          `number`          |          `640`          | Longest side limit (px); larger images are scaled down. |
 | `paddingVertical`      |          `number`          |          `0.4`          | Fractional vertical padding per detected box.           |
 | `paddingHorizontal`    |          `number`          |          `0.6`          | Fractional horizontal padding per detected box.         |
-| `minimumAreaThreshold` |          `number`          |          `50`           | Minimum box area (px²); smaller boxes are discarded.    |
+| `minimumAreaThreshold` |          `number`          |          `50`           | Minimum box area (px^2); smaller boxes are discarded.   |
 
 ### `RecognitionOptions`
 
@@ -820,7 +820,7 @@ const service = new PaddleOcrService({
 Benches use a small zero-dependency harness (`bench/harness.ts`): in-process timing, round-robin scheduling across rounds so thermal/GC drift hits every task equally, reporting the median plus min/max/stddev. Run `bun task bench`. Representative results on Apple M1 / Bun 1.3.14 (20 rounds, opencv + canvas-native):
 
 ```bash
-task                                   median      ±stddev        min        max
+task                                   median      +/-stddev        min        max
 --------------------------------------------------------------------------------
 [per-box][opencv][noCache]             233.0 ms      14.6 ms   211.2 ms   254.5 ms
 [per-line][opencv][noCache]            224.7 ms      17.6 ms   194.3 ms   256.0 ms
@@ -846,7 +846,7 @@ Absolute timings are thermal-sensitive on fanless hardware (Apple Silicon): sust
 `bench/batch.bench.ts` compares the ways to OCR many images, tracking peak RSS alongside time. Captured on the previous v5 default (the relative comparison between sequential / `Promise.all` / `batchRecognize` is model-independent), median over 7 rounds of 16 images each, Apple M1 / Bun 1.3.14, opencv, `noCache`:
 
 ```bash
-task                          median      ±stddev        min        max   peak RSS
+task                          median      +/-stddev        min        max   peak RSS
 ----------------------------------------------------------------------------------
 sequential for-loop          3802.5 ms     300.6 ms  3169.4 ms  3979.7 ms    1059 MB
 Promise.all(map(recognize))  3543.5 ms     254.0 ms  3030.0 ms  3768.0 ms    1428 MB
@@ -855,7 +855,7 @@ batchRecognize (c=4)         3653.8 ms     239.1 ms  3170.1 ms  3804.1 ms    102
 batchRecognize (c=8)         3605.7 ms     187.6 ms  3202.1 ms  3786.6 ms    1096 MB
 ```
 
-On CPU, throughput is bound by ONNX Runtime's native thread pool (which already saturates all cores per inference), so every parallel approach lands within ~4% on time, JS-level concurrency cannot add cores that are already busy. The real difference is **memory**: unbounded `Promise.all` peaks at ~1430 MB and grows with batch size, while `batchRecognize` stays **bounded at ~1030–1100 MB regardless of `N`**. So `batchRecognize` matches the fastest approach at lower, bounded peak memory, and the throughput win from concurrency shows up on GPU (overlapping host↔device) or I/O-bound inputs. Tune `BATCH_N` / `ROUNDS` via env.
+On CPU, throughput is bound by ONNX Runtime's native thread pool (which already saturates all cores per inference), so every parallel approach lands within ~4% on time, JS-level concurrency cannot add cores that are already busy. The real difference is **memory**: unbounded `Promise.all` peaks at ~1430 MB and grows with batch size, while `batchRecognize` stays **bounded at ~1030-1100 MB regardless of `N`**. So `batchRecognize` matches the fastest approach at lower, bounded peak memory, and the throughput win from concurrency shows up on GPU (overlapping host<->device) or I/O-bound inputs. Tune `BATCH_N` / `ROUNDS` via env.
 
 ## Contributing
 

@@ -42,13 +42,13 @@ Instances of abusive, harassing, or otherwise unacceptable behavior may be repor
 
 Maintainers will follow these guidelines to determine consequences for violations:
 
-**1. Correction** — A private written warning explaining the violation and expected behavior going forward.
+**1. Correction** - A private written warning explaining the violation and expected behavior going forward.
 
-**2. Warning** — A formal warning with consequences for continued behavior. No interaction with those involved for a specified period.
+**2. Warning** - A formal warning with consequences for continued behavior. No interaction with those involved for a specified period.
 
-**3. Temporary Ban** — A temporary ban from any community interaction for a period determined by the maintainers.
+**3. Temporary Ban** - A temporary ban from any community interaction for a period determined by the maintainers.
 
-**4. Permanent Ban** — Permanent removal from all community spaces for severe, repeated, or sustained violations.
+**4. Permanent Ban** - Permanent removal from all community spaces for severe, repeated, or sustained violations.
 
 ## Attribution
 

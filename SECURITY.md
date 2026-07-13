@@ -26,13 +26,13 @@ You will receive an acknowledgment within **72 hours**. We aim to assess and res
 
 This library performs local ONNX inference and reads image data. The attack surface is narrow but includes:
 
-- **Model loading** — path traversal or SSRF if a caller passes untrusted strings to `model.detection` / `model.recognition` / `model.charactersDictionary`
-- **Image input** — malformed image buffers passed to the ONNX runtime
-- **Dependency vulnerabilities** — issues in `onnxruntime-node`, `onnxruntime-web`, or `ppu-ocv`
+- **Model loading** - path traversal or SSRF if a caller passes untrusted strings to `model.detection` / `model.recognition` / `model.charactersDictionary`
+- **Image input** - malformed image buffers passed to the ONNX runtime
+- **Dependency vulnerabilities** - issues in `onnxruntime-node`, `onnxruntime-web`, or `ppu-ocv`
 
 Out-of-scope reports:
 
-- Vulnerabilities in `onnxruntime-node` or `onnxruntime-web` themselves — report those to [microsoft/onnxruntime](https://github.com/microsoft/onnxruntime/security)
+- Vulnerabilities in `onnxruntime-node` or `onnxruntime-web` themselves - report those to [microsoft/onnxruntime](https://github.com/microsoft/onnxruntime/security)
 - Issues that require an attacker to already have write access to the host filesystem
 - General questions or feature requests
 
@@ -42,11 +42,11 @@ Static scanners (e.g. Socket) flag an **"obfuscated code"** alert on a few
 transitive dependencies. These are false positives on minified or
 machine-generated artifacts, not malicious code:
 
-- `onnxruntime-web` — `dist/ort.webgpu.bundle.min.mjs` is a **minified** WASM /
+- `onnxruntime-web` - `dist/ort.webgpu.bundle.min.mjs` is a **minified** WASM /
   WebWorker bundle; `lib/onnxjs/ort-schema/protobuf/onnx.js` is **generated**
   protobuf binding code.
 - `@protobufjs/float` (pulled in via `protobufjs`, a dependency of ONNX Runtime
-  for parsing the protobuf-encoded model format) — hand-written IEEE-754
+  for parsing the protobuf-encoded model format) - hand-written IEEE-754
   bit-manipulation that trips dense-code heuristics.
 
 The scanners' own deeper analysis rates all three low-risk with no evidence of
