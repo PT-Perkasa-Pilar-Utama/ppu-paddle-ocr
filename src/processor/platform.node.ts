@@ -63,6 +63,11 @@ export class NodePlatformProvider implements PlatformProvider<CoreCanvas> {
     });
   }
 
+  public async saveImage(canvas: CoreCanvas, filePath: string): Promise<void> {
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
+    await fs.writeFile(filePath, (canvas as Canvas).toBuffer("image/png"));
+  }
+
   public readonly canvas: CanvasOps<CoreCanvas> = {
     prepareCanvas: (image: unknown): Promise<CoreCanvas> =>
       CanvasProcessor.prepareCanvas(image as ArrayBuffer) as Promise<CoreCanvas>,

@@ -2,8 +2,81 @@
 // Copyright (c) 2026 PT Perkasa Pilar Utama
 
 import type { Box } from "../../interface.js";
+import type { FlattenedPaddleOcrResult, PaddleOcrResult } from "../base-paddle-ocr.service.js";
 import type { RecognitionResult } from "../base-recognition.service.js";
 import type { CanvasOps, CoreCanvas } from "../platform.js";
+
+/**
+ * Shapes recognition results into the flat {@link FlattenedPaddleOcrResult}:
+ * space-joined text and the mean confidence across all items.
+ */
+export function flattenResults(results: RecognitionResult[]): FlattenedPaddleOcrResult {
+  if (results.length === 0) {
+    return { text: "", results: [], confidence: 0 };
+  }
+
+  const text = results.map((r) => r.text).join(" ");
+  const avgConfidence = results.reduce((sum, r) => sum + r.confidence, 0) / results.length;
+
+  return {
+    text,
+    results,
+    confidence: avgConfidence,
+  };
+}
+
+/**
+ * Shapes recognition results into the grouped {@link PaddleOcrResult}:
+ * items within half the running average height of the current line's y are
+ * kept on that line, each line is sorted left-to-right, and lines are joined
+ * with newlines.
+ */
+export function groupResultsByLine(results: RecognitionResult[]): PaddleOcrResult {
+  if (results.length === 0) {
+    return { text: "", lines: [], confidence: 0 };
+  }
+
+  const lines: RecognitionResult[][] = [];
+  let currentLine: RecognitionResult[] = [];
+  const firstResult = results[0];
+  if (!firstResult) return { text: "", lines: [], confidence: 0 };
+  let currentY = firstResult.box.y;
+  let avgHeight = firstResult.box.height;
+
+  for (const result of results) {
+    const { box } = result;
+
+    if (Math.abs(box.y - currentY) < avgHeight / 2) {
+      currentLine.push(result);
+      avgHeight = (avgHeight * (currentLine.length - 1) + box.height) / currentLine.length;
+    } else {
+      currentLine.sort((a, b) => a.box.x - b.box.x);
+      lines.push(currentLine);
+      currentLine = [result];
+      currentY = box.y;
+      avgHeight = box.height;
+    }
+  }
+
+  if (currentLine.length > 0) {
+    currentLine.sort((a, b) => a.box.x - b.box.x);
+    lines.push(currentLine);
+  }
+
+  const fullText = lines.map((line) => line.map((r) => r.text).join(" ")).join("\n");
+
+  const totalConfidence = lines.reduce(
+    (sum, line) => sum + line.reduce((s, r) => s + r.confidence, 0),
+    0
+  );
+  const totalItems = lines.reduce((sum, line) => sum + line.length, 0);
+
+  return {
+    text: fullText,
+    lines,
+    confidence: totalItems > 0 ? totalConfidence / totalItems : 0,
+  };
+}
 
 /**
  * Groups detected boxes into lines based on vertical proximity.

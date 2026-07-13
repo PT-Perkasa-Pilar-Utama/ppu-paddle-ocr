@@ -31,6 +31,7 @@ await service.destroy();
   - [Custom Models](#custom-models)
   - [Changing Models at Runtime](#changing-models-at-runtime)
   - [Per-Call Options](#per-call-options)
+  - [Detection Only](#detection-only)
 - [Command Line](#command-line)
 - [Batch Recognition](#batch-recognition)
 - [Recognition Strategies](#recognition-strategies)
@@ -55,6 +56,7 @@ await service.destroy();
 - [Configuration Reference](#configuration-reference)
   - [PaddleOptions](#paddleoptions)
   - [RecognizeOptions](#recognizeoptions)
+  - [DetectOptions](#detectoptions)
   - [ModelPathOptions](#modelpathoptions)
   - [DetectionOptions](#detectionoptions)
   - [RecognitionOptions](#recognitionoptions)
@@ -213,6 +215,30 @@ const result = await service.recognize("./assets/receipt.jpg", {
   strategy: "per-box",
 });
 ```
+
+### Detection Only
+
+`detect()` runs only the detection model — no recognition — and returns the
+bounding boxes of the text regions it finds. Useful when you only need layout
+(where the text is), or want to feed the crops into your own pipeline.
+
+```ts
+// Just the boxes
+const { boxes } = await service.detect(imageBuffer);
+// boxes: { x, y, width, height }[] in original image coordinates
+
+// Also return each region as a PNG buffer, index-aligned with boxes
+const { crops } = await service.detect(imageBuffer, { crop: true });
+await Bun.write("first-region.png", crops![0]!);
+
+// Or write the crops straight to a folder as crop_000.png, crop_001.png, ...
+await service.detect(imageBuffer, { saveCropsTo: "./out/regions" });
+```
+
+`detect()` accepts the same inputs as `recognize()` (`ArrayBuffer`, canvas,
+absolute path, or URL) and works on all entry points. `saveCropsTo` is
+Node/Bun only (ignored on web/mobile); `crop: true` is not supported on React
+Native, where the Skia canvas cannot be encoded to PNG.
 
 ## Command Line
 
@@ -677,6 +703,15 @@ Per-call options for `recognize()`.
 | `strategy`   | `"per-box" \| "per-line" \| "cross-line"` | service default | Override strategy for this call.                 |
 | `dictionary` |          `string \| ArrayBuffer`          |     `null`      | Custom character dictionary (disables caching).  |
 | `noCache`    |                 `boolean`                 |     `false`     | Bypass the result cache.                         |
+
+### `DetectOptions`
+
+Per-call options for `detect()`.
+
+| Property      |   Type    | Default | Description                                                                               |
+| :------------ | :-------: | :-----: | :---------------------------------------------------------------------------------------- |
+| `crop`        | `boolean` | `false` | Return each detected region PNG-encoded as `ArrayBuffer`, index-aligned with `boxes`.     |
+| `saveCropsTo` | `string`  | `null`  | Folder where each crop is saved as `crop_NNN.png` (Node/Bun only; ignored on web/mobile). |
 
 ### `BatchRecognizeOptions`
 

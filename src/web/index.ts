@@ -25,6 +25,7 @@
 export type {
   AnyOcrResult,
   BatchRecognizeInput,
+  DetectResult,
   FlattenedPaddleOcrResult,
   PaddleOcrResult,
 } from "../core/base-paddle-ocr.service.js";
@@ -69,6 +70,7 @@ export type {
   Box,
   DebuggingOptions,
   DetectionOptions,
+  DetectOptions,
   ModelPathOptions,
   PaddleOptions,
   ProcessingEngine,
