@@ -2,7 +2,7 @@
 // Copyright (c) 2026 PT Perkasa Pilar Utama
 
 import type { InferenceSession } from "onnxruntime-common";
-import { DEFAULT_PADDLE_OPTIONS } from "../constants.js";
+import { DEFAULT_PADDLE_OPTIONS, DEFAULT_PROCESSING_ENGINE } from "../constants.js";
 import type {
   BatchRecognizeOptions,
   Box,
@@ -11,7 +11,7 @@ import type {
   RecognizeOptions,
 } from "../interface.js";
 import { deepMerge, parseDictionary } from "../utils.js";
-import type { BaseDetectionService } from "./base-detection.service.js";
+import { BaseDetectionService } from "./base-detection.service.js";
 import type { BaseRecognitionService, RecognitionResult } from "./base-recognition.service.js";
 import type { BatchItemResult } from "./batch.js";
 import { createAsyncQueue, runPool } from "./batch.js";
@@ -228,7 +228,8 @@ export abstract class BasePaddleOcrService {
    * Run text detection only (no recognition) on an image.
    *
    * @param image - The source image as an `ArrayBuffer`, platform canvas, or URL/path string.
-   * @param options - Set `crop: true` to also return each region as a PNG `ArrayBuffer`,
+   * @param options - Any {@link DetectionOptions} tuning field to override for
+   *   this call, plus `crop: true` to return each region as a PNG `ArrayBuffer`
    *   and/or `saveCropsTo` to write the crops to a folder (Node/Bun only).
    * @returns Detected boxes in original image coordinates, plus crops when requested.
    */
@@ -239,6 +240,18 @@ export abstract class BasePaddleOcrService {
     if (!this.detector) {
       await this.initSessions();
     }
+
+    const { crop, saveCropsTo, ...tuning } = options ?? {};
+    const detector =
+      Object.keys(tuning).length > 0
+        ? new BaseDetectionService(
+            this.platform,
+            this.detectionSession as InferenceSession,
+            { ...this.options.detection, ...tuning },
+            this.options.debugging,
+            this.options.processing?.engine ?? DEFAULT_PROCESSING_ENGINE
+          )
+        : (this.detector as BaseDetectionService);
 
     let canvas: CoreCanvas;
     if (typeof image === "string") {
@@ -256,17 +269,15 @@ export abstract class BasePaddleOcrService {
       canvas = image;
     }
 
-    const boxes = (await (this.detector as BaseDetectionService).run(canvas)).filter(
-      (box) => box.width > 0 && box.height > 0
-    );
+    const boxes = (await detector.run(canvas)).filter((box) => box.width > 0 && box.height > 0);
 
-    if (!options?.crop && !options?.saveCropsTo) {
+    if (!crop && !saveCropsTo) {
       return { boxes };
     }
 
-    const crops = await cropDetectedBoxes(this.platform, canvas, boxes, options);
+    const crops = await cropDetectedBoxes(this.platform, canvas, boxes, { crop, saveCropsTo });
 
-    return options.crop ? { boxes, crops } : { boxes };
+    return crop ? { boxes, crops } : { boxes };
   }
 
   /**

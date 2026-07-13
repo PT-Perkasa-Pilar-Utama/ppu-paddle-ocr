@@ -198,8 +198,12 @@ export type RecognizeOptions = {
 
 /**
  * Options for individual detect() calls.
+ *
+ * Extends the constructor-level {@link DetectionOptions}, so every detection
+ * tuning field (`maxSideLength`, `minimumAreaThreshold`, paddings, `mean`,
+ * `stdDeviation`) can also be overridden per call.
  */
-export type DetectOptions = {
+export type DetectOptions = DetectionOptions & {
   /**
    * Crop each detected region and return it as a PNG-encoded `ArrayBuffer`,
    * index-aligned with the returned `boxes`.

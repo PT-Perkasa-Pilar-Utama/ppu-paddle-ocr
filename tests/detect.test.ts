@@ -43,6 +43,16 @@ describe("detect()", () => {
     }
   });
 
+  test("applies per-call detection tuning without touching service defaults", async () => {
+    const strict = await service.detect(imageBuffer, {
+      minimumAreaThreshold: Number.MAX_SAFE_INTEGER,
+    });
+    expect(strict.boxes).toHaveLength(0);
+
+    const defaults = await service.detect(imageBuffer);
+    expect(defaults.boxes.length).toBeGreaterThan(0);
+  });
+
   test("saves one crop file per box to a custom folder", async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), "ppu-detect-"));
 
