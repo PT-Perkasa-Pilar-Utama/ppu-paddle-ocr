@@ -7,18 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.1.0] - 2026-07-13
+
 ### Added
 
 - **`detect()` — detection-only inference.** Runs the detection model without
   recognition and returns the bounding boxes (`{ boxes: Box[] }`). Available on
-  all entry points (Node/Bun, web, mobile). Optional `DetectOptions`:
+  all entry points (Node/Bun, web, mobile) and as the CLI `detect` command and
+  the serve app's `POST /v1/detect`. Per-call `DetectOptions` extends
+  `DetectionOptions`, so every tuning field (`maxSideLength`,
+  `minimumAreaThreshold`, paddings, `mean`, `stdDeviation`) can be overridden
+  per call, plus:
   - `crop: true` returns each region PNG-encoded as `ArrayBuffer`,
     index-aligned with `boxes` (not supported on React Native — the Skia
     canvas has no encoder).
   - `saveCropsTo: "some/folder"` writes each crop as `crop_NNN.png` into the
     folder (Node/Bun only; ignored on web/mobile).
-
-## [6.0.1] - 2026-07-11
 
 ### Fixed
 
