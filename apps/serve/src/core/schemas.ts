@@ -37,6 +37,25 @@ export const multipartOcrSchema = z
   })
   .openapi("OcrMultipartRequest");
 
+/** JSON body for detection-only inference. */
+export const jsonDetectSchema = z
+  .object({
+    engine,
+    source: z.string().min(1).openapi({
+      description: "A `data:` URI or an allowlisted https URL. Local paths are rejected.",
+      example: EXAMPLE_IMAGE,
+    }),
+  })
+  .openapi("DetectJsonRequest");
+
+/** Multipart body for detection-only inference (documentation only — parsed manually). */
+export const multipartDetectSchema = z
+  .object({
+    file: z.custom<File>().openapi({ type: "string", format: "binary" }),
+    engine,
+  })
+  .openapi("DetectMultipartRequest");
+
 /** JSON body for batch / async / stream OCR. */
 export const batchOcrSchema = ocrOptionsSchema
   .extend({
@@ -72,6 +91,8 @@ export const ocrResultSchema = z
     results: z.array(recognitionItemSchema).optional(),
   })
   .openapi("OcrResult");
+
+export const detectResultSchema = z.object({ boxes: z.array(boxSchema) }).openapi("DetectResult");
 
 export const batchResultSchema = z.object({ results: z.array(z.unknown()) }).openapi("BatchResult");
 

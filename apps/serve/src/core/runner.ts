@@ -1,4 +1,4 @@
-import type { BatchItemResult, ProcessingEngine } from "ppu-paddle-ocr";
+import type { BatchItemResult, DetectResult, ProcessingEngine } from "ppu-paddle-ocr";
 import { config } from "./config.js";
 import { badRequest } from "./errors.js";
 import { resolveSource } from "./input.js";
@@ -21,6 +21,21 @@ export async function runOcr(image: ArrayBuffer, opts: OcrOptions): Promise<OcrR
     ? await queue.run(() => svc.recognize(image, { flatten: true, strategy, noCache: true }))
     : await queue.run(() => svc.recognize(image, { strategy, noCache: true }));
   return { result, meta: { engine, strategy, ms: round1(performance.now() - start) } };
+}
+
+export type DetectResponse = {
+  result: DetectResult;
+  meta: { engine: ProcessingEngine; ms: number };
+};
+
+/** Detect text boxes only (no recognition) through the bounded inference queue. */
+export async function runDetect(image: ArrayBuffer, opts: OcrOptions): Promise<DetectResponse> {
+  const engine = (opts.engine ?? config.defaultEngine) as ProcessingEngine;
+  const svc = await getService(engine);
+
+  const start = performance.now();
+  const result = await queue.run(() => svc.detect(image));
+  return { result, meta: { engine, ms: round1(performance.now() - start) } };
 }
 
 /** Resolve a batch of `sources` to image buffers, bounded by MAX_BATCH_IMAGES. */
