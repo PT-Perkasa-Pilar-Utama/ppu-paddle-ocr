@@ -55,6 +55,28 @@ describe("POST /v1/ocr (success)", () => {
   }, 30_000);
 });
 
+describe("POST /v1/detect", () => {
+  test("multipart upload returns enveloped boxes with a count", async () => {
+    const res = await app.request("/v1/detect", upload());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.status).toBe("success");
+    expect(Array.isArray(body.data.boxes)).toBe(true);
+    expect(body.data.boxes.length).toBeGreaterThan(0);
+    expect(body.data.boxes[0]).toHaveProperty("width");
+    expect(body.metadata.count).toBe(body.data.boxes.length);
+    expect(body.metadata.speed).toBeGreaterThan(0);
+  }, 30_000);
+
+  test("JSON data: URI source works", async () => {
+    const res = await app.request("/v1/detect", json({ source: dataUri }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.status).toBe("success");
+    expect(body.data.boxes.length).toBeGreaterThan(0);
+  }, 30_000);
+});
+
 describe("POST /v1/ocr/batch", () => {
   test("returns one result per source", async () => {
     const res = await app.request("/v1/ocr/batch", json({ sources: [dataUri, dataUri] }));

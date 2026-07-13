@@ -15,6 +15,7 @@ import { recordRequest } from "./core/metrics.js";
 import { rateLimiter } from "./core/middleware.js";
 import { QueueFullError } from "./core/queue.js";
 import type { Env } from "./core/types.js";
+import * as detect from "./modules/detect/index.js";
 import * as health from "./modules/health/index.js";
 import * as metrics from "./modules/metrics/index.js";
 import * as models from "./modules/models/index.js";
@@ -69,6 +70,9 @@ app.openapi(models.route, models.handler);
 // parses its body manually rather than via auto-validation.
 app.openAPIRegistry.registerPath(recognize.route);
 app.post(recognize.route.path, recognize.handler);
+// /v1/detect is dual-content (multipart or JSON) like /v1/ocr.
+app.openAPIRegistry.registerPath(detect.route);
+app.post(detect.route.path, detect.handler);
 app.openapi(recognizeBatch.route, recognizeBatch.handler);
 app.openapi(recognizeStream.route, recognizeStream.handler);
 app.openapi(recognizeAsync.route, recognizeAsync.handler);
@@ -87,7 +91,7 @@ if (config.docsEnabled) {
     openapi: "3.1.0",
     info: {
       title: "ppu-paddle-ocr-serve",
-      version: "0.1.5",
+      version: "0.2.0",
       description: "REST API serving ppu-paddle-ocr. POST an image, get OCR JSON.",
     },
   });

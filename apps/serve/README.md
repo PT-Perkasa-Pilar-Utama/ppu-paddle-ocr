@@ -40,19 +40,20 @@ The library is a building block; this wraps it as a service you'd be comfortable
 
 ## Endpoints
 
-| Method | Path                      | Purpose                                                        |
-| ------ | ------------------------- | -------------------------------------------------------------- |
-| POST   | `/v1/ocr`                 | Sync OCR — `multipart/form-data` (`file`) or JSON `{ source }` |
-| POST   | `/v1/ocr/batch`           | Sync batch — JSON `{ sources: string[] }`                      |
-| POST   | `/v1/ocr/stream`          | SSE — one event per image as it finishes                       |
-| POST   | `/v1/ocr/async`           | Enqueue a batch → `202 { taskId }`                             |
-| GET    | `/v1/tasks/:id`           | Task status                                                    |
-| GET    | `/v1/tasks/:id/result`    | Task result (409 until done)                                   |
-| DELETE | `/v1/tasks/:id`           | Cancel a task                                                  |
-| GET    | `/v1/models`              | Engines, strategies, defaults                                  |
-| GET    | `/health` · `/ready`      | Liveness · readiness (200 once warmed)                         |
-| GET    | `/metrics`                | Prometheus                                                     |
-| GET    | `/docs` · `/openapi.json` | Scalar UI · spec                                               |
+| Method | Path                      | Purpose                                                          |
+| ------ | ------------------------- | ---------------------------------------------------------------- |
+| POST   | `/v1/ocr`                 | Sync OCR — `multipart/form-data` (`file`) or JSON `{ source }`   |
+| POST   | `/v1/detect`              | Detection only — boxes, no recognition (same input as `/v1/ocr`) |
+| POST   | `/v1/ocr/batch`           | Sync batch — JSON `{ sources: string[] }`                        |
+| POST   | `/v1/ocr/stream`          | SSE — one event per image as it finishes                         |
+| POST   | `/v1/ocr/async`           | Enqueue a batch → `202 { taskId }`                               |
+| GET    | `/v1/tasks/:id`           | Task status                                                      |
+| GET    | `/v1/tasks/:id/result`    | Task result (409 until done)                                     |
+| DELETE | `/v1/tasks/:id`           | Cancel a task                                                    |
+| GET    | `/v1/models`              | Engines, strategies, defaults                                    |
+| GET    | `/health` · `/ready`      | Liveness · readiness (200 once warmed)                           |
+| GET    | `/metrics`                | Prometheus                                                       |
+| GET    | `/docs` · `/openapi.json` | Scalar UI · spec                                                 |
 
 ### Input
 
@@ -69,6 +70,8 @@ The library is a building block; this wraps it as a service you'd be comfortable
 
 `source` must be a `data:` URI or an `https` URL whose host is in `SOURCE_URL_ALLOWLIST` (empty = https disabled). **Local filesystem paths are rejected**, and URL fetches refuse redirects — so the API never reads arbitrary host files or gets steered off-allowlist. Uploads are sniffed by magic bytes; non-images get a `400`, not a `500`.
 
+`POST /v1/detect` takes the same input (`file` or `{ source, engine? }`; `strategy`/`flatten` don't apply) and returns `{ boxes: [{ x, y, width, height }] }` — detection inference only, no recognition. `metadata` carries `speed`, `count`, and `engine`.
+
 ### Response format
 
 Every JSON response uses a consistent envelope and carries the request id (also returned as the `X-Request-Id` header):
@@ -77,12 +80,12 @@ Every JSON response uses a consistent envelope and carries the request id (also 
 // success
 {
   "status": "success",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "metadata": { "id": "<request-id>", "speed": 0.27, "confidence": 0.95, "engine": "opencv", "strategy": "per-line" },
   "data": { "text": "…", "lines": [ … ], "confidence": 0.95 }
 }
 // error
-{ "status": "error", "version": "0.1.0", "data": { "message": "…", "requestId": "<request-id>" } }
+{ "status": "error", "version": "0.2.0", "data": { "message": "…", "requestId": "<request-id>" } }
 ```
 
 `/metrics` is the only exception (Prometheus text). The spec at `/openapi.json` (rendered at `/docs`) is generated from the zod schemas via `@hono/zod-openapi`.
