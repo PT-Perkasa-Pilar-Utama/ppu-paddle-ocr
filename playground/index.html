@@ -400,20 +400,29 @@
       .sidebar {
         border-right: 1px solid var(--text-primary);
         background: var(--bg-secondary);
-        overflow-y: auto;
-        padding: 1rem;
+        overflow: hidden;
+        padding: 0;
         display: flex;
         flex-direction: column;
-        gap: 1.5rem;
+        gap: 0;
       }
 
-      .sidebar::-webkit-scrollbar {
+      .config-scroll-content {
+        flex: 1;
+        min-height: 0;
+        padding: 1rem;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+      }
+
+      .config-scroll-content::-webkit-scrollbar {
         width: 6px;
       }
-      .sidebar::-webkit-scrollbar-track {
+      .config-scroll-content::-webkit-scrollbar-track {
         background: transparent;
       }
-      .sidebar::-webkit-scrollbar-thumb {
+      .config-scroll-content::-webkit-scrollbar-thumb {
         background: var(--text-muted);
         border-radius: 0;
       }
@@ -430,6 +439,111 @@
         padding: 0 0.25rem;
         border-bottom: 1px solid var(--text-primary);
         padding-bottom: 0.25rem;
+      }
+
+      .config-header {
+        padding: 0 0.15rem;
+      }
+      .config-title {
+        font-family: var(--serif);
+        font-size: 1.1rem;
+        font-weight: 700;
+        font-style: italic;
+      }
+      .config-description {
+        margin-top: 0.2rem;
+        font-size: 0.7rem;
+        line-height: 1.5;
+        color: var(--text-muted);
+      }
+      .config-sections {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        margin-top: 1rem;
+      }
+      .config-section,
+      .config-subsection {
+        background: var(--bg-card);
+        border: 1px solid var(--text-primary);
+        border-radius: var(--radius-xs);
+      }
+      .config-section > summary,
+      .config-subsection > summary {
+        display: flex;
+        align-items: center;
+        min-height: 42px;
+        padding: 0.55rem 0.65rem;
+        color: var(--text-primary);
+        cursor: pointer;
+        list-style: none;
+        user-select: none;
+      }
+      .config-section > summary::-webkit-details-marker,
+      .config-subsection > summary::-webkit-details-marker {
+        display: none;
+      }
+      .config-section > summary::after,
+      .config-subsection > summary::after {
+        content: "+";
+        margin-left: auto;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 1rem;
+        color: var(--accent);
+      }
+      .config-section[open] > summary::after,
+      .config-subsection[open] > summary::after {
+        content: "−";
+      }
+      .config-section[open] > summary {
+        border-bottom: 1px solid var(--border);
+      }
+      .config-summary {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.25;
+      }
+      .config-summary strong {
+        font-family: var(--serif);
+        font-size: 0.85rem;
+        font-style: italic;
+      }
+      .config-summary small {
+        margin-top: 0.15rem;
+        font-size: 0.62rem;
+        font-weight: 400;
+        color: var(--text-muted);
+      }
+      .config-body {
+        padding: 0.7rem;
+      }
+      .config-subsection {
+        margin-top: 0.75rem;
+        border-color: var(--border);
+        background: var(--bg-primary);
+      }
+      .config-subsection > summary {
+        min-height: 38px;
+        font-size: 0.68rem;
+        font-weight: 600;
+      }
+      .config-subsection .config-body {
+        padding-top: 0.2rem;
+      }
+      .inline-fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+      }
+      .inline-fields.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .field-help {
+        display: block;
+        margin: 0.3rem 0.2rem 0;
+        font-size: 0.62rem;
+        line-height: 1.4;
+        color: var(--text-muted);
       }
 
       /* Input Fields */
@@ -477,14 +591,44 @@
       }
 
       .apply-bar {
-        position: sticky;
-        bottom: 0;
-        margin: 0 -1rem -1rem;
+        flex: 0 0 auto;
+        margin: 0;
         padding: 0.75rem 1rem;
         background: var(--bg-secondary);
         border-top: 1px solid var(--text-primary);
-        box-shadow: 0 -8px 16px -10px rgba(60, 40, 20, 0.18);
+        box-shadow: 0 -6px 14px -12px rgba(60, 40, 20, 0.45);
         z-index: 5;
+      }
+      .apply-actions {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 0.5rem;
+      }
+      .btn-reset {
+        padding: 0.6rem 0.7rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xs);
+        background: transparent;
+        color: var(--text-secondary);
+        font-family: inherit;
+        font-size: 0.7rem;
+        cursor: pointer;
+      }
+      .btn-reset:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: var(--bg-card-hover);
+      }
+      .config-state {
+        display: block;
+        margin-top: 0.45rem;
+        font-size: 0.62rem;
+        text-align: center;
+        color: var(--text-muted);
+      }
+      .config-state.pending {
+        color: var(--accent);
+        font-weight: 600;
       }
       .btn-apply {
         width: 100%;
@@ -505,6 +649,12 @@
         transform: translate(-1px, -1px);
         box-shadow: 3px 3px 0 0 var(--text-primary);
         background: var(--bg-card-hover);
+      }
+      .btn-apply:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
       }
       .btn-apply.dirty {
         background: var(--accent);
@@ -718,6 +868,52 @@
         font-size: 0.78rem;
       }
 
+      .model-error {
+        position: relative;
+        z-index: 20;
+        width: min(360px, calc(100% - 2rem));
+        padding: 1rem;
+        background: var(--bg-card);
+        border: 1px solid var(--error);
+        border-left-width: 4px;
+        box-shadow: 4px 4px 0 rgba(60, 40, 20, 0.18);
+        color: var(--text-secondary);
+        text-align: left;
+      }
+      .model-error[hidden] {
+        display: none;
+      }
+      .model-error strong {
+        display: block;
+        margin-bottom: 0.25rem;
+        color: var(--error);
+        font-family: var(--serif);
+        font-size: 0.95rem;
+        font-style: italic;
+      }
+      .model-error p {
+        font-size: 0.7rem;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+      .btn-retry-models {
+        margin-top: 0.75rem;
+        min-height: 38px;
+        padding: 0.45rem 0.8rem;
+        border: 1px solid var(--text-primary);
+        border-radius: var(--radius-xs);
+        background: var(--accent);
+        color: #fffaf0;
+        font-family: inherit;
+        font-size: 0.72rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .btn-retry-models:disabled {
+        opacity: 0.6;
+        cursor: wait;
+      }
+
       .timing-badge {
         position: absolute;
         bottom: 0.6rem;
@@ -865,10 +1061,28 @@
         animation: fadeIn 0.3s ease-out forwards;
       }
 
+      .mobile-view-tabs {
+        display: none;
+      }
+
       /* --- Responsive layout --- */
       @media (max-width: 800px) {
+        :root {
+          --mobile-tabs-h: 49px;
+        }
+
+        body {
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+          height: 100dvh;
+          min-height: 0;
+          overflow: hidden;
+        }
+
         .topbar {
           position: relative;
+          flex: 0 0 auto;
           padding: 0.75rem;
           gap: 0.65rem;
         }
@@ -899,31 +1113,107 @@
         }
 
         .app {
+          flex: 1 1 auto;
+          display: block;
           height: auto;
+          min-height: 0;
         }
 
         .sidebar {
-          max-height: 45svh;
+          display: none;
+          height: 100%;
+          max-height: none;
           border-right: 0;
-          border-bottom: 1px solid var(--text-primary);
+          border-bottom: 0;
           overscroll-behavior: contain;
         }
 
+        .mobile-view-tabs {
+          position: relative;
+          flex: 0 0 var(--mobile-tabs-h);
+          z-index: 90;
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          height: var(--mobile-tabs-h);
+          padding: 0 0.5rem;
+          background: var(--bg-secondary);
+          border-top: 1px solid var(--text-primary);
+          border-bottom: 1px solid var(--text-primary);
+          box-shadow: 0 4px 12px rgba(60, 40, 20, 0.1);
+        }
+
+        .mobile-view-tab {
+          position: relative;
+          min-width: 0;
+          border: 0;
+          background: transparent;
+          color: var(--text-muted);
+          font-family: inherit;
+          font-size: 0.72rem;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .mobile-view-tab::after {
+          content: "";
+          position: absolute;
+          right: 0.55rem;
+          bottom: -1px;
+          left: 0.55rem;
+          height: 3px;
+          background: transparent;
+        }
+
+        .mobile-view-tab.active {
+          color: var(--accent);
+        }
+
+        .mobile-view-tab.active::after {
+          background: var(--accent);
+        }
+
+        .app[data-mobile-view="config"] .sidebar {
+          display: flex;
+        }
+
+        .app[data-mobile-view="config"] .content {
+          display: none;
+        }
+
         .content {
-          grid-template-columns: minmax(0, 1fr);
-          grid-template-rows: minmax(320px, 55svh) minmax(280px, auto);
-          overflow: visible;
+          display: block;
+          height: 100%;
+          overflow: hidden;
+        }
+
+        .app[data-mobile-view="image"] .canvas-area {
+          display: flex;
+          height: 100%;
+        }
+
+        .app[data-mobile-view="image"] .results-details {
+          display: none;
+        }
+
+        .app[data-mobile-view="results"] .canvas-area {
+          display: none;
+        }
+
+        .app[data-mobile-view="results"] .results-details {
+          display: flex;
+          height: 100%;
         }
 
         .results-details {
-          min-height: 280px;
+          min-height: 0;
           border-left: 0;
-          border-top: 1px solid var(--text-primary);
-          overflow: visible;
+          border-top: 0;
+          overflow: hidden;
         }
 
         .tab-content {
-          max-height: 55svh;
+          min-height: 0;
+          max-height: none;
         }
 
         .brave-notice {
@@ -996,13 +1286,18 @@
         }
 
         .sidebar {
-          max-height: 42svh;
+          height: 100%;
+          max-height: none;
+          padding: 0;
+          gap: 0;
+        }
+
+        .config-scroll-content {
           padding: 0.75rem;
-          gap: 1rem;
         }
 
         .apply-bar {
-          margin: 0 -0.75rem -0.75rem;
+          margin: 0;
           padding: 0.75rem;
         }
 
@@ -1016,15 +1311,15 @@
         }
 
         .content {
-          grid-template-rows: minmax(280px, 52svh) minmax(260px, auto);
+          height: 100%;
         }
 
         .canvas-panel {
-          min-height: 280px;
+          min-height: 0;
         }
 
         .tab-content {
-          max-height: 60svh;
+          max-height: none;
           padding: 0.75rem;
         }
 
@@ -1168,174 +1463,334 @@
       Chrome/Firefox.
     </div>
 
+    <nav class="mobile-view-tabs" aria-label="Playground views">
+      <button
+        class="mobile-view-tab"
+        type="button"
+        data-mobile-view="config"
+        aria-controls="config-view"
+        aria-selected="false"
+      >
+        Configuration
+      </button>
+      <button
+        class="mobile-view-tab active"
+        type="button"
+        data-mobile-view="image"
+        aria-controls="image-view"
+        aria-selected="true"
+      >
+        Image
+      </button>
+      <button
+        class="mobile-view-tab"
+        type="button"
+        data-mobile-view="results"
+        aria-controls="results-view"
+        aria-selected="false"
+      >
+        Results
+      </button>
+    </nav>
+
     <!-- App Layout -->
-    <div class="app">
+    <div class="app" id="app" data-mobile-view="image">
       <!-- Sidebar: Configuration -->
-      <aside class="sidebar">
-        <div>
-          <div class="section-title">Model Paths</div>
-          <div class="input-group">
-            <label class="input-label">Detection Model URL</label>
-            <input
-              type="text"
-              id="cfg-model-det"
-              class="input-field"
-              placeholder="Default GitHub Release"
-            />
-          </div>
-          <div class="input-group">
-            <label class="input-label">Recognition Model URL</label>
-            <input
-              type="text"
-              id="cfg-model-rec"
-              class="input-field"
-              placeholder="Default GitHub Release"
-            />
-          </div>
-          <div class="input-group">
-            <label class="input-label">Dictionary URL</label>
-            <input
-              type="text"
-              id="cfg-model-dict"
-              class="input-field"
-              placeholder="Default GitHub Release"
-            />
+      <aside class="sidebar" id="config-view">
+        <div class="config-scroll-content">
+          <div class="config-header">
+            <div class="config-title">Configuration</div>
+            <p class="config-description">
+              The defaults work well for most images. Adjust only what you need, then apply your
+              changes.
+            </p>
           </div>
 
-          <div class="section-title" style="margin-top: 1.5rem">Detection Options</div>
-          <div class="input-group">
-            <label class="input-label">Max Side Length</label>
-            <input type="number" id="cfg-det-maxside" class="input-field" placeholder="960" />
-          </div>
-          <div class="input-group">
-            <label class="input-label">Minimum Area Threshold</label>
-            <input type="number" id="cfg-det-minarea" class="input-field" placeholder="20" />
-          </div>
-          <div class="input-group" style="display: flex; gap: 0.5rem">
-            <div style="flex: 1">
-              <label class="input-label">Pad Vert.</label>
-              <input
-                type="number"
-                step="0.1"
-                id="cfg-det-padvert"
-                class="input-field"
-                placeholder="0.4"
-              />
-            </div>
-            <div style="flex: 1">
-              <label class="input-label">Pad Horiz.</label>
-              <input
-                type="number"
-                step="0.1"
-                id="cfg-det-padhoriz"
-                class="input-field"
-                placeholder="0.6"
-              />
-            </div>
-          </div>
-          <div class="input-group">
-            <label class="input-label">Mean (R, G, B)</label>
-            <div style="display: flex; gap: 0.5rem">
-              <input
-                type="number"
-                step="0.001"
-                id="cfg-det-mean-r"
-                class="input-field"
-                placeholder="0.485"
-              />
-              <input
-                type="number"
-                step="0.001"
-                id="cfg-det-mean-g"
-                class="input-field"
-                placeholder="0.456"
-              />
-              <input
-                type="number"
-                step="0.001"
-                id="cfg-det-mean-b"
-                class="input-field"
-                placeholder="0.406"
-              />
-            </div>
-          </div>
-          <div class="input-group">
-            <label class="input-label">Std Deviation (R, G, B)</label>
-            <div style="display: flex; gap: 0.5rem">
-              <input
-                type="number"
-                step="0.001"
-                id="cfg-det-std-r"
-                class="input-field"
-                placeholder="0.229"
-              />
-              <input
-                type="number"
-                step="0.001"
-                id="cfg-det-std-g"
-                class="input-field"
-                placeholder="0.224"
-              />
-              <input
-                type="number"
-                step="0.001"
-                id="cfg-det-std-b"
-                class="input-field"
-                placeholder="0.225"
-              />
-            </div>
-          </div>
+          <div class="config-sections">
+            <details class="config-section" open>
+              <summary>
+                <span class="config-summary">
+                  <strong>Detection</strong>
+                  <small>Find and crop text regions</small>
+                </span>
+              </summary>
+              <div class="config-body">
+                <div class="input-group">
+                  <label class="input-label" for="cfg-det-maxside">Image processing size</label>
+                  <input
+                    type="number"
+                    min="32"
+                    step="32"
+                    id="cfg-det-maxside"
+                    class="input-field"
+                    placeholder="960 (default)"
+                    inputmode="numeric"
+                  />
+                  <small class="field-help">
+                    Larger values can detect smaller text but use more memory and time.
+                  </small>
+                </div>
+                <div class="input-group">
+                  <label class="input-label" for="cfg-det-minarea">Minimum text area</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    id="cfg-det-minarea"
+                    class="input-field"
+                    placeholder="20 (default)"
+                    inputmode="numeric"
+                  />
+                  <small class="field-help"
+                    >Increase this to ignore tiny noise and artifacts.</small
+                  >
+                </div>
+                <div class="input-group">
+                  <span class="input-label">Crop padding</span>
+                  <div class="inline-fields">
+                    <div>
+                      <label class="input-label" for="cfg-det-padvert">Vertical</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        id="cfg-det-padvert"
+                        class="input-field"
+                        placeholder="0.4"
+                        inputmode="decimal"
+                      />
+                    </div>
+                    <div>
+                      <label class="input-label" for="cfg-det-padhoriz">Horizontal</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        id="cfg-det-padhoriz"
+                        class="input-field"
+                        placeholder="0.6"
+                        inputmode="decimal"
+                      />
+                    </div>
+                  </div>
+                  <small class="field-help">Adds breathing room around detected text.</small>
+                </div>
 
-          <div class="section-title" style="margin-top: 1.5rem">Recognition Options</div>
-          <div class="input-group">
-            <label class="input-label">Image Height</label>
-            <input type="number" id="cfg-rec-imgheight" class="input-field" placeholder="48" />
-          </div>
-          <div class="input-group">
-            <label class="input-label">Strategy</label>
-            <select id="cfg-rec-strategy" class="input-field">
-              <option value="per-box" selected>per-box (most accurate, default)</option>
-              <option value="per-line">per-line</option>
-              <option value="cross-line">cross-line (fastest)</option>
-            </select>
-          </div>
-          <div class="input-group">
-            <label class="input-label">Cross-Line Width Factor</label>
-            <input
-              type="number"
-              step="0.1"
-              min="0.1"
-              id="cfg-rec-crosslinefactor"
-              class="input-field"
-              placeholder="1.0"
-            />
-          </div>
+                <details class="config-subsection">
+                  <summary>Advanced image normalization</summary>
+                  <div class="config-body">
+                    <div class="input-group">
+                      <span class="input-label">Mean — R, G, B</span>
+                      <div class="inline-fields three">
+                        <input
+                          aria-label="Red mean"
+                          type="number"
+                          step="0.001"
+                          id="cfg-det-mean-r"
+                          class="input-field"
+                          placeholder="0.485"
+                          inputmode="decimal"
+                        />
+                        <input
+                          aria-label="Green mean"
+                          type="number"
+                          step="0.001"
+                          id="cfg-det-mean-g"
+                          class="input-field"
+                          placeholder="0.456"
+                          inputmode="decimal"
+                        />
+                        <input
+                          aria-label="Blue mean"
+                          type="number"
+                          step="0.001"
+                          id="cfg-det-mean-b"
+                          class="input-field"
+                          placeholder="0.406"
+                          inputmode="decimal"
+                        />
+                      </div>
+                    </div>
+                    <div class="input-group">
+                      <span class="input-label">Standard deviation — R, G, B</span>
+                      <div class="inline-fields three">
+                        <input
+                          aria-label="Red standard deviation"
+                          type="number"
+                          step="0.001"
+                          id="cfg-det-std-r"
+                          class="input-field"
+                          placeholder="0.229"
+                          inputmode="decimal"
+                        />
+                        <input
+                          aria-label="Green standard deviation"
+                          type="number"
+                          step="0.001"
+                          id="cfg-det-std-g"
+                          class="input-field"
+                          placeholder="0.224"
+                          inputmode="decimal"
+                        />
+                        <input
+                          aria-label="Blue standard deviation"
+                          type="number"
+                          step="0.001"
+                          id="cfg-det-std-b"
+                          class="input-field"
+                          placeholder="0.225"
+                          inputmode="decimal"
+                        />
+                      </div>
+                    </div>
+                    <small class="field-help">
+                      Change these only when using a model trained with different normalization.
+                    </small>
+                  </div>
+                </details>
+              </div>
+            </details>
 
-          <div class="section-title" style="margin-top: 1.5rem">Session Options</div>
-          <div class="input-group">
-            <label class="input-label">Execution Provider</label>
-            <select id="cfg-session-ep" class="input-field">
-              <option value="">Auto (WebGPU → WASM)</option>
-              <option value="webgpu">WebGPU only</option>
-              <option value="wasm">WASM only</option>
-            </select>
-          </div>
+            <details class="config-section" open>
+              <summary>
+                <span class="config-summary">
+                  <strong>Recognition</strong>
+                  <small>Control text reading speed and accuracy</small>
+                </span>
+              </summary>
+              <div class="config-body">
+                <div class="input-group">
+                  <label class="input-label" for="cfg-rec-strategy">Reading strategy</label>
+                  <select id="cfg-rec-strategy" class="input-field">
+                    <option value="per-box" selected>Accurate — one text box at a time</option>
+                    <option value="per-line">Balanced — group boxes by line</option>
+                    <option value="cross-line">Fast — batch across lines</option>
+                  </select>
+                  <small class="field-help">
+                    Accurate is recommended. Faster modes may help on dense documents.
+                  </small>
+                </div>
+                <div class="input-group">
+                  <label class="input-label" for="cfg-rec-imgheight"
+                    >Recognition image height</label
+                  >
+                  <input
+                    type="number"
+                    min="8"
+                    step="8"
+                    id="cfg-rec-imgheight"
+                    class="input-field"
+                    placeholder="48 (default)"
+                    inputmode="numeric"
+                  />
+                </div>
+                <div class="input-group">
+                  <label class="input-label" for="cfg-rec-crosslinefactor">
+                    Cross-line width factor
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    id="cfg-rec-crosslinefactor"
+                    class="input-field"
+                    placeholder="1.0 (default)"
+                    inputmode="decimal"
+                  />
+                  <small class="field-help">Used only by the fast cross-line strategy.</small>
+                </div>
+              </div>
+            </details>
 
-          <div class="section-title" style="margin-top: 1.5rem">Debugging Options</div>
-          <label class="checkbox-label"
-            ><input type="checkbox" id="cfg-dbg-verbose" class="input-checkbox" /> Verbose Logging
-            (Console)</label
-          >
+            <details class="config-section">
+              <summary>
+                <span class="config-summary">
+                  <strong>Models</strong>
+                  <small>Use custom model and dictionary URLs</small>
+                </span>
+              </summary>
+              <div class="config-body">
+                <p class="field-help" style="margin: 0 0 0.75rem">
+                  Leave these blank to use the built-in PP-OCR defaults.
+                </p>
+                <div class="input-group">
+                  <label class="input-label" for="cfg-model-det">Detection model URL</label>
+                  <input
+                    type="url"
+                    id="cfg-model-det"
+                    class="input-field"
+                    placeholder="Use built-in model"
+                    inputmode="url"
+                  />
+                </div>
+                <div class="input-group">
+                  <label class="input-label" for="cfg-model-rec">Recognition model URL</label>
+                  <input
+                    type="url"
+                    id="cfg-model-rec"
+                    class="input-field"
+                    placeholder="Use built-in model"
+                    inputmode="url"
+                  />
+                </div>
+                <div class="input-group">
+                  <label class="input-label" for="cfg-model-dict">Character dictionary URL</label>
+                  <input
+                    type="url"
+                    id="cfg-model-dict"
+                    class="input-field"
+                    placeholder="Use built-in dictionary"
+                    inputmode="url"
+                  />
+                </div>
+              </div>
+            </details>
+
+            <details class="config-section">
+              <summary>
+                <span class="config-summary">
+                  <strong>Runtime & debugging</strong>
+                  <small>Hardware acceleration and console logs</small>
+                </span>
+              </summary>
+              <div class="config-body">
+                <div class="input-group">
+                  <label class="input-label" for="cfg-session-ep">Processing engine</label>
+                  <select id="cfg-session-ep" class="input-field">
+                    <option value="">Automatic — WebGPU, then WASM</option>
+                    <option value="webgpu">WebGPU only — GPU acceleration</option>
+                    <option value="wasm">WASM only — CPU processing</option>
+                  </select>
+                  <small class="field-help">
+                    Automatic provides the best compatibility across browsers.
+                  </small>
+                </div>
+                <label class="checkbox-label" for="cfg-dbg-verbose">
+                  <input type="checkbox" id="cfg-dbg-verbose" class="input-checkbox" />
+                  Show detailed logs in the browser console
+                </label>
+              </div>
+            </details>
+          </div>
         </div>
+
         <div class="apply-bar">
-          <button class="btn-apply" id="btn-apply-config">Apply Configuration</button>
+          <div class="apply-actions">
+            <button class="btn-reset" id="btn-reset-config" type="button">Reset</button>
+            <button class="btn-apply" id="btn-apply-config" type="button" disabled>
+              Apply changes
+            </button>
+          </div>
+          <span class="config-state" id="config-state" aria-live="polite">
+            Using recommended defaults
+          </span>
         </div>
       </aside>
 
       <!-- Main Content -->
       <div class="content">
         <!-- Canvas Results (Left) -->
-        <div class="canvas-area">
+        <div class="canvas-area" id="image-view">
           <div class="canvas-panel" id="result-panel">
             <div class="canvas-label">Image Input</div>
             <div class="placeholder" id="result-placeholder">
@@ -1352,6 +1807,15 @@
               </svg>
               <p>Upload an image to begin</p>
             </div>
+            <div class="model-error" id="model-error" role="alert" hidden>
+              <strong>OCR models unavailable</strong>
+              <p id="model-error-message">
+                The models could not be loaded. Check your connection or model URLs and try again.
+              </p>
+              <button class="btn-retry-models" id="btn-retry-models" type="button">
+                Retry loading models
+              </button>
+            </div>
             <div class="canvas-container" id="canvas-container" style="display: none">
               <canvas id="result-canvas"></canvas>
               <canvas id="overlay-canvas" class="overlay-canvas"></canvas>
@@ -1361,7 +1825,7 @@
         </div>
 
         <!-- Results Panel (Right) -->
-        <div class="results-details">
+        <div class="results-details" id="results-view">
           <div class="results-tabs">
             <button class="tab-btn active" data-tab="list">List</button>
             <button class="tab-btn" data-tab="json">JSON</button>
@@ -1442,6 +1906,24 @@
       const resultsList = document.getElementById("results-list");
       const resultsTitle = document.getElementById("results-title");
       const jsonResult = document.getElementById("json-result");
+      const modelError = document.getElementById("model-error");
+      const modelErrorMessage = document.getElementById("model-error-message");
+      const btnRetryModels = document.getElementById("btn-retry-models");
+      const app = document.getElementById("app");
+      const mobileViewTabs = document.querySelectorAll(".mobile-view-tab");
+
+      const setMobileView = (view) => {
+        app.dataset.mobileView = view;
+        mobileViewTabs.forEach((tab) => {
+          const selected = tab.dataset.mobileView === view;
+          tab.classList.toggle("active", selected);
+          tab.setAttribute("aria-selected", String(selected));
+        });
+      };
+
+      mobileViewTabs.forEach((tab) => {
+        tab.addEventListener("click", () => setMobileView(tab.dataset.mobileView));
+      });
 
       // Config elements
       const cfgDetModel = document.getElementById("cfg-model-det");
@@ -1463,6 +1945,8 @@
       const cfgSessionEp = document.getElementById("cfg-session-ep");
       const cfgDbgVerbose = document.getElementById("cfg-dbg-verbose");
       const btnApplyConfig = document.getElementById("btn-apply-config");
+      const btnResetConfig = document.getElementById("btn-reset-config");
+      const configState = document.getElementById("config-state");
 
       // Mark Apply button as dirty whenever any config input changes; cleared on apply.
       const configInputs = [
@@ -1485,10 +1969,37 @@
         cfgSessionEp,
         cfgDbgVerbose,
       ];
-      const markDirty = () => btnApplyConfig.classList.add("dirty");
+      let configRevision = 0;
+      let configApplying = false;
+
+      const markDirty = () => {
+        configRevision += 1;
+        btnApplyConfig.classList.add("dirty");
+        btnApplyConfig.disabled = configApplying;
+        configState.textContent = configApplying
+          ? "New changes will need another apply"
+          : "Changes ready to apply";
+        configState.classList.add("pending");
+      };
       configInputs.forEach((el) => {
         el.addEventListener("input", markDirty);
         el.addEventListener("change", markDirty);
+      });
+
+      btnResetConfig.addEventListener("click", () => {
+        configInputs.forEach((el) => {
+          if (el instanceof HTMLInputElement && el.type === "checkbox") {
+            el.checked = false;
+          } else if (el instanceof HTMLSelectElement) {
+            el.selectedIndex = 0;
+          } else {
+            el.value = "";
+          }
+        });
+        markDirty();
+        configState.textContent = configApplying
+          ? "Defaults changed — apply again after loading"
+          : "Recommended defaults ready to apply";
       });
 
       const btnCopyJson = document.getElementById("btn-copy-json");
@@ -1500,6 +2011,8 @@
 
       let loadedImage = null;
       let ocrService = null;
+      let serviceReady = false;
+      let lastServiceOptions = DEFAULT_OPTIONS;
       let fallbackCdn = false;
       let lastResults = null;
       let lastElapsed = 0;
@@ -1526,21 +2039,66 @@
 
       // -- Init PaddleOcrService --
       async function initService(options = {}) {
-        setStatus("loading", "Loading initially...");
+        lastServiceOptions = options;
+        serviceReady = false;
+        btnProcess.disabled = true;
+        modelError.hidden = true;
+        if (!loadedImage) resultPlaceholder.style.display = "flex";
+        setStatus("loading", "Loading Models…");
+
         if (ocrService) {
-          await ocrService.destroy();
+          try {
+            await ocrService.destroy();
+          } catch (err) {
+            console.warn("Failed to clean up the previous OCR session:", err);
+          }
+          ocrService = null;
         }
 
         try {
           ocrService = new PaddleOcrService(options);
           await ocrService.initialize();
+          if (!ocrService.isInitialized()) {
+            throw new Error("Model sessions were created incompletely.");
+          }
+          serviceReady = true;
+          btnProcess.disabled = !loadedImage;
           setStatus("ready", "Ready");
           console.log("✅ Service initialized successfully");
+          return true;
         } catch (err) {
-          setStatus("error", "Initialization failed");
-          console.error("❌ Service failed to initialize:", err.message);
+          serviceReady = false;
+          btnProcess.disabled = true;
+          resultPlaceholder.style.display = "none";
+          const message = err instanceof Error ? err.message : String(err);
+          modelErrorMessage.textContent = `${message} Check your connection or model URLs, then retry.`;
+          modelError.hidden = false;
+          setStatus("error", "Models failed to load");
+          console.error("❌ Service failed to initialize:", message);
+
+          if (ocrService) {
+            try {
+              await ocrService.destroy();
+            } catch {
+              // Best-effort cleanup for partially created sessions.
+            }
+          }
+          ocrService = null;
+
+          if (window.matchMedia("(max-width: 800px)").matches) {
+            setMobileView("image");
+          }
+          return false;
         }
       }
+
+      btnRetryModels.addEventListener("click", async () => {
+        btnRetryModels.disabled = true;
+        btnRetryModels.textContent = "Loading…";
+        await initService(lastServiceOptions);
+        btnRetryModels.disabled = false;
+        btnRetryModels.textContent = "Retry loading models";
+      });
       // Brave farbles navigator.hardwareConcurrency per-origin, capping ORT's
       // WASM thread count and making recognition look slower than it is. Show a
       // dismissible popup once; remember dismissal like a cookie banner.
@@ -1563,8 +2121,11 @@
         }
       })();
 
-      // Initial boot with the fast default strategy
-      initService(DEFAULT_OPTIONS).then(() => {
+      // Initial boot, followed by a hidden inference that warms the selected backend.
+      (async () => {
+        const initialized = await initService(DEFAULT_OPTIONS);
+        if (!initialized) return;
+
         // Perform a hidden warmup inference to initialize WASM backend efficiently
         setStatus("loading", "Warming up engines...");
         const dummyCanvas = document.createElement("canvas");
@@ -1577,17 +2138,15 @@
         ctx.font = "20px serif";
         ctx.fillText("A", 25, 40);
 
-        ocrService
-          .recognize(dummyCanvas, { flatten: true })
-          .then(() => {
-            console.log("🔥 Warmup complete");
-            setStatus("ready", "Ready");
-          })
-          .catch((e) => {
-            console.warn("Warmup failed (ignored):", e);
-            setStatus("ready", "Ready");
-          });
-      });
+        try {
+          await ocrService.recognize(dummyCanvas, { flatten: true });
+          console.log("🔥 Warmup complete");
+        } catch (err) {
+          // Warmup is an optimization only; initialized model sessions remain usable.
+          console.warn("Warmup failed (ignored):", err);
+        }
+        setStatus("ready", "Ready");
+      })();
       btnCopyJson.addEventListener("click", async () => {
         try {
           await navigator.clipboard.writeText(jsonResult.textContent);
@@ -1603,7 +2162,11 @@
       });
 
       // -- Configuration Apply --
-      btnApplyConfig.addEventListener("click", () => {
+      btnApplyConfig.addEventListener("click", async () => {
+        if (configApplying) return;
+        configApplying = true;
+        const appliedRevision = configRevision;
+
         const options = {
           model: {},
           detection: {},
@@ -1645,8 +2208,25 @@
         if (cfgDbgVerbose.checked) options.debugging.verbose = true;
 
         console.log("⚙️ Applying new configuration...", options);
-        btnApplyConfig.classList.remove("dirty");
-        initService(options);
+        btnApplyConfig.disabled = true;
+        configState.textContent = "Applying changes…";
+        configState.classList.remove("pending");
+        const initialized = await initService(options);
+        configApplying = false;
+
+        if (initialized && configRevision === appliedRevision) {
+          btnApplyConfig.classList.remove("dirty");
+          btnApplyConfig.disabled = true;
+          configState.textContent = "Configuration applied";
+        } else if (initialized) {
+          btnApplyConfig.disabled = false;
+          configState.textContent = "New changes ready to apply";
+          configState.classList.add("pending");
+        } else {
+          btnApplyConfig.disabled = false;
+          configState.textContent = "Could not apply changes — check the console";
+          configState.classList.add("pending");
+        }
       });
 
       // -- Upload --
@@ -1684,6 +2264,7 @@
           return;
         }
         setStatus("loading", "Loading Image…");
+        setMobileView("image");
         fileNameEl.textContent = file.name;
         resultsList.innerHTML = "";
         resultsTitle.style.display = "none";
@@ -1711,8 +2292,12 @@
           canvasContainer.style.display = "flex";
           resultPlaceholder.style.display = "none";
           URL.revokeObjectURL(url);
-          btnProcess.disabled = false;
-          setStatus("ready", `${img.width}×${img.height}`);
+          btnProcess.disabled = !serviceReady;
+          if (serviceReady) {
+            setStatus("ready", `${img.width}×${img.height}`);
+          } else {
+            setStatus("error", "Models unavailable");
+          }
         };
         img.src = url;
       }
@@ -1770,7 +2355,12 @@
 
       // -- Process --
       btnProcess.addEventListener("click", async () => {
-        if (!loadedImage || !ocrService) return;
+        if (!loadedImage || !ocrService || !serviceReady) {
+          btnProcess.disabled = true;
+          modelError.hidden = false;
+          setStatus("error", "Models unavailable");
+          return;
+        }
 
         btnProcess.disabled = true;
         setStatus("loading", "Recognizing Text…");
@@ -1830,11 +2420,14 @@
           timingBadge.style.display = "block";
 
           setStatus("ready", `Done in ${elapsed}ms`);
+          if (window.matchMedia("(max-width: 800px)").matches) {
+            setMobileView("results");
+          }
         } catch (err) {
           console.error(err);
           setStatus("error", err.message);
         } finally {
-          btnProcess.disabled = false;
+          btnProcess.disabled = !loadedImage || !serviceReady;
           // Guarantee the overlay was visible long enough for the user to see
           // it even if recognize() finished in a few milliseconds.
           const MIN_OVERLAY_MS = 350;
