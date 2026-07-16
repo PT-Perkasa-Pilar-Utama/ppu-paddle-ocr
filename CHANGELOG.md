@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- README: added an Ecosystem section linking the sibling PPU libraries
+  (ppu-ocv, ppu-pdf, ppu-doclayout, ppu-doc-correction,
+  ppu-orientation-corrector, ppu-uniface, ppu-yolo-onnx-inference).
+
 ## [6.1.0] - 2026-07-13
 
 ### Added
