@@ -64,6 +64,7 @@ await service.destroy();
   - [SessionOptions](#sessionoptions)
   - [ProcessingOptions](#processingoptions)
 - [Benchmark](#benchmark)
+- [Ecosystem](#ecosystem)
 - [Contributing](#contributing)
 - [License](#license)
 - [Support](#support)
@@ -856,6 +857,20 @@ batchRecognize (c=8)         3605.7 ms     187.6 ms  3202.1 ms  3786.6 ms    109
 ```
 
 On CPU, throughput is bound by ONNX Runtime's native thread pool (which already saturates all cores per inference), so every parallel approach lands within ~4% on time, JS-level concurrency cannot add cores that are already busy. The real difference is **memory**: unbounded `Promise.all` peaks at ~1430 MB and grows with batch size, while `batchRecognize` stays **bounded at ~1030-1100 MB regardless of `N`**. So `batchRecognize` matches the fastest approach at lower, bounded peak memory, and the throughput win from concurrency shows up on GPU (overlapping host<->device) or I/O-bound inputs. Tune `BATCH_N` / `ROUNDS` via env.
+
+## Ecosystem
+
+ppu-paddle-ocr is part of a family of document-processing libraries for JavaScript runtimes, all from [PT Perkasa Pilar Utama](https://github.com/PT-Perkasa-Pilar-Utama):
+
+| Library                                                                                          | What it does                                                                                                    |
+| :----------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------- |
+| [ppu-ocv](https://github.com/PT-Perkasa-Pilar-Utama/ppu-ocv)                                     | Chainable image processing on OpenCV.js, plus canvas utilities that run in Node, Bun, browsers, and extensions. |
+| [ppu-pdf](https://github.com/PT-Perkasa-Pilar-Utama/ppu-pdf)                                     | PDF text extraction (digital and scanned) with coordinates, line grouping, and page-to-canvas/PNG rendering.    |
+| [ppu-doclayout](https://github.com/PT-Perkasa-Pilar-Utama/ppu-doclayout)                         | Document layout analysis with PaddlePaddle PP-DocLayout (tables, figures, text regions).                        |
+| [ppu-doc-correction](https://github.com/PT-Perkasa-Pilar-Utama/ppu-doc-correction)               | Document image correction: page orientation, geometric unwarping (UVDoc), and text-line orientation.            |
+| [ppu-orientation-corrector](https://github.com/PT-Perkasa-Pilar-Utama/ppu-orientation-corrector) | Straightens rotated images/canvases using MobileNetV3 via ONNX Runtime.                                         |
+| [ppu-uniface](https://github.com/PT-Perkasa-Pilar-Utama/ppu-uniface)                             | Face detection, recognition, verification, alignment, and anti-spoofing (a port of Python's Uniface).           |
+| [ppu-yolo-onnx-inference](https://github.com/PT-Perkasa-Pilar-Utama/ppu-yolo-onnx-inference)     | YOLOv11 object detection in Bun/Node and browsers; no Python or PyTorch required.                               |
 
 ## Contributing
 
