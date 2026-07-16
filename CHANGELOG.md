@@ -12,6 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README: added an Ecosystem section linking the sibling PPU libraries
   (ppu-ocv, ppu-pdf, ppu-doclayout, ppu-doc-correction,
   ppu-orientation-corrector, ppu-uniface, ppu-yolo-onnx-inference).
+- **Playground mobile experience and recovery.** Small screens now use dedicated
+  Configuration, Image, and Results views instead of one long stacked page. The
+  configuration panel groups advanced settings, preserves edits made during
+  asynchronous reloads, and reports incomplete model loads with a retry action.
+
+### Fixed
+
+- **Cloudflare playground now ships the complete browser build dependency tree.**
+  Shared modules imported by `lib/web` are copied into the deployment, preventing
+  local module MIME errors and unnecessary CDN fallback.
 
 ## [6.1.0] - 2026-07-13
 
