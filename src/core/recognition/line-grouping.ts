@@ -126,10 +126,17 @@ export function groupBoxesIntoLines(
   return lines;
 }
 
+/** Max factor a box may be stretched horizontally when normalized to the line height. */
+const MAX_BOX_STRETCH = 4;
+/** Max width of a merged line canvas; safe on every skia/browser surface. */
+const MAX_MERGED_WIDTH = 16384;
+
 /**
  * Merges multiple same-line boxes into a single stitched canvas.
  *
  * All crops are stretched to a common height so character sizes are uniform.
+ * Degenerate boxes (far shorter than the line) have their stretch clamped so
+ * the merged width stays bounded.
  */
 export function mergeLineCrop(
   sourceCanvas: CoreCanvas,
@@ -150,22 +157,33 @@ export function mergeLineCrop(
   };
 
   const commonHeight = maxBottom - minY;
-  const commonWidth = lineBoxes.reduce(
-    (sum, b) => sum + Math.round(b.box.width * (commonHeight / b.box.height)),
-    0
+  // Thin boxes (underlines, table rules) grouped into a line would be
+  // stretched by commonHeight/height, multiplying their width; clamp the
+  // per-box stretch and the total so the merged canvas stays within
+  // platform surface limits.
+  let widths = lineBoxes.map(({ box }) =>
+    Math.max(1, Math.round(box.width * Math.min(commonHeight / box.height, MAX_BOX_STRETCH)))
   );
+  const totalWidth = widths.reduce((sum, w) => sum + w, 0);
+  if (totalWidth > MAX_MERGED_WIDTH) {
+    const shrink = MAX_MERGED_WIDTH / totalWidth;
+    widths = widths.map((w) => Math.max(1, Math.round(w * shrink)));
+  }
+  const commonWidth = widths.reduce((sum, w) => sum + w, 0);
 
   const mergedCanvas = createCanvas(commonWidth, commonHeight);
   const ctx = mergedCanvas.getContext("2d");
 
   let offsetX = 0;
-  for (const { box } of lineBoxes) {
+  for (let i = 0; i < lineBoxes.length; i++) {
+    const entry = lineBoxes[i];
+    const stretchedWidth = widths[i];
+    if (!entry || stretchedWidth === undefined) continue;
+    const { box } = entry;
     const cropped = canvasOps.getToolkit().crop({
       bbox: { x0: box.x, y0: box.y, x1: box.x + box.width, y1: box.y + box.height },
       canvas: sourceCanvas,
     });
-    const scaleX = commonHeight / box.height;
-    const stretchedWidth = Math.round(box.width * scaleX);
     ctx.drawImage(cropped, 0, 0, box.width, box.height, offsetX, 0, stretchedWidth, commonHeight);
     offsetX += stretchedWidth;
   }

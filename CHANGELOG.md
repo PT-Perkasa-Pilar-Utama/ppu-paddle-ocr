@@ -22,6 +22,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cloudflare playground now ships the complete browser build dependency tree.**
   Shared modules imported by `lib/web` are copied into the deployment, preventing
   local module MIME errors and unnecessary CDN fallback.
+- **`per-line`/`cross-line` no longer crash on dense pages with thin detected
+  regions ([#72](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/issues/72)).**
+  `mergeLineCrop` stretches every box on a line to the
+  line's height; a degenerate box (an underline or table rule a few px tall)
+  multiplied its width by that stretch and the merged canvas width could
+  exceed the platform's maximum surface size, making `createCanvas` throw
+  `Create skia surface failed`. The per-box stretch is now clamped (max 4x)
+  and the merged width is capped at 16384px, shrinking proportionally when
+  exceeded. `run()` also awaits the strategy result inside its try/catch, so
+  a strategy failure degrades to an empty result instead of rejecting
+  `recognize()`.
 
 ## [6.1.0] - 2026-07-13
 

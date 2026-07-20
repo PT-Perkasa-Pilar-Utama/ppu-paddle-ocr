@@ -111,12 +111,17 @@ export class BaseRecognitionService {
 
       switch (strategy) {
         case "cross-line":
-          return runCrossLineStrategy(sourceCanvasForCrop, validBoxes, ctx, charactersDictionary);
+          return await runCrossLineStrategy(
+            sourceCanvasForCrop,
+            validBoxes,
+            ctx,
+            charactersDictionary
+          );
         case "per-line":
-          return runLineStrategy(sourceCanvasForCrop, validBoxes, ctx, charactersDictionary);
+          return await runLineStrategy(sourceCanvasForCrop, validBoxes, ctx, charactersDictionary);
         case "per-box":
         default:
-          return runPerBoxStrategy(
+          return await runPerBoxStrategy(
             sourceCanvasForCrop,
             validBoxes,
             ctx,
