@@ -868,7 +868,6 @@ ppu-paddle-ocr is part of a family of document-processing libraries for JavaScri
 | [ppu-pdf](https://github.com/PT-Perkasa-Pilar-Utama/ppu-pdf)                                     | PDF text extraction (digital and scanned) with coordinates, line grouping, and page-to-canvas/PNG rendering.    |
 | [ppu-doclayout](https://github.com/PT-Perkasa-Pilar-Utama/ppu-doclayout)                         | Document layout analysis with PaddlePaddle PP-DocLayout (tables, figures, text regions).                        |
 | [ppu-doc-correction](https://github.com/PT-Perkasa-Pilar-Utama/ppu-doc-correction)               | Document image correction: page orientation, geometric unwarping (UVDoc), and text-line orientation.            |
-| [ppu-orientation-corrector](https://github.com/PT-Perkasa-Pilar-Utama/ppu-orientation-corrector) | Straightens rotated images/canvases using MobileNetV3 via ONNX Runtime.                                         |
 | [ppu-uniface](https://github.com/PT-Perkasa-Pilar-Utama/ppu-uniface)                             | Face detection, recognition, verification, alignment, and anti-spoofing (a port of Python's Uniface).           |
 | [ppu-yolo-onnx-inference](https://github.com/PT-Perkasa-Pilar-Utama/ppu-yolo-onnx-inference)     | YOLOv11 object detection in Bun/Node and browsers; no Python or PyTorch required.                               |
 
