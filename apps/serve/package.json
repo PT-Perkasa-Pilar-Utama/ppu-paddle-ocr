@@ -23,5 +23,8 @@
     "onnxruntime-node": "^1.27.0",
     "ppu-ocv": "^4.0.0",
     "typescript": "^7.0.2"
+  },
+  "overrides": {
+    "adm-zip": "^0.6.0"
   }
 }
