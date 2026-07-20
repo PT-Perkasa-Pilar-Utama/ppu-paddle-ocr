@@ -126,5 +126,8 @@
     "onnxruntime-web": {
       "optional": true
     }
+  },
+  "overrides": {
+    "adm-zip": "^0.6.0"
   }
 }
