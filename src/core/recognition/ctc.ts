@@ -13,6 +13,48 @@ export const UNK_TOKEN = "<unk>";
 export const MIN_CROP_WIDTH = 8;
 
 /**
+ * Consecutive characters separated by more than this multiple of the median
+ * glyph pitch get a space injected between them.
+ */
+const SPACE_GAP_FACTOR = 2.5;
+
+/**
+ * Inserts spaces into wide gaps between decoded characters, in place.
+ *
+ * CTC recognition models under-emit spaces; a horizontal gap much wider than
+ * the typical glyph pitch is whitespace the model read through (columnar
+ * receipts, tab-aligned forms). The injected space's position is the gap's
+ * midpoint, keeping `chars` and `positions` index-aligned.
+ */
+export function injectGapSpaces(chars: string[], positions: number[]): void {
+  if (chars.length < 4) return;
+
+  const deltas: number[] = [];
+  for (let i = 1; i < positions.length; i++) {
+    deltas.push((positions[i] ?? 0) - (positions[i - 1] ?? 0));
+  }
+  const sorted = [...deltas].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)] ?? 0;
+  if (median <= 0) return;
+
+  for (let i = chars.length - 1; i >= 1; i--) {
+    const prev = positions[i - 1] ?? 0;
+    const curr = positions[i] ?? 0;
+    // Identical neighbors are excluded: CTC must emit a blank between
+    // repeated characters, so their gap is structurally inflated ("44").
+    if (
+      curr - prev > median * SPACE_GAP_FACTOR &&
+      chars[i] !== " " &&
+      chars[i - 1] !== " " &&
+      chars[i] !== chars[i - 1]
+    ) {
+      chars.splice(i, 0, " ");
+      positions.splice(i, 0, (prev + curr) / 2);
+    }
+  }
+}
+
+/**
  * Performs greedy CTC decoding over raw model logits.
  *
  * Hot loop: argmax and character handling are inlined, and per-character
@@ -21,6 +63,7 @@ export const MIN_CROP_WIDTH = 8;
  * `positions` holds, per emitted character, the fraction (0..1) of the input
  * width where its timestep fired; CTC peaks near the glyph's center, so this
  * locates each character in the crop for position-based text splitting.
+ * Wide gaps between characters become spaces (see {@link injectGapSpaces}).
  */
 export function ctcGreedyDecode(
   logits: Float32Array,
@@ -31,7 +74,7 @@ export function ctcGreedyDecode(
   const dictLen = charDict.length;
   const lastDictIndex = dictLen - 1;
 
-  let decodedText = "";
+  const emitted: string[] = [];
   let lastCharIndex = -1;
   let confidenceSum = 0;
   let confidenceCount = 0;
@@ -60,13 +103,13 @@ export function ctcGreedyDecode(
       const char = charDict[maxIndex] ?? "";
       if (maxIndex === lastDictIndex) {
         if (char !== UNK_TOKEN) {
-          decodedText += " ";
+          emitted.push(" ");
           confidenceSum += maxProb;
           confidenceCount++;
           positions.push((t + 0.5) / sequenceLength);
         }
       } else {
-        decodedText += char;
+        emitted.push(char);
         confidenceSum += maxProb;
         confidenceCount++;
         positions.push((t + 0.5) / sequenceLength);
@@ -76,8 +119,10 @@ export function ctcGreedyDecode(
     lastCharIndex = maxIndex;
   }
 
+  injectGapSpaces(emitted, positions);
+
   const confidence = confidenceCount > 0 ? confidenceSum / confidenceCount : 0;
-  return { text: decodedText, confidence, positions };
+  return { text: emitted.join(""), confidence, positions };
 }
 
 /**

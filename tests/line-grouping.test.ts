@@ -6,6 +6,7 @@ import { Canvas } from "ppu-ocv";
 import { CanvasToolkit } from "ppu-ocv/canvas";
 
 import type { CanvasOps, CoreCanvas } from "../src/core/platform.js";
+import { injectGapSpaces } from "../src/core/recognition/ctc.js";
 import {
   groupBoxesIntoLines,
   mergeLineCrop,
@@ -91,5 +92,46 @@ describe("splitTextByPositions", () => {
 
   test("falls back to the width-proportional split when positions misalign", () => {
     expect(splitTextByPositions("abcdefghij", [0.5], [50, 50])).toEqual(["abcde", "fghij"]);
+  });
+});
+
+describe("injectGapSpaces", () => {
+  test("injects a space into a gap far wider than the glyph pitch", () => {
+    const chars = ["I", "t", "e", "m", "1"];
+    const positions = [0.1, 0.15, 0.2, 0.25, 0.6];
+    injectGapSpaces(chars, positions);
+    expect(chars.join("")).toBe("Item 1");
+    expect(positions).toHaveLength(6);
+    expect(positions[4]).toBeCloseTo((0.25 + 0.6) / 2);
+  });
+
+  test("leaves uniform-pitch text and existing spaces alone", () => {
+    const chars = ["a", "b", " ", "c", "d"];
+    const positions = [0.1, 0.2, 0.3, 0.4, 0.5];
+    injectGapSpaces(chars, positions);
+    expect(chars.join("")).toBe("ab cd");
+  });
+
+  test("does not double a space the model already emitted at a wide gap", () => {
+    const chars = ["a", "b", " ", "c", "d"];
+    const positions = [0.1, 0.15, 0.4, 0.7, 0.75];
+    injectGapSpaces(chars, positions);
+    expect(chars.join("")).toBe("ab cd");
+  });
+
+  test("skips very short texts", () => {
+    const chars = ["a", "b"];
+    const positions = [0.1, 0.9];
+    injectGapSpaces(chars, positions);
+    expect(chars.join("")).toBe("ab");
+  });
+});
+
+describe("injectGapSpaces repeated characters", () => {
+  test("never splits identical neighbors (CTC blank inflates their gap)", () => {
+    const chars = ["1", "5", ":", "4", "4"];
+    const positions = [0.1, 0.15, 0.2, 0.25, 0.5];
+    injectGapSpaces(chars, positions);
+    expect(chars.join("")).toBe("15:44");
   });
 });
