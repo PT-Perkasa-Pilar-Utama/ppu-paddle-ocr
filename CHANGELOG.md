@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`per-line`/`cross-line` now hand each box its own text instead of dumping
+  the whole line into the first box.** `mergeLineCrop` stitched same-line
+  crops flush against each other, so the recognizer returned the line as one
+  unspaced token and the word-based redistribution gave everything to the
+  first box and empty strings to the rest. Merged crops now get a white
+  separator gap between boxes (a word boundary the model can see), and the
+  recognized text maps back to boxes by each crop's pixel-width share, with
+  cuts snapping to nearby spaces instead of slicing words. The same snapping
+  fixes cross-line batch splits that previously bled characters between
+  lines (e.g. `...AlbumsRe` / `centl`).
+
+### Added
+
+- **Playground: model preset selector and warm-up option.** The Models
+  section now lists every catalogue preset (`v6-small` ... `v3-mobile`);
+  custom URLs override the chosen preset per file. A new checkbox runs the
+  hidden warm-up inference after Apply Configuration, so the first real
+  recognize on a freshly applied model is not paying WASM/WebGPU
+  compilation cost.
+
 ## [6.1.1] - 2026-07-20
 
 ### Changed
