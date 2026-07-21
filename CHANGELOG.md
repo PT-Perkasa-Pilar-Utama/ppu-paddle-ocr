@@ -14,11 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   crops flush against each other, so the recognizer returned the line as one
   unspaced token and the word-based redistribution gave everything to the
   first box and empty strings to the rest. Merged crops now get a white
-  separator gap between boxes (a word boundary the model can see), and the
-  recognized text maps back to boxes by each crop's pixel-width share, with
-  cuts snapping to nearby spaces instead of slicing words. The same snapping
-  fixes cross-line batch splits that previously bled characters between
-  lines (e.g. `...AlbumsRe` / `centl`).
+  separator gap between boxes (a word boundary the model can see), and
+  recognized text maps back to boxes by each character's CTC timestep
+  position - the decoder reports where in the crop every character fired,
+  so each character lands in the box it was read from. Falls back to a
+  width-proportional split (with cuts snapped to nearby spaces) when
+  positions are unavailable. Fixes both the all-text-in-first-box symptom
+  and cross-line batch splits bleeding characters between lines
+  (e.g. `...AlbumsRe` / `centl`).
 
 ### Added
 

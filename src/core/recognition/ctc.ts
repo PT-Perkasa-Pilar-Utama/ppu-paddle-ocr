@@ -17,13 +17,17 @@ export const MIN_CROP_WIDTH = 8;
  *
  * Hot loop: argmax and character handling are inlined, and per-character
  * confidence is accumulated as a running sum instead of a backing array.
+ *
+ * `positions` holds, per emitted character, the fraction (0..1) of the input
+ * width where its timestep fired; CTC peaks near the glyph's center, so this
+ * locates each character in the crop for position-based text splitting.
  */
 export function ctcGreedyDecode(
   logits: Float32Array,
   sequenceLength: number,
   numClasses: number,
   charDict: string[]
-): { text: string; confidence: number } {
+): { text: string; confidence: number; positions: number[] } {
   const dictLen = charDict.length;
   const lastDictIndex = dictLen - 1;
 
@@ -31,6 +35,7 @@ export function ctcGreedyDecode(
   let lastCharIndex = -1;
   let confidenceSum = 0;
   let confidenceCount = 0;
+  const positions: number[] = [];
 
   for (let t = 0; t < sequenceLength; t++) {
     const base = t * numClasses;
@@ -58,11 +63,13 @@ export function ctcGreedyDecode(
           decodedText += " ";
           confidenceSum += maxProb;
           confidenceCount++;
+          positions.push((t + 0.5) / sequenceLength);
         }
       } else {
         decodedText += char;
         confidenceSum += maxProb;
         confidenceCount++;
+        positions.push((t + 0.5) / sequenceLength);
       }
     }
 
@@ -70,7 +77,7 @@ export function ctcGreedyDecode(
   }
 
   const confidence = confidenceCount > 0 ? confidenceSum / confidenceCount : 0;
-  return { text: decodedText, confidence };
+  return { text: decodedText, confidence, positions };
 }
 
 /**
@@ -87,7 +94,7 @@ export function decodeResults(
   charactersDictionary: string[],
   numClassesFromShape: number,
   verbose = false
-): { text: string; confidence: number } {
+): { text: string; confidence: number; positions: number[] } {
   const outputData = outputTensor.data as Float32Array;
   const outputShape = outputTensor.dims;
 
@@ -95,7 +102,7 @@ export function decodeResults(
   const numClasses = outputShape[2] ?? numClassesFromShape;
 
   if (!charactersDictionary) {
-    return { text: "", confidence: 0 };
+    return { text: "", confidence: 0, positions: [] };
   }
 
   let dict = charactersDictionary;

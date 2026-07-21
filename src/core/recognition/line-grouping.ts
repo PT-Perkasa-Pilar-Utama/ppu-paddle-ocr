@@ -202,6 +202,41 @@ export function mergeLineCrop(
   return { mergedCanvas, mergedBox, cropWidths };
 }
 
+/**
+ * Splits recognized text across stitched segments using the CTC decoder's
+ * per-character positions (fraction 0..1 of the input width).
+ *
+ * Each character lands in the segment containing its position, which is exact
+ * up to the model's own alignment; falls back to the width-proportional split
+ * when positions don't align one-to-one with the text's characters.
+ */
+export function splitTextByPositions(
+  text: string,
+  positions: number[],
+  segmentWidths: number[]
+): string[] {
+  const chars = [...text];
+  if (positions.length !== chars.length || segmentWidths.length === 0) {
+    return splitBatchTextByWidths(text, segmentWidths);
+  }
+
+  const totalWidth = segmentWidths.reduce((a, b) => a + b, 0);
+  const result: string[] = segmentWidths.map(() => "");
+
+  let seg = 0;
+  let segEnd = (segmentWidths[0] ?? 0) / totalWidth;
+  for (let i = 0; i < chars.length; i++) {
+    const pos = positions[i] ?? 0;
+    while (pos >= segEnd && seg < segmentWidths.length - 1) {
+      seg++;
+      segEnd += (segmentWidths[seg] ?? 0) / totalWidth;
+    }
+    result[seg] += chars[i] ?? "";
+  }
+
+  return result;
+}
+
 /** How far (in characters) a width-proportional cut may move to land on a space. */
 const CUT_SNAP_RANGE = 4;
 
