@@ -1711,8 +1711,21 @@
               </summary>
               <div class="config-body">
                 <p class="field-help" style="margin: 0 0 0.75rem">
-                  Leave these blank to use the built-in PP-OCR defaults.
+                  Pick a preset, or leave everything blank to use the built-in PP-OCR defaults.
                 </p>
+                <div class="input-group">
+                  <label class="input-label" for="cfg-model-preset">Model preset</label>
+                  <select id="cfg-model-preset" class="input-field">
+                    <option value="">Default — PP-OCRv6 small</option>
+                  </select>
+                  <small class="field-help">
+                    Any URL filled in below overrides that part of the preset.
+                  </small>
+                </div>
+                <label class="checkbox-label" for="cfg-model-warm">
+                  <input type="checkbox" id="cfg-model-warm" class="input-checkbox" />
+                  Warm up after applying (hidden inference so the first recognize is fast)
+                </label>
                 <div class="input-group">
                   <label class="input-label" for="cfg-model-det">Detection model URL</label>
                   <input
@@ -1876,16 +1889,19 @@
     </script>
     <script type="module">
       let PaddleOcrService;
+      let MODEL_PRESETS;
       try {
         // Try local build first (for development)
         const local = await import("./lib/web/index.js");
         PaddleOcrService = local.PaddleOcrService;
+        MODEL_PRESETS = local.MODEL_PRESETS;
       } catch (e) {
         // Fallback to npm CDN
         console.warn("Local build failed to load:", e);
         console.log("Falling back to CDN...");
         const cdn = await import("https://cdn.jsdelivr.net/npm/ppu-paddle-ocr@6.1.1/web/index.js");
         PaddleOcrService = cdn.PaddleOcrService;
+        MODEL_PRESETS = cdn.MODEL_PRESETS;
       }
 
       // -- DOM refs --
@@ -1926,6 +1942,8 @@
       });
 
       // Config elements
+      const cfgModelPreset = document.getElementById("cfg-model-preset");
+      const cfgModelWarm = document.getElementById("cfg-model-warm");
       const cfgDetModel = document.getElementById("cfg-model-det");
       const cfgRecModel = document.getElementById("cfg-model-rec");
       const cfgDict = document.getElementById("cfg-model-dict");
@@ -1948,8 +1966,21 @@
       const btnResetConfig = document.getElementById("btn-reset-config");
       const configState = document.getElementById("config-state");
 
+      // Model preset options come from the library's catalogue so new presets
+      // appear here without touching the playground.
+      if (MODEL_PRESETS) {
+        for (const name of Object.keys(MODEL_PRESETS)) {
+          const opt = document.createElement("option");
+          opt.value = name;
+          opt.textContent = name;
+          cfgModelPreset.appendChild(opt);
+        }
+      }
+
       // Mark Apply button as dirty whenever any config input changes; cleared on apply.
       const configInputs = [
+        cfgModelPreset,
+        cfgModelWarm,
         cfgDetModel,
         cfgRecModel,
         cfgDict,
@@ -2121,12 +2152,10 @@
         }
       })();
 
-      // Initial boot, followed by a hidden inference that warms the selected backend.
-      (async () => {
-        const initialized = await initService(DEFAULT_OPTIONS);
-        if (!initialized) return;
-
-        // Perform a hidden warmup inference to initialize WASM backend efficiently
+      // Hidden inference that warms the selected backend (WASM JIT / WebGPU
+      // pipeline compilation) so the first real recognize is fast.
+      async function warmUpService() {
+        if (!ocrService) return;
         setStatus("loading", "Warming up engines...");
         const dummyCanvas = document.createElement("canvas");
         dummyCanvas.width = 64;
@@ -2146,6 +2175,12 @@
           console.warn("Warmup failed (ignored):", err);
         }
         setStatus("ready", "Ready");
+      }
+
+      // Initial boot, followed by the warmup inference.
+      (async () => {
+        const initialized = await initService(DEFAULT_OPTIONS);
+        if (initialized) await warmUpService();
       })();
       btnCopyJson.addEventListener("click", async () => {
         try {
@@ -2175,6 +2210,10 @@
           session: {},
         };
 
+        const preset = cfgModelPreset.value;
+        if (preset && MODEL_PRESETS?.[preset]) {
+          options.model = { ...MODEL_PRESETS[preset] };
+        }
         if (cfgDetModel.value.trim()) options.model.detection = cfgDetModel.value.trim();
         if (cfgRecModel.value.trim()) options.model.recognition = cfgRecModel.value.trim();
         if (cfgDict.value.trim()) options.model.charactersDictionary = cfgDict.value.trim();
@@ -2212,6 +2251,7 @@
         configState.textContent = "Applying changes…";
         configState.classList.remove("pending");
         const initialized = await initService(options);
+        if (initialized && cfgModelWarm.checked) await warmUpService();
         configApplying = false;
 
         if (initialized && configRevision === appliedRevision) {
