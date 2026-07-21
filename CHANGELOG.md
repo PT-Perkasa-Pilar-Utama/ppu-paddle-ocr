@@ -22,6 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   positions are unavailable. Fixes both the all-text-in-first-box symptom
   and cross-line batch splits bleeding characters between lines
   (e.g. `...AlbumsRe` / `centl`).
+- **Spaces the model drops at wide gaps are restored.** CTC recognition
+  under-emits spaces on columnar layouts (receipts, tab-aligned forms):
+  `Total Item 1` came back as `Total Item1` even on a per-box crop. The
+  decoder now inserts a space wherever the gap between two consecutive
+  characters exceeds 2.5x the median glyph pitch, except between identical
+  characters (CTC's mandatory blank inflates their gap, e.g. `44`).
+  Receipt bench accuracy: per-box 96.61% -> 97.13%, per-line up to 97.13%,
+  cross-line up to 98.17% (opencv engine).
 
 ### Added
 
