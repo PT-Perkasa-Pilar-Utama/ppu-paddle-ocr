@@ -6,7 +6,11 @@ import { Canvas } from "ppu-ocv";
 import { CanvasToolkit } from "ppu-ocv/canvas";
 
 import type { CanvasOps, CoreCanvas } from "../src/core/platform.js";
-import { groupBoxesIntoLines, mergeLineCrop } from "../src/core/recognition/line-grouping.js";
+import {
+  groupBoxesIntoLines,
+  mergeLineCrop,
+  splitBatchTextByWidths,
+} from "../src/core/recognition/line-grouping.js";
 
 const createCanvas = (width: number, height: number) =>
   new Canvas(width, height) as unknown as CoreCanvas;
@@ -35,15 +39,35 @@ describe("mergeLineCrop", () => {
     expect(mergedBox).toEqual({ x: 0, y: 10, width: 2120, height: 40 });
   });
 
-  test("keeps normal same-height boxes at their summed scaled width", () => {
+  test("stitches normal same-height boxes with a separator gap and reports cropWidths", () => {
     const source = createCanvas(1000, 100);
     const lineBoxes = [
       { box: { x: 0, y: 0, width: 200, height: 40 }, index: 0 },
       { box: { x: 250, y: 0, width: 300, height: 40 }, index: 1 },
     ];
 
-    const { mergedCanvas } = mergeLineCrop(source, lineBoxes, createCanvas, canvasOps);
-    expect(mergedCanvas.width).toBe(500);
+    const { mergedCanvas, cropWidths } = mergeLineCrop(source, lineBoxes, createCanvas, canvasOps);
+    const gap = Math.round(40 * 0.4);
+    expect(mergedCanvas.width).toBe(500 + gap);
     expect(mergedCanvas.height).toBe(40);
+    expect(cropWidths).toEqual([200 + gap, 300]);
+    expect(cropWidths.reduce((a, b) => a + b, 0)).toBe(mergedCanvas.width);
+  });
+});
+
+describe("splitBatchTextByWidths", () => {
+  test("snaps the proportional cut to a nearby space instead of slicing a word", () => {
+    // Ideal cut for [100, 100] lands mid-"World"; the space at index 5 is
+    // within snap range, so the split lands there and drops the space.
+    expect(splitBatchTextByWidths("Hello World", [100, 100])).toEqual(["Hello", "World"]);
+    expect(splitBatchTextByWidths("Photos Albums", [90, 110])).toEqual(["Photos", "Albums"]);
+  });
+
+  test("falls back to a hard proportional cut when no space is near", () => {
+    expect(splitBatchTextByWidths("abcdefghij", [50, 50])).toEqual(["abcde", "fghij"]);
+  });
+
+  test("assigns everything to a single crop", () => {
+    expect(splitBatchTextByWidths("all of it", [123])).toEqual(["all of it"]);
   });
 });

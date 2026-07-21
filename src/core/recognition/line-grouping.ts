@@ -136,14 +136,17 @@ const MAX_MERGED_WIDTH = 16384;
  *
  * All crops are stretched to a common height so character sizes are uniform.
  * Degenerate boxes (far shorter than the line) have their stretch clamped so
- * the merged width stays bounded.
+ * the merged width stays bounded. A white gap is drawn between crops so the
+ * recognizer sees a word boundary at each box seam; `cropWidths` gives each
+ * box's share of the stitched width (its crop plus the trailing gap) for
+ * mapping recognized text back to its source box.
  */
 export function mergeLineCrop(
   sourceCanvas: CoreCanvas,
   lineBoxes: Array<{ box: Box; index: number }>,
   createCanvas: (width: number, height: number) => CoreCanvas,
   canvasOps: CanvasOps
-): { mergedCanvas: CoreCanvas; mergedBox: Box } {
+): { mergedCanvas: CoreCanvas; mergedBox: Box; cropWidths: number[] } {
   const minX = Math.min(...lineBoxes.map((b) => b.box.x));
   const minY = Math.min(...lineBoxes.map((b) => b.box.y));
   const maxRight = Math.max(...lineBoxes.map((b) => b.box.x + b.box.width));
@@ -157,6 +160,8 @@ export function mergeLineCrop(
   };
 
   const commonHeight = maxBottom - minY;
+  // ~0.4 of the line height approximates a space glyph at that text size.
+  let gap = Math.max(1, Math.round(commonHeight * 0.4));
   // Thin boxes (underlines, table rules) grouped into a line would be
   // stretched by commonHeight/height, multiplying their width; clamp the
   // per-box stretch and the total so the merged canvas stays within
@@ -164,17 +169,21 @@ export function mergeLineCrop(
   let widths = lineBoxes.map(({ box }) =>
     Math.max(1, Math.round(box.width * Math.min(commonHeight / box.height, MAX_BOX_STRETCH)))
   );
-  const totalWidth = widths.reduce((sum, w) => sum + w, 0);
+  const totalWidth = widths.reduce((sum, w) => sum + w, 0) + gap * (lineBoxes.length - 1);
   if (totalWidth > MAX_MERGED_WIDTH) {
     const shrink = MAX_MERGED_WIDTH / totalWidth;
     widths = widths.map((w) => Math.max(1, Math.round(w * shrink)));
+    gap = Math.max(1, Math.floor(gap * shrink));
   }
-  const commonWidth = widths.reduce((sum, w) => sum + w, 0);
+  const commonWidth = widths.reduce((sum, w) => sum + w, 0) + gap * (lineBoxes.length - 1);
 
   const mergedCanvas = createCanvas(commonWidth, commonHeight);
   const ctx = mergedCanvas.getContext("2d");
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, commonWidth, commonHeight);
 
   let offsetX = 0;
+  const cropWidths: number[] = [];
   for (let i = 0; i < lineBoxes.length; i++) {
     const entry = lineBoxes[i];
     const stretchedWidth = widths[i];
@@ -185,16 +194,24 @@ export function mergeLineCrop(
       canvas: sourceCanvas,
     });
     ctx.drawImage(cropped, 0, 0, box.width, box.height, offsetX, 0, stretchedWidth, commonHeight);
-    offsetX += stretchedWidth;
+    const trailingGap = i < lineBoxes.length - 1 ? gap : 0;
+    cropWidths.push(stretchedWidth + trailingGap);
+    offsetX += stretchedWidth + trailingGap;
   }
 
-  return { mergedCanvas, mergedBox };
+  return { mergedCanvas, mergedBox, cropWidths };
 }
+
+/** How far (in characters) a width-proportional cut may move to land on a space. */
+const CUT_SNAP_RANGE = 4;
 
 /**
  * Splits recognized text proportionally across stitched line crops by pixel width.
  *
  * Characters are assigned proportionally to each crop's share of total width.
+ * Each cut snaps to the nearest whitespace within {@link CUT_SNAP_RANGE} so
+ * proportional drift does not slice through a word; the space itself is
+ * dropped from both sides of the cut.
  */
 export function splitBatchTextByWidths(text: string, cropWidths: number[]): string[] {
   if (cropWidths.length === 1) {
@@ -209,14 +226,27 @@ export function splitBatchTextByWidths(text: string, cropWidths: number[]): stri
   let charIdx = 0;
 
   for (let i = 0; i < cropWidths.length; i++) {
-    const proportionalChars =
-      i < cropWidths.length - 1
-        ? Math.round((cropWidths[i] ?? 0) / charWidth)
-        : chars.length - charIdx;
+    if (i === cropWidths.length - 1) {
+      result.push(chars.slice(charIdx).join(""));
+      break;
+    }
 
-    const end = Math.min(charIdx + proportionalChars, chars.length);
-    result.push(chars.slice(charIdx, end).join(""));
-    charIdx = end;
+    const ideal = Math.min(charIdx + Math.round((cropWidths[i] ?? 0) / charWidth), chars.length);
+    let cut = ideal;
+    let skipSpace = false;
+    for (let d = 0; d <= CUT_SNAP_RANGE && !skipSpace; d++) {
+      for (const cand of [ideal - d, ideal + d]) {
+        const ch = chars[cand];
+        if (cand > charIdx && cand < chars.length && ch !== undefined && /\s/.test(ch)) {
+          cut = cand;
+          skipSpace = true;
+          break;
+        }
+      }
+    }
+
+    result.push(chars.slice(charIdx, cut).join(""));
+    charIdx = skipSpace ? cut + 1 : cut;
   }
 
   return result;
@@ -259,45 +289,4 @@ export function packIntoBatches<T>(
   }
 
   return batches;
-}
-
-/**
- * Distributes one recognized line's text across its source boxes.
- *
- * A single box takes the whole text; multiple boxes split the words by each
- * box's share of the total width.
- */
-export function distributeLineText(
-  boxes: Array<{ box: Box; index: number }>,
-  lineText: string,
-  confidence: number
-): RecognitionResult[] {
-  if (boxes.length === 1) {
-    const first = boxes[0];
-    return [
-      { text: lineText.trim(), box: first?.box ?? { x: 0, y: 0, width: 0, height: 0 }, confidence },
-    ];
-  }
-
-  const words = lineText
-    .trim()
-    .split(/\s+/)
-    .filter((w) => w.length > 0);
-  const totalBoxWidth = boxes.reduce((sum, b) => sum + b.box.width, 0);
-
-  const results: RecognitionResult[] = [];
-  let wordIdx = 0;
-  for (const { box } of boxes) {
-    if (wordIdx >= words.length) {
-      results.push({ text: "", box, confidence });
-      continue;
-    }
-    const proportion = box.width / totalBoxWidth;
-    const wordsForBox = Math.max(1, Math.round(words.length * proportion));
-    const end = Math.min(wordIdx + wordsForBox, words.length);
-    results.push({ text: words.slice(wordIdx, end).join(" "), box, confidence });
-    wordIdx = end;
-  }
-
-  return results;
 }

@@ -8,7 +8,6 @@ import { decodeResults } from "./ctc.js";
 import { MIN_CROP_WIDTH } from "./ctc.js";
 import { preprocessImage } from "./image-tensor.js";
 import {
-  distributeLineText,
   groupBoxesIntoLines,
   mergeLineCrop,
   packIntoBatches,
@@ -137,7 +136,7 @@ export async function runLineStrategy(
       const { text, confidence } = await recognizeText(cropCanvas, ctx, charactersDictionary);
       results.push({ text, box, confidence });
     } else {
-      const { mergedCanvas } = mergeLineCrop(
+      const { mergedCanvas, cropWidths } = mergeLineCrop(
         sourceCanvas,
         lineBoxes,
         ctx.platform.createCanvas.bind(ctx.platform),
@@ -148,42 +147,11 @@ export async function runLineStrategy(
         ctx,
         charactersDictionary
       );
-      const totalWidth = lineBoxes.reduce((sum, b) => sum + b.box.width, 0);
-      const words = lineText
-        .trim()
-        .split(/\s+/)
-        .filter((w) => w.length > 0);
-
-      if (words.length === 0 || lineBoxes.length === 0) {
-        for (const { box } of lineBoxes) {
-          results.push({ text: lineText, box, confidence: lineConf });
-        }
-      } else if (words.length >= lineBoxes.length) {
-        let wordIdx = 0;
-        for (let i = 0; i < lineBoxes.length; i++) {
-          const lb = lineBoxes[i];
-          if (!lb) continue;
-          const proportion = lb.box.width / totalWidth;
-          const wordsForBox = Math.max(1, Math.round(words.length * proportion));
-          const end = Math.min(wordIdx + wordsForBox, words.length);
-          results.push({
-            text: words.slice(wordIdx, end).join(" "),
-            box: lb.box,
-            confidence: lineConf,
-          });
-          wordIdx = end;
-        }
-        if (wordIdx < words.length) {
-          const lastResult = results[results.length - 1];
-          if (lastResult) lastResult.text += ` ${words.slice(wordIdx).join(" ")}`;
-        }
-      } else {
-        for (const { box } of lineBoxes.slice(0, words.length)) {
-          results.push({ text: words.shift() ?? "", box, confidence: lineConf });
-        }
-        for (const { box } of lineBoxes.slice(words.length)) {
-          results.push({ text: "", box, confidence: lineConf });
-        }
+      const pieces = splitBatchTextByWidths(lineText, cropWidths);
+      for (let i = 0; i < lineBoxes.length; i++) {
+        const lb = lineBoxes[i];
+        if (!lb) continue;
+        results.push({ text: (pieces[i] ?? "").trim(), box: lb.box, confidence: lineConf });
       }
     }
   }
@@ -204,30 +172,32 @@ export async function runCrossLineStrategy(
   const targetHeight = ctx.options.imageHeight ?? 48;
   const SEPARATOR_GAP = 20;
 
-  const lineCrops: Array<{ canvas: CoreCanvas; boxes: Array<{ box: Box; index: number }> }> = [];
+  const lineCrops: Array<{
+    canvas: CoreCanvas;
+    boxes: Array<{ box: Box; index: number }>;
+    cropWidths: number[];
+  }> = [];
   for (const lineBoxes of lines) {
     if (lineBoxes.length === 1) {
       const first = lineBoxes[0];
       if (!first) continue;
-      lineCrops.push({
-        canvas: cropRegion(sourceCanvas, first.box, ctx.platform.canvas),
-        boxes: lineBoxes,
-      });
+      const canvas = cropRegion(sourceCanvas, first.box, ctx.platform.canvas);
+      lineCrops.push({ canvas, boxes: lineBoxes, cropWidths: [canvas.width] });
     } else {
-      const { mergedCanvas } = mergeLineCrop(
+      const { mergedCanvas, cropWidths } = mergeLineCrop(
         sourceCanvas,
         lineBoxes,
         ctx.platform.createCanvas.bind(ctx.platform),
         ctx.platform.canvas
       );
-      lineCrops.push({ canvas: mergedCanvas, boxes: lineBoxes });
+      lineCrops.push({ canvas: mergedCanvas, boxes: lineBoxes, cropWidths });
     }
   }
 
-  const resized = lineCrops.map(({ canvas, boxes }, i) => {
+  const resized = lineCrops.map(({ canvas, boxes, cropWidths }, i) => {
     const ar = canvas.width / canvas.height;
     const resizedWidth = Math.max(MIN_CROP_WIDTH, Math.round(targetHeight * ar));
-    return { canvas, boxes, resizedWidth, originalHeight: canvas.height, index: i };
+    return { canvas, boxes, cropWidths, resizedWidth, originalHeight: canvas.height, index: i };
   });
 
   const maxWidth = Math.max(...resized.map((r) => r.resizedWidth));
@@ -288,7 +258,18 @@ export async function runCrossLineStrategy(
     for (let i = 0; i < batchSorted.length; i++) {
       const item = batchSorted[i];
       if (!item) continue;
-      results.push(...distributeLineText(item.boxes, lineTexts[i] ?? "", batchConf));
+      const lineText = lineTexts[i] ?? "";
+      const firstBox = item.boxes[0];
+      if (item.boxes.length === 1 && firstBox) {
+        results.push({ text: lineText.trim(), box: firstBox.box, confidence: batchConf });
+        continue;
+      }
+      const pieces = splitBatchTextByWidths(lineText, item.cropWidths);
+      for (let j = 0; j < item.boxes.length; j++) {
+        const lb = item.boxes[j];
+        if (!lb) continue;
+        results.push({ text: (pieces[j] ?? "").trim(), box: lb.box, confidence: batchConf });
+      }
     }
   }
 
