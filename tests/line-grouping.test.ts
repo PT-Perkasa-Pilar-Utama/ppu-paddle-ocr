@@ -10,6 +10,7 @@ import {
   groupBoxesIntoLines,
   mergeLineCrop,
   splitBatchTextByWidths,
+  splitTextByPositions,
 } from "../src/core/recognition/line-grouping.js";
 
 const createCanvas = (width: number, height: number) =>
@@ -69,5 +70,26 @@ describe("splitBatchTextByWidths", () => {
 
   test("assigns everything to a single crop", () => {
     expect(splitBatchTextByWidths("all of it", [123])).toEqual(["all of it"]);
+  });
+});
+
+describe("splitTextByPositions", () => {
+  test("assigns characters by their decoded position, not by proportion", () => {
+    // Four chars, three crowding the left segment: a proportional split
+    // would hand two chars to each segment; positions say otherwise.
+    expect(splitTextByPositions("AAAB", [0.1, 0.2, 0.3, 0.9], [50, 50])).toEqual(["AAA", "B"]);
+    // The "Total Item144,900" failure shape: digits belonging to the right
+    // box even though the character count is left-heavy.
+    expect(
+      splitTextByPositions(
+        "TotalItem44,900",
+        [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.75, 0.8, 0.85, 0.9, 0.93, 0.96],
+        [350, 150]
+      )
+    ).toEqual(["TotalItem", "44,900"]);
+  });
+
+  test("falls back to the width-proportional split when positions misalign", () => {
+    expect(splitTextByPositions("abcdefghij", [0.5], [50, 50])).toEqual(["abcde", "fghij"]);
   });
 });

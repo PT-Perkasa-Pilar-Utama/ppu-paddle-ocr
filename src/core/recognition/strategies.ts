@@ -11,7 +11,7 @@ import {
   groupBoxesIntoLines,
   mergeLineCrop,
   packIntoBatches,
-  splitBatchTextByWidths,
+  splitTextByPositions,
 } from "./line-grouping.js";
 import type { RecognitionResult } from "../base-recognition.service.js";
 
@@ -35,7 +35,7 @@ async function recognizeText(
   cropCanvas: CoreCanvas,
   ctx: RecognitionContext,
   charactersDictionary?: string[]
-): Promise<{ text: string; confidence: number }> {
+): Promise<{ text: string; confidence: number; positions: number[] }> {
   const targetHeight = ctx.options.imageHeight ?? 48;
   const imageProcessor = ctx.engine === "opencv" ? ctx.platform.imageProcessor : undefined;
 
@@ -142,12 +142,12 @@ export async function runLineStrategy(
         ctx.platform.createCanvas.bind(ctx.platform),
         ctx.platform.canvas
       );
-      const { text: lineText, confidence: lineConf } = await recognizeText(
-        mergedCanvas,
-        ctx,
-        charactersDictionary
-      );
-      const pieces = splitBatchTextByWidths(lineText, cropWidths);
+      const {
+        text: lineText,
+        confidence: lineConf,
+        positions,
+      } = await recognizeText(mergedCanvas, ctx, charactersDictionary);
+      const pieces = splitTextByPositions(lineText, positions, cropWidths);
       for (let i = 0; i < lineBoxes.length; i++) {
         const lb = lineBoxes[i];
         if (!lb) continue;
@@ -248,28 +248,37 @@ export async function runCrossLineStrategy(
       if (i < batchSorted.length - 1) offsetX += SEPARATOR_GAP;
     }
 
-    const { text: batchText, confidence: batchConf } = await recognizeText(
-      batchCanvas,
-      ctx,
-      charactersDictionary
-    );
-    const lineTexts = splitBatchTextByWidths(batchText, stretchedWidths);
+    const {
+      text: batchText,
+      confidence: batchConf,
+      positions,
+    } = await recognizeText(batchCanvas, ctx, charactersDictionary);
 
+    // One flat segment per source box, in batch-canvas pixels: each line's
+    // cropWidths scaled to its drawn width, with the inter-line separator
+    // attached to the previous line's last box.
+    const flatSegments: number[] = [];
+    const flatBoxes: Array<{ box: Box; index: number }> = [];
     for (let i = 0; i < batchSorted.length; i++) {
       const item = batchSorted[i];
-      if (!item) continue;
-      const lineText = lineTexts[i] ?? "";
-      const firstBox = item.boxes[0];
-      if (item.boxes.length === 1 && firstBox) {
-        results.push({ text: lineText.trim(), box: firstBox.box, confidence: batchConf });
-        continue;
-      }
-      const pieces = splitBatchTextByWidths(lineText, item.cropWidths);
+      const drawWidth = stretchedWidths[i];
+      if (!item || drawWidth === undefined) continue;
+      const scale = drawWidth / item.canvas.width;
       for (let j = 0; j < item.boxes.length; j++) {
         const lb = item.boxes[j];
         if (!lb) continue;
-        results.push({ text: (pieces[j] ?? "").trim(), box: lb.box, confidence: batchConf });
+        let w = (item.cropWidths[j] ?? 0) * scale;
+        if (j === item.boxes.length - 1 && i < batchSorted.length - 1) w += SEPARATOR_GAP;
+        flatSegments.push(w);
+        flatBoxes.push(lb);
       }
+    }
+
+    const pieces = splitTextByPositions(batchText, positions, flatSegments);
+    for (let k = 0; k < flatBoxes.length; k++) {
+      const lb = flatBoxes[k];
+      if (!lb) continue;
+      results.push({ text: (pieces[k] ?? "").trim(), box: lb.box, confidence: batchConf });
     }
   }
 
