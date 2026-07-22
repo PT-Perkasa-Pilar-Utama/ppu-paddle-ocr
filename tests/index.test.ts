@@ -41,7 +41,7 @@ describe("PaddleOcrService Initialization", () => {
   });
 
   test("should initialize and recognize from ArrayBuffer inputs (v5 models)", async () => {
-    // Uses local v5 model files — avoids downloading v6 models just for this test.
+    // Uses local v5 model files - avoids downloading v6 models just for this test.
     const detBuffer = await Bun.file(detModel).arrayBuffer();
     const recBuffer = await Bun.file(recModel).arrayBuffer();
     const dictBuffer = await Bun.file(dict).arrayBuffer();
@@ -63,7 +63,7 @@ describe("PaddleOcrService Initialization", () => {
 
     const result = await service.recognize(imageBuffer);
     expect(result.text).not.toBeEmpty();
-    // v5 en-only model on a receipt — keep threshold moderate.
+    // v5 en-only model on a receipt - keep threshold moderate.
     expect(result.confidence).toBeGreaterThan(0.5);
   });
 });

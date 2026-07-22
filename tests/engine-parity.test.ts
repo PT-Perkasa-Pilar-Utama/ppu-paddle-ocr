@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
-import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 import type { ProcessingEngine } from "../src/interface.js";
+import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 
 const imgFile = Bun.file(`${import.meta.dir}/../assets/receipt.jpg`);
 const imageBuffer = await imgFile.arrayBuffer();
@@ -65,7 +65,7 @@ describe("Processing engine parity (opencv vs canvas-native)", () => {
     const opencvCount = opencvResult.lines.flat().length;
     const canvasCount = canvasResult.lines.flat().length;
 
-    // Allow some tolerance — canvas-native may detect slightly different
+    // Allow some tolerance - canvas-native may detect slightly different
     // region boundaries due to different contour-finding algorithms,
     // but they should be in the same ballpark.
     const tolerance = Math.max(3, Math.ceil(opencvCount * 0.25));

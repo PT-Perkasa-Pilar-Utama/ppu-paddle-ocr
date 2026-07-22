@@ -6,7 +6,7 @@ import { Canvas } from "ppu-ocv";
 import { CanvasToolkit } from "ppu-ocv/canvas";
 
 import type { CanvasOps, CoreCanvas } from "../src/core/platform.js";
-import { injectGapSpaces } from "../src/core/recognition/ctc.js";
+import { injectGapSpaces, refineDecodedChars } from "../src/core/recognition/ctc.js";
 import {
   groupBoxesIntoLines,
   mergeLineCrop,
@@ -133,5 +133,30 @@ describe("injectGapSpaces repeated characters", () => {
     const positions = [0.1, 0.15, 0.2, 0.25, 0.5];
     injectGapSpaces(chars, positions);
     expect(chars.join("")).toBe("15:44");
+  });
+});
+
+describe("refineDecodedChars", () => {
+  test("maps fullwidth punctuation to ASCII on Latin-only text", () => {
+    const chars = ["N", "P", "W", "P", "\uFF1A", "0", "1"];
+    const positions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7];
+    refineDecodedChars(chars, positions);
+    expect(chars.join("")).toBe("NPWP:01");
+    expect(positions.length).toBe(chars.length);
+  });
+
+  test("leaves fullwidth forms untouched when the text contains CJK", () => {
+    const chars = ["\u4E2D", "\uFF1A", "1"];
+    const positions = [0.2, 0.5, 0.8];
+    refineDecodedChars(chars, positions);
+    expect(chars.join("")).toBe("\u4E2D\uFF1A1");
+  });
+
+  test("collapses doubled spaces and keeps positions aligned", () => {
+    const chars = ["A", " ", " ", "B"];
+    const positions = [0.1, 0.4, 0.5, 0.9];
+    refineDecodedChars(chars, positions);
+    expect(chars.join("")).toBe("A B");
+    expect(positions).toEqual([0.1, 0.4, 0.9]);
   });
 });
