@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Default model is PP-OCRv6 tiny** (was small): 2-4x faster, ~6 MB
+  download instead of ~30 MB, and 99.48% vs 97.39% on the receipt
+  benchmark. Tiny's dictionary covers ~6.9k characters; pass
+  `model: V6_SMALL_MODEL` for the full 50+ language coverage
+- **Default recognition strategy is `per-line`** (was `per-box`): line
+  context reads short low-contrast labels more reliably and needs fewer
+  inference calls. Applies to the library, CLI, serve, and playground
+- **Default `minimumAreaThreshold` is 20** (was 50), so single-digit
+  detections survive the area filter
+
+### Added
+
+- **`maxSideLength: "auto"` (new default)**: the detection cap scales with
+  the input, `clamp(0.75 x longestSide, 960, 1920)`, replacing the fixed
+  640 cap. Pass a number to pin a fixed cap
+- **`minimumConfidence` recognition option (default 0.5)**: drops
+  recognized items below the threshold (upstream PaddleOCR's
+  `drop_score`); symbol-only items need an extra 0.3. Set 0 to disable
+- **Decode-level text refinement**: fullwidth forms become ASCII on
+  non-CJK text, doubled spaces collapse, and gap-based space injection is
+  measured in each crop's own CTC timestep quantum so it adapts to any
+  model's position grid
+- **"Choosing a Model and Configuration" README section**: a selection
+  matrix by model family and input characteristics, each recipe validated
+  against a committed example image in `assets/config-matrix/`
+
+### Fixed
+
+- **`canvas-native` no longer drops weak detections the `opencv` engine
+  keeps** (missed text on the web build): its binarization threshold now
+  matches the OpenCV foreground criterion
+
 ## [6.1.2] - 2026-07-21
 
 ### Fixed

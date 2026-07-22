@@ -5,7 +5,7 @@ description: Use this skill whenever the user is writing TypeScript/JavaScript c
 
 # Writing code with `ppu-paddle-ocr`
 
-`ppu-paddle-ocr` is a TypeScript SDK around the PP-OCR ONNX models (PP-OCRv6 by default; v3-v5 presets available). One package, one API, every JavaScript runtime - Node.js, Bun, Deno, browsers, browser extensions, and React Native (iOS/Android). It pairs a text-detection model with a text-recognition model and decodes them with a character dictionary; the package ships the PP-OCRv6 small unified multilingual models by default and downloads them on first run.
+`ppu-paddle-ocr` is a TypeScript SDK around the PP-OCR ONNX models (PP-OCRv6 by default; v3-v5 presets available). One package, one API, every JavaScript runtime - Node.js, Bun, Deno, browsers, browser extensions, and React Native (iOS/Android). It pairs a text-detection model with a text-recognition model and decodes them with a character dictionary; the package ships the PP-OCRv6 tiny multilingual models by default (small/medium presets for full-dictionary coverage) and downloads them on first run.
 
 The two things that bite people first are (1) picking the right entry point for the runtime, and (2) understanding that the service has a real lifecycle - you must `await initialize()` before `recognize()`, and call `destroy()` to free ONNX sessions. Everything else is configuration.
 
@@ -115,11 +115,11 @@ Three strategies control how detected boxes are batched into recognition inferen
 
 | Strategy     | Inferences                  | Best for                                                                      |
 | :----------- | :-------------------------- | :---------------------------------------------------------------------------- |
-| `per-box`    | One per box (most)          | **Default.** Highest accuracy; recognizes each region in isolation.           |
-| `per-line`   | One per visual line (fewer) | Dense, multi-word-per-line documents - fewer inferences, line context.        |
+| `per-box`    | One per box (most)          | Isolated regions with no line structure; recognizes each region alone.        |
+| `per-line`   | One per visual line (fewer) | **Default.** Line context fixes short-label misreads; fewer inferences.       |
 | `cross-line` | Bin-packed batches (fewest) | Throughput-sensitive workloads with dense text. Slight accuracy hit possible. |
 
-On sparse receipts the three strategies are within ~1% on speed (inference count only dominates wall-clock on dense pages), so `per-box` defaults to the most accurate. Switch to `per-line` / `cross-line` when a page has many words per line and throughput matters.
+The strategies are within ~10% on speed; `per-line` is the default because merged line context reads short low-contrast labels more reliably than isolated crops and needs fewer inferences. Switch to `cross-line` for maximum throughput on dense pages, or `per-box` when regions are truly independent.
 
 Set globally on construction, or override per call:
 
@@ -499,7 +499,7 @@ Rules to remember:
   `v5-thai-mobile`; `models --json` lists them), `--model-detection/-recognition/-dict`
   (raw paths/URLs that override the preset), detection tuning (`--max-side-length`,
   `--mean`, `--std`, ...), `--execution-providers`, and `--concurrency` for
-  batch/stream. Defaults match the SDK (v6 small models, `per-box`, `opencv`).
+  batch/stream. Defaults match the SDK (v6 tiny models, `per-line`, `opencv`).
 - **Recognized text -> stdout; progress and logs -> stderr.** Pipe stdout safely;
   add `-q` to silence stderr. `--json` emits the full result object (NDJSON for
   `stream`); `-o <file>` writes to disk.

@@ -22,7 +22,7 @@ Production pipelines need three properties that LLM OCR fights against:
 
 1. **Reproducibility.** Run the same image through the same code on Monday and Friday and get the same string. PP-OCRv6 detection plus recognition is a pair of fixed convolutional and transformer graphs. The output of `recognize("./receipt.jpg")` does not drift between calls.
 2. **Auditability.** When a downstream system extracts `$42.50` from a receipt, a finance team can point at the model version, the input image, and the bounding box that produced that string. LLMs give you a paragraph of free-form text and no box geometry.
-3. **Latency and cost.** A single receipt takes roughly 190 ms on an M1 with no GPU and zero network calls. The equivalent vision-LLM round trip is two orders of magnitude slower and costs real money per thousand pages.
+3. **Latency and cost.** A single receipt takes roughly 140 ms on an M1 with no GPU and zero network calls. The equivalent vision-LLM round trip is two orders of magnitude slower and costs real money per thousand pages.
 
 LLM OCR is great for one-off semantic extraction (give me the vendor name, summarize this contract). It is the wrong tool for "ingest a million invoices a month and never disagree with yourself."
 
@@ -96,7 +96,7 @@ const { text, lines } = await ocr.recognize("./receipt.jpg");
 await ocr.destroy();
 ```
 
-`initialize()` downloads the PP-OCRv6 small unified multilingual model by default and caches it under `~/.cache/ppu-paddle-ocr`. `recognize()` accepts a file path, URL, `ArrayBuffer`, `HTMLCanvasElement`, or `OffscreenCanvas`. `destroy()` releases the ONNX sessions.
+`initialize()` downloads the PP-OCRv6 tiny multilingual model by default and caches it under `~/.cache/ppu-paddle-ocr`. `recognize()` accepts a file path, URL, `ArrayBuffer`, `HTMLCanvasElement`, or `OffscreenCanvas`. `destroy()` releases the ONNX sessions.
 
 For browsers, swap one import:
 
@@ -116,18 +116,18 @@ const result = await ocr.recognize(document.querySelector("canvas")!);
 Each `recognize()` call walks four stages:
 
 1. **Decode and normalize** the input image through either OpenCV.js (`ppu-ocv`) or canvas-native preprocessing. Browsers default to canvas-native to keep bundles lean; servers default to OpenCV for tighter bounding boxes.
-2. **Run text detection** with `PP-OCRv6_small_det.ort`. Output: a set of quadrilateral boxes around every text region.
-3. **Choose a recognition strategy.** `per-box` (the default) runs one inference per region for the highest accuracy. `per-line` merges regions on the same line into one strip, and `cross-line` bin-packs strips across lines into uniform batches - both cut inference calls on dense, multi-word-per-line pages.
-4. **Decode characters** with `PP-OCRv6_small_rec.ort` against the unified dictionary.
+2. **Run text detection** with `PP-OCRv6_tiny_det.ort`. Output: a set of quadrilateral boxes around every text region.
+3. **Choose a recognition strategy.** `per-line` (the default) merges regions on the same line into one strip - line context reads short labels more reliably with fewer inference calls. `per-box` runs one inference per isolated region, and `cross-line` bin-packs strips across lines into uniform batches for maximum throughput on dense uniform pages.
+4. **Decode characters** with `PP-OCRv6_tiny_rec.ort` against its dictionary, then drop items below the 0.5 confidence floor (upstream PaddleOCR's drop_score).
 
-The strategy knob exists because reducing inference calls dominates wall-clock time on dense documents. On the Apple M1 benchmark in the README, a receipt lands around 190 ms; on sparse pages the three strategies sit within ~1% of each other, so `per-box` defaults to the most accurate. PP-OCRv6 small holds English receipt accuracy in the mid-90s while reading 50+ languages from one model.
+The strategy knob exists because reducing inference calls dominates wall-clock time on dense documents. On the Apple M1 benchmark in the README, a receipt lands around 140 ms at the tiny defaults, with the three strategies within ~1% of each other on speed. The tiny default reads the English receipt benchmark above 99% while covering the major scripts from one model; the small/medium tiers carry the full 50+ language dictionary.
 
 ## The Paddle model ecosystem you get for free
 
 PP-OCR is not one model. It is a family across generations (v3 through v6), and every member has an ONNX export.
 
 - **Mobile vs server.** Mobile models fit in a few megabytes and run on a CPU. Server models trade size for two extra accuracy points on dense or low-quality documents. Swap the URL in your config; the rest of the code is unchanged.
-- **50+ languages, one default model.** The PP-OCRv6 small default reads Simplified/Traditional Chinese, English, Japanese, 46+ Latin-script languages, Arabic, and Indic scripts from a single unified recognition model - no per-language swap needed. When you want a script-specialized head (often a few points more accurate on, say, Thai or Cyrillic), the PP-OCRv5 per-language models still ship as separate recognition + dictionary files. Pre-converted ONNX builds live in [`ppu-paddle-ocr-models`](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models).
+- **50+ languages, one model family.** PP-OCRv6 reads Simplified/Traditional Chinese, English, Japanese, 46+ Latin-script languages, Arabic, and Indic scripts from a single unified recognition model - no per-language swap needed. When you want a script-specialized head (often a few points more accurate on, say, Thai or Cyrillic), the PP-OCRv5 per-language models still ship as separate recognition + dictionary files. Pre-converted ONNX builds live in [`ppu-paddle-ocr-models`](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models).
 - **INT8 quantization.** The recognition transformer's MatMul ops quantize to INT8 with no measured accuracy loss and a 20 to 50 percent speedup on x86-64 CPUs with VNNI and on WebAssembly (shipped for the PP-OCRv5 English model via `V5_EN_MOBILE_INT8_MODEL`). The repo ships a one-line Python script that does the conversion.
 - **PP-DocLayout, PP-Structure, PP-FormulaNet.** Layout, table, and formula models from the same Paddle family export the same way. The library loads any ONNX model whose I/O contract matches.
 
@@ -168,7 +168,7 @@ Browser extensions feel this difference the most. A receipt-scanner popup that r
 
 ## Performance numbers
 
-Accuracy (deterministic, hardware-independent) is measured on the PP-OCRv6 small default; timings below were captured on the previous v5 default (Apple M1, Bun 1.3.x) and v6 small lands within roughly 10% on the same hardware:
+Accuracy (deterministic, hardware-independent) is measured on the current README benchmark; timings below were captured on an older default (Apple M1, Bun 1.3.x) - the current tiny defaults run roughly 30% faster than these numbers:
 
 ```
 benchmark                            avg (min ... max)

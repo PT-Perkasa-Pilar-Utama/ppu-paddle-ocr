@@ -291,7 +291,7 @@ Look at `./out/debug-2026-05-14/` for:
 Common fixes once you've inspected:
 
 - Crops too tight -> bump `detection.paddingHorizontal` to `0.8` or `paddingVertical` to `0.6`.
-- Whole regions missed -> raise `detection.maxSideLength` to `960`+.
+- Whole regions missed -> the default `maxSideLength: "auto"` already scales with input size; pin a higher fixed value if small text still drops.
 - Image too dark / low contrast -> preprocess with `ppu-ocv` (`grayscale().blur().threshold()`) before passing to `recognize()`.
 - Garbled output on non-English text -> wrong language model. Switch the recognition model and dictionary (recipe 3).
 
