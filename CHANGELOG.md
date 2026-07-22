@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.2.0] - 2026-07-22
+
 ### Changed
 
 - **Default model is PP-OCRv6 tiny** (was small): 2-4x faster, ~6 MB
