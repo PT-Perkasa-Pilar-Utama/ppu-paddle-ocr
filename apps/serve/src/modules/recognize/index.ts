@@ -7,7 +7,7 @@ import { jsonOcrSchema, multipartOcrSchema, ocrResultSchema } from "../../core/s
 import type { Env } from "../../core/types.js";
 
 // This endpoint accepts BOTH multipart and JSON. @hono/zod-openapi runs every
-// declared body validator, so it can't auto-validate a dual-content body —
+// declared body validator, so it can't auto-validate a dual-content body -
 // hence we document it via registerPath and parse the body manually.
 export const route: RouteConfig = {
   method: "post",

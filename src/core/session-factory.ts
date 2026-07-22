@@ -23,7 +23,7 @@ function providerName(
  * original attempt fails.
  *
  * Works around cases like `executionProviders: ["cuda", "cpu"]` on a host
- * without the CUDA runtime — ORT throws during session construction instead
+ * without the CUDA runtime - ORT throws during session construction instead
  * of silently falling back to CPU. We catch that, log once, and retry with
  * whichever safe provider (`cpu` or `wasm`) was in the original list (or
  * default to `cpu` / `wasm` based on the ORT binding shape).

@@ -16,11 +16,11 @@ const service = new PaddleOcrService({
 });
 await service.initialize();
 
-// `noCache` forces real work every iteration — otherwise identical buffers
+// `noCache` forces real work every iteration - otherwise identical buffers
 // would short-circuit on the LRU cache and the comparison would be meaningless.
 const opts = { noCache: true } as const;
 
-console.log(`\n=== batch vs. concurrent recognize() — ${N} images/iter, ${ROUNDS} rounds ===`);
+console.log(`\n=== batch vs. concurrent recognize() - ${N} images/iter, ${ROUNDS} rounds ===`);
 console.log(`opencv, noCache, ${process.platform}/${process.arch}, bun ${Bun.version}\n`);
 
 const bench = new Bench({ rounds: ROUNDS, warmup: 1, trackMemory: true });

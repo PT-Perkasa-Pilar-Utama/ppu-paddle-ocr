@@ -4,10 +4,10 @@ import { PaddleOcrService } from "../src";
 /**
  * Example: Choosing between OpenCV and canvas-native processing engines.
  *
- * - "opencv" (default) — uses OpenCV.js for image preprocessing.
+ * - "opencv" (default) - uses OpenCV.js for image preprocessing.
  *   More accurate region detection via contour analysis.
  *
- * - "canvas-native" — pure HTML Canvas operations; no OpenCV dependency.
+ * - "canvas-native" - pure HTML Canvas operations; no OpenCV dependency.
  *   Lighter weight, suitable for browser extensions or minimal setups.
  */
 

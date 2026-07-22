@@ -81,7 +81,7 @@ def quantize(input_path: Path, output_path: Path) -> None:
         #   "Could not find an implementation for ConvInteger(10)"
         # SVTR-based recognition is dominated by MatMul compute in the
         # transformer body anyway, so this still delivers most of the win.
-        # Detection models can largely be left FP32 — they're a small
+        # Detection models can largely be left FP32 - they're a small
         # fraction of end-to-end time and don't quantize cleanly here.
         op_types_to_quantize=["MatMul", "Gemm"],
         # reduce_range=True constrains activations to 7-bit to avoid int8
@@ -89,7 +89,7 @@ def quantize(input_path: Path, output_path: Path) -> None:
         reduce_range=False,
     )
 
-    # Clean up the intermediate preproc model — it's only useful as a
+    # Clean up the intermediate preproc model - it's only useful as a
     # debugging artefact.
     try:
         preproc_path.unlink()

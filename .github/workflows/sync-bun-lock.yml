@@ -2,7 +2,7 @@
 # ecosystem only knows package-lock.json / yarn.lock / pnpm-lock.yaml), so CI's
 # `--frozen-lockfile` install fails on every dep-changing Dependabot PR.
 #
-# This job VERIFIES the lockfile is in sync — it holds no credentials, so there
+# This job VERIFIES the lockfile is in sync - it holds no credentials, so there
 # is nothing for a poisoned dependency to steal. It runs read-only, never auto-
 # commits, and uses --ignore-scripts so install lifecycle scripts never execute.
 # If bun.lock drifts, the check fails and you sync it locally:

@@ -27,7 +27,7 @@ try {
   shipped.push("lib/");
 } catch {
   console.warn(
-    "⚠️  lib/web/index.js not found — run `bun task build` first. The demo will fall back to the jsdelivr CDN import."
+    "⚠️  lib/web/index.js not found - run `bun task build` first. The demo will fall back to the jsdelivr CDN import."
   );
 }
 

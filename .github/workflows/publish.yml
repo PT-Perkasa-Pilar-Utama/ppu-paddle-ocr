@@ -42,7 +42,7 @@ jobs:
           bun-version: 1.3.14
 
       - name: Install dependencies
-        # Frozen so install never rewrites bun.lock — a dirty tree makes the
+        # Frozen so install never rewrites bun.lock - a dirty tree makes the
         # `jsr publish` step below abort ("Aborting due to uncommitted changes").
         run: bun install --frozen-lockfile
 
@@ -71,7 +71,7 @@ jobs:
       # Pinned bun 1.2.23 caps lifecycle-hook timeouts at the 5 s default, and
       # the web tests read the v6 models straight from ~/.cache. Warm the cache
       # here (default v6 + the v5 EN models the dictionary tests use) so the
-      # in-hook downloads are fast disk hits — mirrors ci.yml.
+      # in-hook downloads are fast disk hits - mirrors ci.yml.
       - name: Warm model cache
         run: bun scripts/warm-test-models.ts
 
@@ -131,7 +131,7 @@ jobs:
         if: github.event_name == 'release'
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
-      # Keyless signing via OIDC (Sigstore/Fulcio) — no long-lived keys; uses the
+      # Keyless signing via OIDC (Sigstore/Fulcio) - no long-lived keys; uses the
       # id-token: write permission. cosign 3.x emits one .sigstore.json bundle
       # (signature + Fulcio cert + Rekor entry); Scorecard recognizes the suffix.
       - name: Sign the tarball (keyless)

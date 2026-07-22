@@ -13,7 +13,7 @@ export type Task = {
 };
 
 /**
- * Async task store. In-memory and therefore **per-instance** — fine for a
+ * Async task store. In-memory and therefore **per-instance** - fine for a
  * single replica; swap this implementation for Redis/BullMQ behind the same
  * interface to share tasks across replicas.
  */

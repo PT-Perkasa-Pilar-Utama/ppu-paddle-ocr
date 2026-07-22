@@ -16,7 +16,7 @@ function clientIp(c: Parameters<Parameters<typeof createMiddleware>[0]>[0]): str
 }
 
 /**
- * Fixed-window, in-memory rate limiter keyed by client IP. Per-instance — for
+ * Fixed-window, in-memory rate limiter keyed by client IP. Per-instance - for
  * multi-replica deployments put a shared limiter (Redis) in front.
  */
 export function rateLimiter(): MiddlewareHandler {

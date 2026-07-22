@@ -11,6 +11,7 @@ dist/*
 .vscode/
 
 private-tests
+private
 # coverage output (scripts/coverage.ts)
 coverage/
 # stray test debug output

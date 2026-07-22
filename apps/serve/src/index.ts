@@ -5,7 +5,7 @@ import { initService, shutdownService } from "./core/service.js";
 console.log(`[serve] warming models (providers=${config.executionProviders.join(",")})…`);
 await initService();
 console.log(
-  `[serve] ready — concurrency=${config.concurrency}, default engine=${config.defaultEngine}`
+  `[serve] ready - concurrency=${config.concurrency}, default engine=${config.defaultEngine}`
 );
 
 const server = Bun.serve({
@@ -22,7 +22,7 @@ let shuttingDown = false;
 async function shutdown(signal: string): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
-  console.log(`[serve] ${signal} received — draining…`);
+  console.log(`[serve] ${signal} received - draining…`);
   // Stop accepting new connections, let in-flight requests finish, free models.
   await server.stop(false);
   await shutdownService();
