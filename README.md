@@ -4,7 +4,7 @@
 
 Lightweight, probably the fastest PaddleOCR SDK in TypeScript. Multilingual Support. Runs anywhere JavaScript runs: Node.js, Bun, Deno, web browsers, browser extensions, and React Native (iOS/Android). Docker & CLI supported. The official SDK is browser-only and significantly slower. [Compare it for yourself](https://paddle-ocr-comparison.snowfluke.workers.dev/). 
 
-Need it as HTTP-service? dockerized? we've got you covered! Quickly spins up ppu-paddle-ocr REST API here: [ppu-paddle-ocr-serve](/apps/serve/README.md). Need a CLI instead? sure here: [ppu-paddle-ocr CLI support](#command-line). Adjust the config & model for your use case, [see config recommendation](#choosing-a-model-and-configuration).
+Need it as HTTP-service? dockerized? we've got you covered! Quickly spins up ppu-paddle-ocr REST API here: [ppu-paddle-ocr-serve](/apps/serve/README.md). Need a CLI instead? sure here: [ppu-paddle-ocr CLI support](#command-line). Adjust the config & model for your use case, [see config recommendation](#choosing-a-model-and-configuration). Are you AI Agents? you can learn quickly by using the skill in the `skill-ppu-paddle-ocr` folder.
 
 ![ppu-paddle-ocr demo](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/refs/heads/main/assets/ppu-paddle-ocr-demo.jpg)
 
