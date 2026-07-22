@@ -12,7 +12,7 @@ const engine = z.enum(["opencv", "canvas-native"]).optional();
 export const ocrOptionsSchema = z.object({ strategy, flatten: booleanish, engine });
 export type OcrOptions = z.infer<typeof ocrOptionsSchema>;
 
-// A 1×1 PNG as a data: URI — a valid, runnable example so Scalar's "Send"
+// A 1×1 PNG as a data: URI - a valid, runnable example so Scalar's "Send"
 // works out of the box (it decodes, finds no text, returns an empty result).
 const EXAMPLE_IMAGE =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
@@ -27,7 +27,7 @@ export const jsonOcrSchema = ocrOptionsSchema
   })
   .openapi("OcrJsonRequest");
 
-/** Multipart body for single-image OCR (documentation only — parsed manually). */
+/** Multipart body for single-image OCR (documentation only - parsed manually). */
 export const multipartOcrSchema = z
   .object({
     file: z.custom<File>().openapi({ type: "string", format: "binary" }),
@@ -48,7 +48,7 @@ export const jsonDetectSchema = z
   })
   .openapi("DetectJsonRequest");
 
-/** Multipart body for detection-only inference (documentation only — parsed manually). */
+/** Multipart body for detection-only inference (documentation only - parsed manually). */
 export const multipartDetectSchema = z
   .object({
     file: z.custom<File>().openapi({ type: "string", format: "binary" }),

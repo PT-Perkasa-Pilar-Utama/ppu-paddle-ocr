@@ -12,7 +12,7 @@ body:
         3. A sample image we can reproduce with.
 
         If you haven't already, browse [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models)
-        to see whether a better model for your script exists — accuracy regressions are often model-choice issues,
+        to see whether a better model for your script exists - accuracy regressions are often model-choice issues,
         not library bugs.
 
   - type: textarea
@@ -41,8 +41,8 @@ body:
     attributes:
       label: Which stage is failing?
       options:
-        - Detection — boxes are wrong, missing, or overlapping
-        - Recognition — boxes are right, characters are wrong
+        - Detection - boxes are wrong, missing, or overlapping
+        - Recognition - boxes are right, characters are wrong
         - Both
         - Not sure
     validations:

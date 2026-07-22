@@ -30,7 +30,7 @@ const GLOB_MAGIC = /[*?[\]{}]/;
 /**
  * Resolve a CLI image argument to an `ArrayBuffer`. The Node `recognize()`
  * accepts only `ArrayBuffer`/`Canvas`, so URLs are fetched here and files read
- * from disk — which also sidesteps the SDK's absolute-path-only string rule.
+ * from disk - which also sidesteps the SDK's absolute-path-only string rule.
  */
 export async function loadImageInput(arg: string): Promise<ArrayBuffer> {
   if (HTTP.test(arg)) {

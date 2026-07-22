@@ -148,7 +148,7 @@ export function printResults(results: BenchResult[]): void {
   const ranked = [...results].sort((a, b) => a.median - b.median);
   const fastest = ranked[0];
   if (!fastest || ranked.length < 2) return;
-  console.log(`\nsummary — fastest: ${fastest.name}`);
+  console.log(`\nsummary - fastest: ${fastest.name}`);
   for (const r of ranked.slice(1)) {
     console.log(`  ${(r.median / fastest.median).toFixed(2)}x slower  ${r.name}`);
   }

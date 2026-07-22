@@ -81,7 +81,7 @@ jobs:
 
       # The bin is only usable via npx/bunx if the build kept its shebang and
       # executable bit; assert both, then that it actually runs.
-      - name: CLI — verify bin
+      - name: CLI - verify bin
         run: |
           test -x lib/cli/index.js
           head -1 lib/cli/index.js | grep -q '^#!/usr/bin/env node'
@@ -89,7 +89,7 @@ jobs:
 
       # apps/serve tests run as part of the root suite above; type-check it
       # separately here (deps already installed before the test step).
-      - name: Serve — type check
+      - name: Serve - type check
         run: cd apps/serve && bun run type-check
 
   sca:

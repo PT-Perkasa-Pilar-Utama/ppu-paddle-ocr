@@ -20,10 +20,10 @@ import * as health from "./modules/health/index.js";
 import * as metrics from "./modules/metrics/index.js";
 import * as models from "./modules/models/index.js";
 import * as ready from "./modules/ready/index.js";
-import * as recognize from "./modules/recognize/index.js";
 import * as recognizeAsync from "./modules/recognize-async/index.js";
 import * as recognizeBatch from "./modules/recognize-batch/index.js";
 import * as recognizeStream from "./modules/recognize-stream/index.js";
+import * as recognize from "./modules/recognize/index.js";
 import * as taskCancel from "./modules/task-cancel/index.js";
 import * as taskResult from "./modules/task-result/index.js";
 import * as taskStatus from "./modules/task-status/index.js";
@@ -36,7 +36,7 @@ export const app = new OpenAPIHono<Env>({
       const detail = result.error.issues
         .map((i) => `${i.path.join(".") || "body"}: ${i.message}`)
         .join("; ");
-      return sendError(c, 400, `Validation failed — ${detail}`);
+      return sendError(c, 400, `Validation failed - ${detail}`);
     }
   },
 });
@@ -95,7 +95,7 @@ if (config.docsEnabled) {
       description: "REST API serving ppu-paddle-ocr. POST an image, get OCR JSON.",
     },
   });
-  app.get("/docs", Scalar({ url: "/openapi.json", pageTitle: "ppu-paddle-ocr-serve — API" }));
+  app.get("/docs", Scalar({ url: "/openapi.json", pageTitle: "ppu-paddle-ocr-serve - API" }));
   app.get("/", (c) => c.redirect("/docs"));
 } else {
   app.get("/", (c) => c.json({ name: "ppu-paddle-ocr-serve", health: "/health" }));
@@ -107,7 +107,7 @@ app.onError((err, c) => {
   if (err instanceof HttpError) return sendError(c, err.status, err.message);
   if (err instanceof ZodError) {
     const detail = err.issues.map((i) => `${i.path.join(".") || "body"}: ${i.message}`).join("; ");
-    return sendError(c, 400, `Validation failed — ${detail}`);
+    return sendError(c, 400, `Validation failed - ${detail}`);
   }
   if (err instanceof QueueFullError) {
     return c.json(failure(err.message, c.get("requestId")), 429, { "Retry-After": "1" });

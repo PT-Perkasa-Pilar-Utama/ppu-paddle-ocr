@@ -5,7 +5,7 @@
 # ---- dependencies ----
 FROM oven/bun:1@sha256:e10577f0db68676a7024391c6e5cb4b879ebd17188ab750cf10024a6d700e5c4 AS deps
 WORKDIR /app
-# Library (root) deps — the serve app imports ppu-paddle-ocr from source, which
+# Library (root) deps - the serve app imports ppu-paddle-ocr from source, which
 # pulls onnxruntime-node + ppu-ocv from the root node_modules.
 # Library runtime deps only: ppu-ocv (a prod dep) plus onnxruntime-node, which
 # is a peer/dev dep so we add it explicitly. --production drops the heavy
@@ -25,10 +25,10 @@ RUN cd apps/serve && bun install --production
 FROM oven/bun:1-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 AS runtime
 WORKDIR /app
 
-# OCI metadata — without these the ghcr package inherits the base image's
+# OCI metadata - without these the ghcr package inherits the base image's
 # (Bun's) description.
 LABEL org.opencontainers.image.title="ppu-paddle-ocr-serve" \
-      org.opencontainers.image.description="Production-grade REST API serving ppu-paddle-ocr (PaddleOCR PP-OCRv6 OCR) — Hono + Bun." \
+      org.opencontainers.image.description="Production-grade REST API serving ppu-paddle-ocr (PaddleOCR PP-OCRv6 OCR) - Hono + Bun." \
       org.opencontainers.image.source="https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr" \
       org.opencontainers.image.licenses="MIT"
 

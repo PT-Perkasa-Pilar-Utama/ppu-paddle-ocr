@@ -21,7 +21,7 @@ const upload = () => {
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-// Only downloadModels here — it fits the default hook timeout (which can't be
+// Only downloadModels here - it fits the default hook timeout (which can't be
 // raised: CI's Bun rejects a beforeAll timeout arg). Model init happens lazily
 // on the first request; the inference tests below carry generous timeouts.
 beforeAll(async () => {

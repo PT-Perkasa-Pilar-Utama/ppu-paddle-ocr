@@ -31,7 +31,7 @@ export type PaddleOcrResult = {
   text: string;
   /** Recognition results grouped by line, in reading order. */
   lines: RecognitionResult[][];
-  /** Average confidence across all recognized items (0–1). */
+  /** Average confidence across all recognized items (0-1). */
   confidence: number;
 };
 
@@ -46,7 +46,7 @@ export type FlattenedPaddleOcrResult = {
   text: string;
   /** All recognized items in reading order. */
   results: RecognitionResult[];
-  /** Average confidence across all recognized items (0–1). */
+  /** Average confidence across all recognized items (0-1). */
   confidence: number;
 };
 

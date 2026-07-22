@@ -14,7 +14,7 @@ export type CoreCanvas = Canvas | CanvasLike;
  *
  * Core services receive the `ppu-ocv/canvas` (Node) or `ppu-ocv/canvas-web`
  * (browser) variant through this surface so they never import the bare
- * `ppu-ocv/canvas` specifier directly — bundlers and browser importmaps
+ * `ppu-ocv/canvas` specifier directly - bundlers and browser importmaps
  * would otherwise have to alias it.
  */
 export type CanvasOps<TCanvas = CoreCanvas> = {
@@ -74,7 +74,7 @@ export type PlatformProvider<TCanvas = CoreCanvas> = {
   /** Optionally dump a given Canvas representation directly onto the disk (No-Op on Web context) */
   saveDebugImage: (canvas: TCanvas, filename: string, path: string) => Promise<void>;
 
-  /** Write a canvas as a PNG to an exact file path (undefined on Web/Mobile — no filesystem) */
+  /** Write a canvas as a PNG to an exact file path (undefined on Web/Mobile - no filesystem) */
   saveImage?: (canvas: TCanvas, filePath: string) => Promise<void>;
 
   /** OpenCV-based image processor (only available in Node/Bun environments) */

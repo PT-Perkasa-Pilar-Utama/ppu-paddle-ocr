@@ -69,7 +69,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
   }
 
   /**
-   * Not used by the Node service — initialization runs in {@link initialize}.
+   * Not used by the Node service - initialization runs in {@link initialize}.
    * @throws Always; call {@link initialize} instead.
    */
   protected async initSessions(): Promise<void> {

@@ -9,7 +9,7 @@ export class QueueFullError extends Error {
 /**
  * Bounded-concurrency gate around inference. Caps how many `recognize` calls
  * run at once (1 on an accelerator, a small pool on CPU) and rejects with
- * {@link QueueFullError} once the wait list exceeds `maxDepth` — backpressure
+ * {@link QueueFullError} once the wait list exceeds `maxDepth` - backpressure
  * that keeps host RAM and device VRAM bounded under load.
  */
 export class InferenceQueue {

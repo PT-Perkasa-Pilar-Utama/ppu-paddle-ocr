@@ -73,7 +73,7 @@ export async function runPool<I, O>(
   let failed = false;
   let failure: unknown;
 
-  // Fast path: a plain array needs no async iterator — workers claim slots
+  // Fast path: a plain array needs no async iterator - workers claim slots
   // through a shared synchronous cursor, avoiding two promise allocations
   // per item (the serialization lock + `iterator.next()`).
   const array = Array.isArray(inputs) ? (inputs as I[]) : null;

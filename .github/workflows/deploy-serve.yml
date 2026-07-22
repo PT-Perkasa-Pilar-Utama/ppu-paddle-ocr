@@ -1,7 +1,7 @@
 name: Deploy serve image
 
 # Manually-triggered. Reads the version from apps/serve/package.json, and skips
-# entirely if that version is already published — bump the version to release.
+# entirely if that version is already published - bump the version to release.
 on:
   workflow_dispatch:
 
@@ -42,7 +42,7 @@ jobs:
         id: published
         run: |
           if docker manifest inspect "${{ steps.img.outputs.image }}:${{ steps.img.outputs.version }}" > /dev/null 2>&1; then
-            echo "::notice::${{ steps.img.outputs.image }}:${{ steps.img.outputs.version }} already exists — skipping build."
+            echo "::notice::${{ steps.img.outputs.image }}:${{ steps.img.outputs.version }} already exists - skipping build."
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"

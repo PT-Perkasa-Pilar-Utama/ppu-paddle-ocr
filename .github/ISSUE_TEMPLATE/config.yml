@@ -6,6 +6,6 @@ contact_links:
   - name: 📦 Models repository
     url: https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models
     about: Request new language models or report a model-specific issue (separate from library code).
-  - name: 📖 README — Models and Language Support
+  - name: 📖 README - Models and Language Support
     url: https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr#models-and-language-support
     about: Before filing a language / accuracy issue, check if a better model exists for your language.

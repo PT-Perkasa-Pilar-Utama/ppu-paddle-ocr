@@ -1,5 +1,5 @@
 // Local dev server for the playground. Sets COOP/COEP so the page is
-// cross-origin isolated (SharedArrayBuffer → multithreaded WASM) — `serve`
+// cross-origin isolated (SharedArrayBuffer → multithreaded WASM) - `serve`
 // can't set headers, and the demo no longer ships the service worker.
 // Serves index.html from here and resolves /lib/* against the repo root so the
 // demo runs against the freshly built local lib/web (run `bun task build`).

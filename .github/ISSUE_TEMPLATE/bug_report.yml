@@ -1,5 +1,5 @@
 name: 🐛 Bug report
-description: Something is broken — wrong output, crash, or runtime error.
+description: Something is broken - wrong output, crash, or runtime error.
 title: "bug: "
 labels: ["bug", "triage"]
 body:
@@ -9,7 +9,7 @@ body:
         Thanks for filing a bug report. Please search existing issues first to avoid duplicates.
 
         If the problem is only that accuracy is lower than you expected on a specific image or language,
-        use the **Accuracy / OCR quality** template instead — that's tracked separately because it usually
+        use the **Accuracy / OCR quality** template instead - that's tracked separately because it usually
         means a different model is the right fix, not a code change.
 
   - type: textarea
