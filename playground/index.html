@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta
       name="description"
-      content="Free interactive demo of ppu-paddle-ocr: run PaddleOCR (PP-OCRv6) text detection and recognition entirely in your browser with onnxruntime-web and WebGPU — no server, no upload. Lightweight, multilingual, TypeScript-first."
+      content="Free interactive demo of ppu-paddle-ocr: run PaddleOCR (PP-OCRv6) text detection and recognition entirely in your browser with onnxruntime-web and WebGPU - no server, no upload. Lightweight, multilingual, TypeScript-first."
     />
     <meta
       name="keywords"
@@ -19,24 +19,24 @@
     <meta property="og:type" content="website" />
     <meta
       property="og:title"
-      content="ppu-paddle-ocr — PaddleOCR in the Browser (Interactive Demo)"
+      content="ppu-paddle-ocr - PaddleOCR in the Browser (Interactive Demo)"
     />
     <meta
       property="og:description"
-      content="Run PaddleOCR (PP-OCRv6) detection + recognition fully client-side with WebGPU/WASM. Try it on your own images — no upload, no server."
+      content="Run PaddleOCR (PP-OCRv6) detection + recognition fully client-side with WebGPU/WASM. Try it on your own images - no upload, no server."
     />
     <meta property="og:url" content="https://ppu-paddle-ocr.snowfluke.workers.dev/" />
     <meta property="og:site_name" content="ppu-paddle-ocr" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="ppu-paddle-ocr — PaddleOCR in the Browser" />
+    <meta name="twitter:title" content="ppu-paddle-ocr - PaddleOCR in the Browser" />
     <meta
       name="twitter:description"
       content="In-browser PaddleOCR (PP-OCRv6) with WebGPU. Detection + recognition, no server."
     />
 
-    <title>ppu-paddle-ocr — PaddleOCR (PP-OCRv6) in the Browser · Interactive Demo</title>
+    <title>ppu-paddle-ocr - PaddleOCR (PP-OCRv6) in the Browser · Interactive Demo</title>
 
     <!-- Structured data -->
     <script type="application/ld+json">
@@ -1523,7 +1523,7 @@
                     step="32"
                     id="cfg-det-maxside"
                     class="input-field"
-                    placeholder="960 (default)"
+                    placeholder="auto (default)"
                     inputmode="numeric"
                   />
                   <small class="field-help">
@@ -1580,7 +1580,7 @@
                   <summary>Advanced image normalization</summary>
                   <div class="config-body">
                     <div class="input-group">
-                      <span class="input-label">Mean — R, G, B</span>
+                      <span class="input-label">Mean - R, G, B</span>
                       <div class="inline-fields three">
                         <input
                           aria-label="Red mean"
@@ -1612,7 +1612,7 @@
                       </div>
                     </div>
                     <div class="input-group">
-                      <span class="input-label">Standard deviation — R, G, B</span>
+                      <span class="input-label">Standard deviation - R, G, B</span>
                       <div class="inline-fields three">
                         <input
                           aria-label="Red standard deviation"
@@ -1662,12 +1662,12 @@
                 <div class="input-group">
                   <label class="input-label" for="cfg-rec-strategy">Reading strategy</label>
                   <select id="cfg-rec-strategy" class="input-field">
-                    <option value="per-box" selected>Accurate — one text box at a time</option>
-                    <option value="per-line">Balanced — group boxes by line</option>
-                    <option value="cross-line">Fast — batch across lines</option>
+                    <option value="per-box">Isolated - one text box at a time</option>
+                    <option value="per-line" selected>Balanced - group boxes by line (default)</option>
+                    <option value="cross-line">Fast - batch across lines</option>
                   </select>
                   <small class="field-help">
-                    Accurate is recommended. Faster modes may help on dense documents.
+                    Balanced is the default: line context improves short labels at equal speed.
                   </small>
                 </div>
                 <div class="input-group">
@@ -1716,7 +1716,7 @@
                 <div class="input-group">
                   <label class="input-label" for="cfg-model-preset">Model preset</label>
                   <select id="cfg-model-preset" class="input-field">
-                    <option value="">Default — PP-OCRv6 small</option>
+                    <option value="">Default - PP-OCRv6 tiny</option>
                   </select>
                   <small class="field-help">
                     Any URL filled in below overrides that part of the preset.
@@ -1770,9 +1770,9 @@
                 <div class="input-group">
                   <label class="input-label" for="cfg-session-ep">Processing engine</label>
                   <select id="cfg-session-ep" class="input-field">
-                    <option value="">Automatic — WebGPU, then WASM</option>
-                    <option value="webgpu">WebGPU only — GPU acceleration</option>
-                    <option value="wasm">WASM only — CPU processing</option>
+                    <option value="">Automatic - WebGPU, then WASM</option>
+                    <option value="webgpu">WebGPU only - GPU acceleration</option>
+                    <option value="wasm">WASM only - CPU processing</option>
                   </select>
                   <small class="field-help">
                     Automatic provides the best compatibility across browsers.
@@ -2029,7 +2029,7 @@
         });
         markDirty();
         configState.textContent = configApplying
-          ? "Defaults changed — apply again after loading"
+          ? "Defaults changed - apply again after loading"
           : "Recommended defaults ready to apply";
       });
 
@@ -2038,7 +2038,7 @@
 
       // cross-line packs crops into uniform-width batches across lines (fewest
       // inferences) for the fastest recognition; overridable in the sidebar.
-      const DEFAULT_OPTIONS = { recognition: { strategy: "per-box" } };
+      const DEFAULT_OPTIONS = { recognition: { strategy: "per-line" } };
 
       let loadedImage = null;
       let ocrService = null;
@@ -2144,11 +2144,11 @@
             try {
               localStorage.setItem("brave-notice-dismissed", "1");
             } catch {
-              /* storage blocked — popup just won't persist dismissal */
+              /* storage blocked - popup just won't persist dismissal */
             }
           });
         } catch {
-          /* not Brave — leave notice hidden */
+          /* not Brave - leave notice hidden */
         }
       })();
 
@@ -2264,7 +2264,7 @@
           configState.classList.add("pending");
         } else {
           btnApplyConfig.disabled = false;
-          configState.textContent = "Could not apply changes — check the console";
+          configState.textContent = "Could not apply changes - check the console";
           configState.classList.add("pending");
         }
       });
