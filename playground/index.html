@@ -1797,7 +1797,9 @@
                   <label class="input-label" for="cfg-rec-strategy">Reading strategy</label>
                   <select id="cfg-rec-strategy" class="input-field">
                     <option value="per-box">Isolated - one text box at a time</option>
-                    <option value="per-line" selected>Balanced - group boxes by line (default)</option>
+                    <option value="per-line" selected>
+                      Balanced - group boxes by line (default)
+                    </option>
                     <option value="cross-line">Fast - batch across lines</option>
                   </select>
                   <small class="field-help">
@@ -2021,7 +2023,6 @@
                 </label>
               </div>
             </details>
-          
           </div>
         </div>
 
@@ -2058,12 +2059,54 @@
               </svg>
               <p>Upload an image to begin</p>
               <div class="sample-row" id="sample-row">
-                <button type="button" class="sample-chip" data-sample="receipt.jpg" data-label="receipt">Receipt photo</button>
-                <button type="button" class="sample-chip" data-sample="tilted.png" data-label="tilted">Tilted text</button>
-                <button type="button" class="sample-chip" data-sample="config-matrix/dark-dense-portrait.png" data-label="dark app UI">Dark app UI</button>
-                <button type="button" class="sample-chip" data-sample="config-matrix/light-sparse-portrait.png" data-label="form">Form</button>
-                <button type="button" class="sample-chip" data-sample="config-matrix/light-dense-landscape.png" data-label="document">Document page</button>
-                <button type="button" class="sample-chip" data-sample="config-matrix/low-contrast-photo-landscape.png" data-label="low contrast">Low contrast</button>
+                <button
+                  type="button"
+                  class="sample-chip"
+                  data-sample="receipt.jpg"
+                  data-label="receipt"
+                >
+                  Receipt photo
+                </button>
+                <button
+                  type="button"
+                  class="sample-chip"
+                  data-sample="tilted.png"
+                  data-label="tilted"
+                >
+                  Tilted text
+                </button>
+                <button
+                  type="button"
+                  class="sample-chip"
+                  data-sample="config-matrix/dark-dense-portrait.png"
+                  data-label="dark app UI"
+                >
+                  Dark app UI
+                </button>
+                <button
+                  type="button"
+                  class="sample-chip"
+                  data-sample="config-matrix/light-sparse-portrait.png"
+                  data-label="form"
+                >
+                  Form
+                </button>
+                <button
+                  type="button"
+                  class="sample-chip"
+                  data-sample="config-matrix/light-dense-landscape.png"
+                  data-label="document"
+                >
+                  Document page
+                </button>
+                <button
+                  type="button"
+                  class="sample-chip"
+                  data-sample="config-matrix/low-contrast-photo-landscape.png"
+                  data-label="low contrast"
+                >
+                  Low contrast
+                </button>
               </div>
             </div>
             <div class="model-error" id="model-error" role="alert" hidden>
@@ -2158,8 +2201,8 @@
         <button type="button" class="guide-close" id="guide-close" aria-label="Close">x</button>
         <h2 id="guide-title">Which model and config should I use?</h2>
         <p>
-          Defaults are PP-OCRv6 tiny with the Balanced strategy - fast and accurate for
-          screenshots and clean photos. Click a preset to select it, then Apply changes.
+          Defaults are PP-OCRv6 tiny with the Balanced strategy - fast and accurate for screenshots
+          and clean photos. Click a preset to select it, then Apply changes.
         </p>
         <table class="guide-table">
           <thead>
@@ -2173,37 +2216,55 @@
             <tr>
               <td>App or web screenshot (dark or light theme)</td>
               <td>Defaults as-is</td>
-              <td><button type="button" class="guide-preset" data-preset="v6-tiny">v6-tiny</button></td>
+              <td>
+                <button type="button" class="guide-preset" data-preset="v6-tiny">v6-tiny</button>
+              </td>
             </tr>
             <tr>
               <td>Form or sparse labels</td>
               <td>Defaults as-is</td>
-              <td><button type="button" class="guide-preset" data-preset="v6-tiny">v6-tiny</button></td>
+              <td>
+                <button type="button" class="guide-preset" data-preset="v6-tiny">v6-tiny</button>
+              </td>
             </tr>
             <tr>
               <td>Receipt or document photo</td>
               <td>Defaults as-is; small for hard shots</td>
-              <td><button type="button" class="guide-preset" data-preset="v6-tiny">v6-tiny</button></td>
+              <td>
+                <button type="button" class="guide-preset" data-preset="v6-tiny">v6-tiny</button>
+              </td>
             </tr>
             <tr>
               <td>Dense document page (paragraphs, tables)</td>
               <td>Small + the Fast (cross-line) strategy</td>
-              <td><button type="button" class="guide-preset" data-preset="v6-small">v6-small</button></td>
+              <td>
+                <button type="button" class="guide-preset" data-preset="v6-small">v6-small</button>
+              </td>
             </tr>
             <tr>
               <td>Low contrast or blurry photo</td>
               <td>Medium (server-grade); raise processing size</td>
-              <td><button type="button" class="guide-preset" data-preset="v6-medium">v6-medium</button></td>
+              <td>
+                <button type="button" class="guide-preset" data-preset="v6-medium">
+                  v6-medium
+                </button>
+              </td>
             </tr>
             <tr>
               <td>Rare CJK, kana, or full 50+ language coverage</td>
               <td>Small or medium (full dictionary)</td>
-              <td><button type="button" class="guide-preset" data-preset="v6-small">v6-small</button></td>
+              <td>
+                <button type="button" class="guide-preset" data-preset="v6-small">v6-small</button>
+              </td>
             </tr>
             <tr>
               <td>One known language only</td>
               <td>A v5 language preset (English shown)</td>
-              <td><button type="button" class="guide-preset" data-preset="v5-en-mobile">v5-en-mobile</button></td>
+              <td>
+                <button type="button" class="guide-preset" data-preset="v5-en-mobile">
+                  v5-en-mobile
+                </button>
+              </td>
             </tr>
             <tr>
               <td>Tilted or rotated input</td>
@@ -2566,11 +2627,12 @@
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const blob = await res.blob();
             const name = path.split("/").pop();
-            const type = blob.type && blob.type.startsWith("image/")
-              ? blob.type
-              : name.endsWith(".jpg")
-                ? "image/jpeg"
-                : "image/png";
+            const type =
+              blob.type && blob.type.startsWith("image/")
+                ? blob.type
+                : name.endsWith(".jpg")
+                  ? "image/jpeg"
+                  : "image/png";
             await handleFile(new File([blob], name, { type }));
           } catch (err) {
             console.error("Sample fetch failed:", err);
