@@ -39,8 +39,10 @@ const EnvSchema = z.object({
 
   // OCR engine / models
   EXECUTION_PROVIDERS: z.string().default("cpu"),
-  DEFAULT_STRATEGY: z.enum(["per-box", "per-line", "cross-line"]).default("per-box"),
+  DEFAULT_STRATEGY: z.enum(["per-box", "per-line", "cross-line"]).default("per-line"),
   DEFAULT_ENGINE: z.enum(["opencv", "canvas-native"]).default("opencv"),
+  MIN_CONFIDENCE: z.coerce.number().min(0).max(1).optional(),
+  MAX_SIDE_LENGTH: z.union([z.literal("auto"), z.coerce.number().int().positive()]).optional(),
   MODEL_DETECTION: z.string().optional(),
   MODEL_RECOGNITION: z.string().optional(),
   MODEL_DICT: z.string().optional(),
@@ -104,6 +106,8 @@ function build(raw: NodeJS.ProcessEnv) {
     usesAccelerator,
     defaultStrategy: e.DEFAULT_STRATEGY,
     defaultEngine: e.DEFAULT_ENGINE,
+    minConfidence: e.MIN_CONFIDENCE,
+    maxSideLength: e.MAX_SIDE_LENGTH,
     model,
 
     concurrency: e.MAX_CONCURRENCY > 0 ? e.MAX_CONCURRENCY : autoConcurrency,

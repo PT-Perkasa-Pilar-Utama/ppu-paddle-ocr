@@ -13,10 +13,28 @@ export const UNK_TOKEN = "<unk>";
 export const MIN_CROP_WIDTH = 8;
 
 /**
- * Consecutive characters separated by more than this multiple of the median
- * glyph pitch get a space injected between them.
+ * Space-injection thresholds are dynamic per crop, expressed in the crop's
+ * own CTC quantization unit: positions land on a timestep grid, so gaps come
+ * in integer multiples of one quantum (estimated as the smallest positive
+ * gap). A gap is a space when it exceeds the median gap by K quanta. This
+ * adapts to each model automatically - a coarse-grid model (tiny) reads a
+ * real space as a 2-quantum excess, while on a fine-grid model (small) a
+ * 2-quantum excess is normal glyph variation and its real spaces are
+ * already emitted by the model; any fixed multiple of the median tuned on
+ * one grid injects false spaces on the other. Same-class pairs
+ * (letter-letter, digit-digit) demand a larger excess than cross-class
+ * transitions: a false space splits "Email Address" or "12:05", while a
+ * letter/digit/punctuation boundary ("Page 1of 3", "Tgl.17") is a real
+ * space more often.
  */
-const SPACE_GAP_FACTOR = 2.5;
+const GAP_QUANTA_CROSS_CLASS = 1.5;
+const GAP_QUANTA_SAME_CLASS = 2.5;
+
+function charClass(char: string): number {
+  if (/\p{L}/u.test(char)) return 0;
+  if (/\p{N}/u.test(char)) return 1;
+  return 2;
+}
 
 /**
  * Inserts spaces into wide gaps between decoded characters, in place.
@@ -37,19 +55,63 @@ export function injectGapSpaces(chars: string[], positions: number[]): void {
   const median = sorted[Math.floor(sorted.length / 2)] ?? 0;
   if (median <= 0) return;
 
+  const quantum = sorted.find((d) => d > 0) ?? 0;
+  if (quantum <= 0) return;
+
   for (let i = chars.length - 1; i >= 1; i--) {
     const prev = positions[i - 1] ?? 0;
     const curr = positions[i] ?? 0;
+    const k =
+      charClass(chars[i] ?? "") === charClass(chars[i - 1] ?? "")
+        ? GAP_QUANTA_SAME_CLASS
+        : GAP_QUANTA_CROSS_CLASS;
     // Identical neighbors are excluded: CTC must emit a blank between
     // repeated characters, so their gap is structurally inflated ("44").
     if (
-      curr - prev > median * SPACE_GAP_FACTOR &&
+      curr - prev > median + k * quantum &&
       chars[i] !== " " &&
       chars[i - 1] !== " " &&
       chars[i] !== chars[i - 1]
     ) {
       chars.splice(i, 0, " ");
       positions.splice(i, 0, (prev + curr) / 2);
+    }
+  }
+}
+
+/** Offset between fullwidth forms (U+FF01-FF5E) and their ASCII equivalents. */
+const FULLWIDTH_OFFSET = 0xfee0;
+
+/** Matches CJK ideographs, kana, and hangul - text where fullwidth forms are correct. */
+const CJK_PATTERN = /[\u2E80-\u9FFF\uAC00-\uD7AF\uF900-\uFAFF]/;
+
+/**
+ * Cleans up decoded characters in place, keeping `positions` index-aligned:
+ *
+ * - Collapses runs of spaces to one (the model can emit a space at a wide
+ *   gap that {@link injectGapSpaces} also widened, or fire two space
+ *   timesteps across a column gap).
+ * - Maps fullwidth forms (U+FF01-FF5E, ideographic space) to ASCII when the
+ *   text contains no CJK: the multilingual recognizer picks the fullwidth
+ *   colon (U+FF1A) or parenthesis (U+FF08) on Latin-only receipts where the
+ *   halfwidth form is always the correct reading. Text with any CJK is left
+ *   untouched - fullwidth is proper typography there.
+ */
+export function refineDecodedChars(chars: string[], positions: number[]): void {
+  for (let i = chars.length - 1; i >= 1; i--) {
+    if (chars[i] === " " && chars[i - 1] === " ") {
+      chars.splice(i, 1);
+      positions.splice(i, 1);
+    }
+  }
+
+  if (CJK_PATTERN.test(chars.join(""))) return;
+  for (let i = 0; i < chars.length; i++) {
+    const code = chars[i]?.codePointAt(0) ?? 0;
+    if (code >= 0xff01 && code <= 0xff5e) {
+      chars[i] = String.fromCodePoint(code - FULLWIDTH_OFFSET);
+    } else if (code === 0x3000) {
+      chars[i] = " ";
     }
   }
 }
@@ -120,6 +182,7 @@ export function ctcGreedyDecode(
   }
 
   injectGapSpaces(emitted, positions);
+  refineDecodedChars(emitted, positions);
 
   const confidence = confidenceCount > 0 ? confidenceSum / confidenceCount : 0;
   return { text: emitted.join(""), confidence, positions };

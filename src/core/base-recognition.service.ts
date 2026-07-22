@@ -26,7 +26,7 @@ export type RecognitionResult = {
   text: string;
   /** Bounding box of the text region in the original image coordinates. */
   box: Box;
-  /** Recognition confidence score (0–1). */
+  /** Recognition confidence score (0-1). */
   confidence: number;
 };
 
@@ -109,19 +109,27 @@ export class BaseRecognitionService {
 
       const ctx = this.buildContext();
 
+      let results: RecognitionResult[];
       switch (strategy) {
         case "cross-line":
-          return await runCrossLineStrategy(
+          results = await runCrossLineStrategy(
             sourceCanvasForCrop,
             validBoxes,
             ctx,
             charactersDictionary
           );
+          break;
         case "per-line":
-          return await runLineStrategy(sourceCanvasForCrop, validBoxes, ctx, charactersDictionary);
+          results = await runLineStrategy(
+            sourceCanvasForCrop,
+            validBoxes,
+            ctx,
+            charactersDictionary
+          );
+          break;
         case "per-box":
         default:
-          return await runPerBoxStrategy(
+          results = await runPerBoxStrategy(
             sourceCanvasForCrop,
             validBoxes,
             ctx,
@@ -130,6 +138,22 @@ export class BaseRecognitionService {
             charactersDictionary
           );
       }
+
+      // Drop hallucinated noise regions (hatch patterns, logos, barcodes read
+      // as text at 0.2-0.45 confidence) the way upstream PaddleOCR's
+      // drop_score does; real text measures >= 0.65 on our regression set.
+      // Symbol-only items (no letter or digit) carry no language evidence -
+      // ruled separator lines read as "+-" at ~0.69 - so they must clear a
+      // higher bar.
+      const minimumConfidence = this.options.minimumConfidence ?? 0.5;
+      return minimumConfidence > 0
+        ? results.filter((r) => {
+            const bar = /[\p{L}\p{N}]/u.test(r.text)
+              ? minimumConfidence
+              : Math.min(1, minimumConfidence + 0.3);
+            return r.confidence >= bar;
+          })
+        : results;
     } catch (error) {
       console.error(
         "Error during text recognition:",

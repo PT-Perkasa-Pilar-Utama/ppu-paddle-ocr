@@ -16,7 +16,14 @@ function build(engine: ProcessingEngine): PaddleOcrService {
   return new PaddleOcrService({
     session: { executionProviders: config.executionProviders },
     processing: { engine },
-    recognition: { charactersDictionary: [], strategy: config.defaultStrategy },
+    recognition: {
+      charactersDictionary: [],
+      strategy: config.defaultStrategy,
+      ...(config.minConfidence !== undefined ? { minimumConfidence: config.minConfidence } : {}),
+    },
+    ...(config.maxSideLength !== undefined
+      ? { detection: { maxSideLength: config.maxSideLength } }
+      : {}),
     ...(config.model ? { model: config.model } : {}),
   });
 }

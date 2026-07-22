@@ -17,7 +17,7 @@ export const DICT_BASE_URL =
 
 // ─── PP-OCRv6 Models ──────────────────────────────────────────────────────────
 
-/** PP-OCRv6 small (default): 50+ languages, best accuracy/speed balance. */
+/** PP-OCRv6 small: 50+ languages full dictionary, best accuracy/speed balance. */
 export const V6_SMALL_MODEL: ModelUrls = {
   detection: `${MODEL_BASE_URL}/detection/ort/PP-OCRv6_small_det.ort`,
   recognition: `${MODEL_BASE_URL}/recognition/ort/PP-OCRv6_small_rec.ort`,
@@ -31,7 +31,7 @@ export const V6_MEDIUM_MODEL: ModelUrls = {
   charactersDictionary: `${DICT_BASE_URL}/recognition/ppocrv6_dict.txt`,
 };
 
-/** PP-OCRv6 tiny: Fastest, 6.1× vs v5 mobile (Apple M4), smaller dictionary. */
+/** PP-OCRv6 tiny (default): fastest, ~6.9k-char dictionary (drops rare CJK, kana). */
 export const V6_TINY_MODEL: ModelUrls = {
   detection: `${MODEL_BASE_URL}/detection/ort/PP-OCRv6_tiny_det.ort`,
   recognition: `${MODEL_BASE_URL}/recognition/ort/PP-OCRv6_tiny_rec.ort`,
@@ -111,14 +111,14 @@ export const V4_SERVER_DOC_MODEL: ModelUrls = {
 // paired with the PP-OCRv5 mobile detector. Detection is generation-agnostic
 // (DB-based) and works fine across versions; only the recognition head is v3.
 
-/** PP-OCRv3 mobile recognition (paired with the v5 mobile detector — see note above). */
+/** PP-OCRv3 mobile recognition (paired with the v5 mobile detector - see note above). */
 export const V3_MOBILE_MODEL: ModelUrls = {
   detection: `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.onnx`,
   recognition: `${MODEL_BASE_URL}/recognition/PP-OCRv3_mobile_rec_infer.onnx`,
   charactersDictionary: `${DICT_BASE_URL}/recognition/ppocrv3_dict.txt`,
 };
 
-/** PP-OCRv3 Japanese mobile recognition (paired with the v5 mobile detector — see note above). */
+/** PP-OCRv3 Japanese mobile recognition (paired with the v5 mobile detector - see note above). */
 export const V3_JAPANESE_MOBILE_MODEL: ModelUrls = {
   detection: `${MODEL_BASE_URL}/detection/PP-OCRv5_mobile_det_infer.onnx`,
   recognition: `${MODEL_BASE_URL}/recognition/multi/japan/v3/japan_PP-OCRv3_mobile_rec_infer.onnx`,
@@ -197,8 +197,8 @@ export const V5_THAI_MOBILE_MODEL: ModelUrls = {
   charactersDictionary: `${DICT_BASE_URL}/recognition/multi/th/v5/ppocrv5_th_dict.txt`,
 };
 
-/** Default model (PP-OCRv6 small). */
-export const DEFAULT_MODEL: ModelUrls = V6_SMALL_MODEL;
+/** Default model (PP-OCRv6 tiny): fastest, tuned by DEFAULT_DETECTION_OPTIONS. */
+export const DEFAULT_MODEL: ModelUrls = V6_TINY_MODEL;
 
 /** @deprecated Use {@link DEFAULT_MODEL} instead. */
 export const DEFAULT_MODEL_URLS: ModelUrls = DEFAULT_MODEL;
