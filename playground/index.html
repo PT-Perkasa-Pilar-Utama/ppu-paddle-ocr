@@ -498,6 +498,216 @@
       .config-section[open] > summary {
         border-bottom: 1px solid var(--border);
       }
+      /* The model choice drives accuracy and speed more than any other
+         knob, so its section leads the panel and carries the accent. */
+      .config-section-model {
+        border: 1px solid var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-glow);
+      }
+      .config-section-model > summary strong {
+        color: var(--accent);
+      }
+      .btn-model-guide {
+        width: 100%;
+        margin-bottom: 0.75rem;
+        padding: 0.45rem 0.6rem;
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 0.72rem;
+        color: var(--accent);
+        background: transparent;
+        border: 1px dashed var(--accent);
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .btn-model-guide:hover {
+        background: var(--accent-glow);
+      }
+      .guide-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: rgba(0, 0, 0, 0.45);
+      }
+      .guide-overlay.visible {
+        display: flex;
+      }
+      .guide-card {
+        max-width: 640px;
+        max-height: 85vh;
+        overflow: auto;
+        padding: 1rem 1.25rem 1.25rem;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+      }
+      .guide-card h2 {
+        margin: 0 0 0.25rem;
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 1rem;
+      }
+      .guide-card p {
+        margin: 0 0 0.75rem;
+        font-size: 0.7rem;
+        color: var(--text-muted);
+      }
+      .guide-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.68rem;
+      }
+      .guide-table th,
+      .guide-table td {
+        padding: 0.4rem 0.5rem;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--border);
+      }
+      .guide-table th {
+        font-size: 0.6rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-muted);
+      }
+      .guide-preset {
+        padding: 0.15rem 0.4rem;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.62rem;
+        color: var(--accent);
+        background: transparent;
+        border: 1px solid var(--accent);
+        border-radius: 3px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .guide-preset:hover {
+        background: var(--accent-glow);
+      }
+      .guide-close {
+        float: right;
+        padding: 0.1rem 0.45rem;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .conf-filter {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin: 0.35rem 0 0.5rem;
+        font-size: 0.66rem;
+        color: var(--text-muted);
+      }
+      .conf-filter input {
+        width: 4.5rem;
+        padding: 0.2rem 0.35rem;
+        font-size: 0.66rem;
+      }
+      /* First-visit boot overlay: model download progress */
+      .boot-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1200;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        background: var(--bg-primary);
+      }
+      .boot-overlay.hidden {
+        display: none;
+      }
+      .boot-title {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 1.1rem;
+      }
+      .boot-percent {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 3.2rem;
+        font-weight: 700;
+        color: var(--accent);
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+      }
+      .boot-stage {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+      }
+      .boot-bar {
+        width: min(320px, 70vw);
+        height: 6px;
+        overflow: hidden;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+      }
+      .boot-bar-fill {
+        width: 0%;
+        height: 100%;
+        background: var(--accent);
+        transition: width 0.15s ease;
+      }
+      .boot-bar.indeterminate .boot-bar-fill {
+        width: 40%;
+        animation: boot-slide 1.1s ease-in-out infinite alternate;
+      }
+      @keyframes boot-slide {
+        from {
+          margin-left: 0;
+        }
+        to {
+          margin-left: 60%;
+        }
+      }
+      /* Sample image chips in the empty state */
+      .sample-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        justify-content: center;
+        margin-top: 0.75rem;
+      }
+      .sample-chip {
+        padding: 0.25rem 0.6rem;
+        font-size: 0.64rem;
+        color: var(--accent);
+        background: transparent;
+        border: 1px solid var(--accent);
+        border-radius: 999px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .sample-chip:hover {
+        background: var(--accent-glow);
+      }
+      .sample-chip:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .lib-version-row {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 0.5rem;
+        font-size: 0.66rem;
+        color: var(--text-muted);
+      }
+      .lib-version-row select {
+        flex: 1;
+        padding: 0.25rem 0.35rem;
+        font-size: 0.66rem;
+      }
       .config-summary {
         display: flex;
         flex-direction: column;
@@ -1504,10 +1714,145 @@
               The defaults work well for most images. Adjust only what you need, then apply your
               changes.
             </p>
+            <div class="lib-version-row">
+              <label for="cfg-lib-version">Library</label>
+              <select id="cfg-lib-version" class="input-field">
+                <option value="">v6 (current)</option>
+                <option value="5.8.3">v5.8.3 (legacy)</option>
+                <option value="4.1.1">v4.1.1 (legacy, best effort)</option>
+              </select>
+            </div>
           </div>
 
           <div class="config-sections">
+            <details class="config-section config-section-model" open>
+              <summary>
+                <span class="config-summary">
+                  <strong>Models</strong>
+                  <small>Pick the model tier for your workload</small>
+                </span>
+              </summary>
+              <div class="config-body">
+                <button type="button" class="btn-model-guide" id="btn-model-guide">
+                  Which model and config should I use?
+                </button>
+                <p class="field-help" style="margin: 0 0 0.75rem">
+                  Pick a preset, or leave everything blank to use the built-in PP-OCR defaults.
+                </p>
+                <div class="input-group">
+                  <label class="input-label" for="cfg-model-preset">Model preset</label>
+                  <select id="cfg-model-preset" class="input-field">
+                    <option value="">Default - PP-OCRv6 tiny</option>
+                  </select>
+                  <small class="field-help">
+                    Any URL filled in below overrides that part of the preset.
+                  </small>
+                </div>
+                <label class="checkbox-label" for="cfg-model-warm">
+                  <input type="checkbox" id="cfg-model-warm" class="input-checkbox" />
+                  Warm up after applying (hidden inference so the first recognize is fast)
+                </label>
+                <div class="input-group">
+                  <label class="input-label" for="cfg-model-det">Detection model URL</label>
+                  <input
+                    type="url"
+                    id="cfg-model-det"
+                    class="input-field"
+                    placeholder="Use built-in model"
+                    inputmode="url"
+                  />
+                </div>
+                <div class="input-group">
+                  <label class="input-label" for="cfg-model-rec">Recognition model URL</label>
+                  <input
+                    type="url"
+                    id="cfg-model-rec"
+                    class="input-field"
+                    placeholder="Use built-in model"
+                    inputmode="url"
+                  />
+                </div>
+                <div class="input-group">
+                  <label class="input-label" for="cfg-model-dict">Character dictionary URL</label>
+                  <input
+                    type="url"
+                    id="cfg-model-dict"
+                    class="input-field"
+                    placeholder="Use built-in dictionary"
+                    inputmode="url"
+                  />
+                </div>
+              </div>
+            </details>
+
             <details class="config-section" open>
+              <summary>
+                <span class="config-summary">
+                  <strong>Recognition</strong>
+                  <small>Control text reading speed and accuracy</small>
+                </span>
+              </summary>
+              <div class="config-body">
+                <div class="input-group">
+                  <label class="input-label" for="cfg-rec-strategy">Reading strategy</label>
+                  <select id="cfg-rec-strategy" class="input-field">
+                    <option value="per-box">Isolated - one text box at a time</option>
+                    <option value="per-line" selected>Balanced - group boxes by line (default)</option>
+                    <option value="cross-line">Fast - batch across lines</option>
+                  </select>
+                  <small class="field-help">
+                    Balanced is the default: line context improves short labels at equal speed.
+                  </small>
+                </div>
+                <div class="input-group">
+                  <label class="input-label" for="cfg-rec-minconf">Minimum confidence</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    id="cfg-rec-minconf"
+                    class="input-field"
+                    placeholder="0.5 (default)"
+                    inputmode="decimal"
+                  />
+                  <small class="field-help">
+                    Items below this confidence are dropped before results return. 0 disables.
+                  </small>
+                </div>
+                <div class="input-group">
+                  <label class="input-label" for="cfg-rec-imgheight"
+                    >Recognition image height</label
+                  >
+                  <input
+                    type="number"
+                    min="8"
+                    step="8"
+                    id="cfg-rec-imgheight"
+                    class="input-field"
+                    placeholder="48 (default)"
+                    inputmode="numeric"
+                  />
+                </div>
+                <div class="input-group">
+                  <label class="input-label" for="cfg-rec-crosslinefactor">
+                    Cross-line width factor
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    id="cfg-rec-crosslinefactor"
+                    class="input-field"
+                    placeholder="1.0 (default)"
+                    inputmode="decimal"
+                  />
+                  <small class="field-help">Used only by the fast cross-line strategy.</small>
+                </div>
+              </div>
+            </details>
+
+            <details class="config-section">
               <summary>
                 <span class="config-summary">
                   <strong>Detection</strong>
@@ -1651,114 +1996,6 @@
               </div>
             </details>
 
-            <details class="config-section" open>
-              <summary>
-                <span class="config-summary">
-                  <strong>Recognition</strong>
-                  <small>Control text reading speed and accuracy</small>
-                </span>
-              </summary>
-              <div class="config-body">
-                <div class="input-group">
-                  <label class="input-label" for="cfg-rec-strategy">Reading strategy</label>
-                  <select id="cfg-rec-strategy" class="input-field">
-                    <option value="per-box">Isolated - one text box at a time</option>
-                    <option value="per-line" selected>Balanced - group boxes by line (default)</option>
-                    <option value="cross-line">Fast - batch across lines</option>
-                  </select>
-                  <small class="field-help">
-                    Balanced is the default: line context improves short labels at equal speed.
-                  </small>
-                </div>
-                <div class="input-group">
-                  <label class="input-label" for="cfg-rec-imgheight"
-                    >Recognition image height</label
-                  >
-                  <input
-                    type="number"
-                    min="8"
-                    step="8"
-                    id="cfg-rec-imgheight"
-                    class="input-field"
-                    placeholder="48 (default)"
-                    inputmode="numeric"
-                  />
-                </div>
-                <div class="input-group">
-                  <label class="input-label" for="cfg-rec-crosslinefactor">
-                    Cross-line width factor
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0.1"
-                    id="cfg-rec-crosslinefactor"
-                    class="input-field"
-                    placeholder="1.0 (default)"
-                    inputmode="decimal"
-                  />
-                  <small class="field-help">Used only by the fast cross-line strategy.</small>
-                </div>
-              </div>
-            </details>
-
-            <details class="config-section">
-              <summary>
-                <span class="config-summary">
-                  <strong>Models</strong>
-                  <small>Use custom model and dictionary URLs</small>
-                </span>
-              </summary>
-              <div class="config-body">
-                <p class="field-help" style="margin: 0 0 0.75rem">
-                  Pick a preset, or leave everything blank to use the built-in PP-OCR defaults.
-                </p>
-                <div class="input-group">
-                  <label class="input-label" for="cfg-model-preset">Model preset</label>
-                  <select id="cfg-model-preset" class="input-field">
-                    <option value="">Default - PP-OCRv6 tiny</option>
-                  </select>
-                  <small class="field-help">
-                    Any URL filled in below overrides that part of the preset.
-                  </small>
-                </div>
-                <label class="checkbox-label" for="cfg-model-warm">
-                  <input type="checkbox" id="cfg-model-warm" class="input-checkbox" />
-                  Warm up after applying (hidden inference so the first recognize is fast)
-                </label>
-                <div class="input-group">
-                  <label class="input-label" for="cfg-model-det">Detection model URL</label>
-                  <input
-                    type="url"
-                    id="cfg-model-det"
-                    class="input-field"
-                    placeholder="Use built-in model"
-                    inputmode="url"
-                  />
-                </div>
-                <div class="input-group">
-                  <label class="input-label" for="cfg-model-rec">Recognition model URL</label>
-                  <input
-                    type="url"
-                    id="cfg-model-rec"
-                    class="input-field"
-                    placeholder="Use built-in model"
-                    inputmode="url"
-                  />
-                </div>
-                <div class="input-group">
-                  <label class="input-label" for="cfg-model-dict">Character dictionary URL</label>
-                  <input
-                    type="url"
-                    id="cfg-model-dict"
-                    class="input-field"
-                    placeholder="Use built-in dictionary"
-                    inputmode="url"
-                  />
-                </div>
-              </div>
-            </details>
-
             <details class="config-section">
               <summary>
                 <span class="config-summary">
@@ -1784,6 +2021,7 @@
                 </label>
               </div>
             </details>
+          
           </div>
         </div>
 
@@ -1819,6 +2057,14 @@
                 <polyline points="21 15 16 10 5 21" />
               </svg>
               <p>Upload an image to begin</p>
+              <div class="sample-row" id="sample-row">
+                <button type="button" class="sample-chip" data-sample="receipt.jpg" data-label="receipt">Receipt photo</button>
+                <button type="button" class="sample-chip" data-sample="tilted.png" data-label="tilted">Tilted text</button>
+                <button type="button" class="sample-chip" data-sample="config-matrix/dark-dense-portrait.png" data-label="dark app UI">Dark app UI</button>
+                <button type="button" class="sample-chip" data-sample="config-matrix/light-sparse-portrait.png" data-label="form">Form</button>
+                <button type="button" class="sample-chip" data-sample="config-matrix/light-dense-landscape.png" data-label="document">Document page</button>
+                <button type="button" class="sample-chip" data-sample="config-matrix/low-contrast-photo-landscape.png" data-label="low contrast">Low contrast</button>
+              </div>
             </div>
             <div class="model-error" id="model-error" role="alert" hidden>
               <strong>OCR models unavailable</strong>
@@ -1847,6 +2093,20 @@
           <div class="tab-content active" id="tab-list">
             <div class="section-title" id="results-title" style="display: none; padding-left: 0">
               Recognition Results
+            </div>
+            <div class="conf-filter" id="results-conf-filter-row" style="display: none">
+              <label for="results-conf-filter">Min confidence</label>
+              <input
+                type="number"
+                id="results-conf-filter"
+                min="0"
+                max="1"
+                step="0.05"
+                value="0.5"
+                inputmode="decimal"
+                class="input-field"
+              />
+              <span id="results-conf-count"></span>
             </div>
             <ul class="results-list" id="results-list"></ul>
           </div>
@@ -1878,30 +2138,153 @@
       </div>
     </div>
 
-    <script type="importmap">
-      {
-        "imports": {
-          "onnxruntime-web": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/ort.all.bundle.min.mjs",
-          "ppu-ocv/web": "https://cdn.jsdelivr.net/npm/ppu-ocv@3.3.0/index.web.js",
-          "ppu-ocv/canvas-web": "https://cdn.jsdelivr.net/npm/ppu-ocv@3.3.0/index.canvas-web.js"
-        }
-      }
+    <!-- First-visit boot overlay: model download / init progress -->
+    <div class="boot-overlay" id="boot-overlay" role="status" aria-live="polite">
+      <div class="boot-title">ppu-paddle-ocr</div>
+      <div class="boot-percent" id="boot-percent">0%</div>
+      <div class="boot-bar" id="boot-bar"><div class="boot-bar-fill" id="boot-bar-fill"></div></div>
+      <div class="boot-stage" id="boot-stage">Preparing...</div>
+    </div>
+
+    <!-- Model & config recommendation guide -->
+    <div
+      class="guide-overlay"
+      id="guide-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="guide-title"
+    >
+      <div class="guide-card">
+        <button type="button" class="guide-close" id="guide-close" aria-label="Close">x</button>
+        <h2 id="guide-title">Which model and config should I use?</h2>
+        <p>
+          Defaults are PP-OCRv6 tiny with the Balanced strategy - fast and accurate for
+          screenshots and clean photos. Click a preset to select it, then Apply changes.
+        </p>
+        <table class="guide-table">
+          <thead>
+            <tr>
+              <th>Your input</th>
+              <th>Recommended</th>
+              <th>Preset</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>App or web screenshot (dark or light theme)</td>
+              <td>Defaults as-is</td>
+              <td><button type="button" class="guide-preset" data-preset="v6-tiny">v6-tiny</button></td>
+            </tr>
+            <tr>
+              <td>Form or sparse labels</td>
+              <td>Defaults as-is</td>
+              <td><button type="button" class="guide-preset" data-preset="v6-tiny">v6-tiny</button></td>
+            </tr>
+            <tr>
+              <td>Receipt or document photo</td>
+              <td>Defaults as-is; small for hard shots</td>
+              <td><button type="button" class="guide-preset" data-preset="v6-tiny">v6-tiny</button></td>
+            </tr>
+            <tr>
+              <td>Dense document page (paragraphs, tables)</td>
+              <td>Small + the Fast (cross-line) strategy</td>
+              <td><button type="button" class="guide-preset" data-preset="v6-small">v6-small</button></td>
+            </tr>
+            <tr>
+              <td>Low contrast or blurry photo</td>
+              <td>Medium (server-grade); raise processing size</td>
+              <td><button type="button" class="guide-preset" data-preset="v6-medium">v6-medium</button></td>
+            </tr>
+            <tr>
+              <td>Rare CJK, kana, or full 50+ language coverage</td>
+              <td>Small or medium (full dictionary)</td>
+              <td><button type="button" class="guide-preset" data-preset="v6-small">v6-small</button></td>
+            </tr>
+            <tr>
+              <td>One known language only</td>
+              <td>A v5 language preset (English shown)</td>
+              <td><button type="button" class="guide-preset" data-preset="v5-en-mobile">v5-en-mobile</button></td>
+            </tr>
+            <tr>
+              <td>Tilted or rotated input</td>
+              <td>Deskew the image first, then defaults</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>Tiny text that still is not detected</td>
+              <td>Raise Image processing size (e.g. 1280+)</td>
+              <td>-</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+      // The library version is selectable (?lib=5.8.3 / ?lib=4.1.1). Each
+      // major pairs with the ppu-ocv major it was built against, and import
+      // maps are fixed at page load, so the map is written here, before any
+      // module resolution. Legacy pins are exact on purpose: a floating
+      // major pin (e.g. pkg@5) can serve a stale cached build from the CDN.
+      (() => {
+        const MAPS = {
+          "": {
+            "onnxruntime-web":
+              "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/ort.all.bundle.min.mjs",
+            "ppu-ocv/web": "https://cdn.jsdelivr.net/npm/ppu-ocv@3.3.0/index.web.js",
+            "ppu-ocv/canvas-web": "https://cdn.jsdelivr.net/npm/ppu-ocv@3.3.0/index.canvas-web.js",
+          },
+          "5.8.3": {
+            "onnxruntime-web":
+              "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/ort.all.bundle.min.mjs",
+            "ppu-ocv/web": "https://cdn.jsdelivr.net/npm/ppu-ocv@3.3.0/index.web.js",
+            "ppu-ocv/canvas-web": "https://cdn.jsdelivr.net/npm/ppu-ocv@3.3.0/index.canvas-web.js",
+          },
+          "4.1.1": {
+            "onnxruntime-web":
+              "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/ort.all.bundle.min.mjs",
+            "ppu-ocv/web": "https://cdn.jsdelivr.net/npm/ppu-ocv@2.0.0/index.web.js",
+          },
+        };
+        const requested = new URLSearchParams(location.search).get("lib") || "";
+        const lib = requested in MAPS ? requested : "";
+        window.__LIB_VERSION__ = lib;
+        const mapEl = document.createElement("script");
+        mapEl.type = "importmap";
+        mapEl.textContent = JSON.stringify({ imports: MAPS[lib] });
+        document.currentScript.after(mapEl);
+      })();
     </script>
     <script type="module">
+      const LIB_VERSION = window.__LIB_VERSION__ || "";
       let PaddleOcrService;
       let MODEL_PRESETS;
-      try {
-        // Try local build first (for development)
-        const local = await import("./lib/web/index.js");
-        PaddleOcrService = local.PaddleOcrService;
-        MODEL_PRESETS = local.MODEL_PRESETS;
-      } catch (e) {
-        // Fallback to npm CDN
-        console.warn("Local build failed to load:", e);
-        console.log("Falling back to CDN...");
-        const cdn = await import("https://cdn.jsdelivr.net/npm/ppu-paddle-ocr@6.1.2/web/index.js");
-        PaddleOcrService = cdn.PaddleOcrService;
-        MODEL_PRESETS = cdn.MODEL_PRESETS;
+      let libDefaultModelUrls = null;
+      let libRecognitionDefaults = null;
+      let libDetectionDefaults = null;
+      {
+        let mod;
+        if (LIB_VERSION) {
+          // Legacy build selected via the Library dropdown (?lib=)
+          mod = await import(
+            `https://cdn.jsdelivr.net/npm/ppu-paddle-ocr@${LIB_VERSION}/web/index.js`
+          );
+        } else {
+          try {
+            // Try local build first (for development)
+            mod = await import("./lib/web/index.js");
+          } catch (e) {
+            // Fallback to npm CDN
+            console.warn("Local build failed to load:", e);
+            console.log("Falling back to CDN...");
+            mod = await import("https://cdn.jsdelivr.net/npm/ppu-paddle-ocr@6.1.2/web/index.js");
+          }
+        }
+        PaddleOcrService = mod.PaddleOcrService;
+        MODEL_PRESETS = mod.MODEL_PRESETS ?? null;
+        libDefaultModelUrls = mod.DEFAULT_MODEL ?? mod.DEFAULT_MODEL_URLS ?? null;
+        libRecognitionDefaults = mod.DEFAULT_RECOGNITION_OPTIONS ?? null;
+        libDetectionDefaults = mod.DEFAULT_DETECTION_OPTIONS ?? null;
       }
 
       // -- DOM refs --
@@ -1921,6 +2304,19 @@
       const loadingText = document.getElementById("loading-text");
       const resultsList = document.getElementById("results-list");
       const resultsTitle = document.getElementById("results-title");
+      const confFilterRow = document.getElementById("results-conf-filter-row");
+      const confFilterInput = document.getElementById("results-conf-filter");
+      const confFilterCount = document.getElementById("results-conf-count");
+      const guideOverlay = document.getElementById("guide-overlay");
+      const guideClose = document.getElementById("guide-close");
+      const btnModelGuide = document.getElementById("btn-model-guide");
+      const bootOverlay = document.getElementById("boot-overlay");
+      const bootPercent = document.getElementById("boot-percent");
+      const bootBar = document.getElementById("boot-bar");
+      const bootBarFill = document.getElementById("boot-bar-fill");
+      const bootStage = document.getElementById("boot-stage");
+      const sampleChips = [...document.querySelectorAll(".sample-chip")];
+      const cfgLibVersion = document.getElementById("cfg-lib-version");
       const jsonResult = document.getElementById("json-result");
       const modelError = document.getElementById("model-error");
       const modelErrorMessage = document.getElementById("model-error-message");
@@ -1960,6 +2356,7 @@
       const cfgRecImgHeight = document.getElementById("cfg-rec-imgheight");
       const cfgRecStrategy = document.getElementById("cfg-rec-strategy");
       const cfgRecCrossLineFactor = document.getElementById("cfg-rec-crosslinefactor");
+      const cfgRecMinConf = document.getElementById("cfg-rec-minconf");
       const cfgSessionEp = document.getElementById("cfg-session-ep");
       const cfgDbgVerbose = document.getElementById("cfg-dbg-verbose");
       const btnApplyConfig = document.getElementById("btn-apply-config");
@@ -1997,6 +2394,7 @@
         cfgRecImgHeight,
         cfgRecStrategy,
         cfgRecCrossLineFactor,
+        cfgRecMinConf,
         cfgSessionEp,
         cfgDbgVerbose,
       ];
@@ -2046,6 +2444,142 @@
       let lastServiceOptions = DEFAULT_OPTIONS;
       let fallbackCdn = false;
       let lastResults = null;
+
+      // -- Results list with client-side confidence filter --
+      function renderResultsList() {
+        resultsList.innerHTML = "";
+        if (!lastResults) {
+          confFilterRow.style.display = "none";
+          return;
+        }
+        const raw = parseFloat(confFilterInput.value);
+        const threshold = Number.isFinite(raw) ? raw : 0;
+
+        if (lastResults.length === 0) {
+          confFilterRow.style.display = "none";
+          const li = document.createElement("li");
+          li.className = "result-item";
+          li.innerHTML = `<span class="result-text" style="color:var(--warning);">No text detected.</span>`;
+          resultsList.appendChild(li);
+          return;
+        }
+
+        confFilterRow.style.display = "flex";
+        let shown = 0;
+        lastResults.forEach((item, i) => {
+          if (item.confidence < threshold) return;
+          shown++;
+          const li = document.createElement("li");
+          li.className = "result-item";
+          li.innerHTML = `
+                <span class="result-text"><span style="color:var(--text-muted);font-size:0.6rem;margin-right:4px;">${i + 1}</span>${item.text}</span>
+                <span class="result-conf">Score: ${item.confidence.toFixed(4)}</span>
+            `;
+          resultsList.appendChild(li);
+        });
+        confFilterCount.textContent =
+          shown === lastResults.length
+            ? `${shown} items`
+            : `${shown} of ${lastResults.length} shown`;
+        if (shown === 0) {
+          const li = document.createElement("li");
+          li.className = "result-item";
+          li.innerHTML = `<span class="result-text" style="color:var(--warning);">All ${lastResults.length} items are below the filter.</span>`;
+          resultsList.appendChild(li);
+        }
+      }
+      confFilterInput.addEventListener("input", renderResultsList);
+
+      // -- Model & config recommendation guide --
+      const closeGuide = () => guideOverlay.classList.remove("visible");
+      btnModelGuide.addEventListener("click", () => guideOverlay.classList.add("visible"));
+      guideClose.addEventListener("click", closeGuide);
+      guideOverlay.addEventListener("click", (e) => {
+        if (e.target === guideOverlay) closeGuide();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeGuide();
+      });
+      for (const btn of document.querySelectorAll(".guide-preset")) {
+        btn.addEventListener("click", () => {
+          const key = btn.dataset.preset;
+          const exists = [...cfgModelPreset.options].some((o) => o.value === key);
+          if (exists) {
+            cfgModelPreset.value = key;
+            // Run the dirty-tracking listeners so Apply lights up
+            cfgModelPreset.dispatchEvent(new Event("input", { bubbles: true }));
+            cfgModelPreset.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+          closeGuide();
+        });
+      }
+
+      // -- Library version switching (page reload: the import map is fixed) --
+      cfgLibVersion.value = [...cfgLibVersion.options].some((o) => o.value === LIB_VERSION)
+        ? LIB_VERSION
+        : "";
+      cfgLibVersion.addEventListener("change", () => {
+        const url = new URL(location.href);
+        if (cfgLibVersion.value) url.searchParams.set("lib", cfgLibVersion.value);
+        else url.searchParams.delete("lib");
+        location.href = url.toString();
+      });
+
+      // -- Capability gating: hide config the loaded build does not support --
+      const hideGroup = (el) => {
+        const group = el.closest(".input-group");
+        if (group) group.style.display = "none";
+      };
+      if (!MODEL_PRESETS) {
+        hideGroup(cfgModelPreset);
+        for (const btn of document.querySelectorAll(".guide-preset")) {
+          btn.disabled = true;
+          btn.title = "Presets need the current library version";
+        }
+      }
+      if (!libRecognitionDefaults || !("strategy" in libRecognitionDefaults)) {
+        hideGroup(cfgRecStrategy);
+        hideGroup(cfgRecCrossLineFactor);
+      }
+      if (!libRecognitionDefaults || !("minimumConfidence" in libRecognitionDefaults)) {
+        hideGroup(cfgRecMinConf);
+      }
+      if (!libDetectionDefaults || libDetectionDefaults.maxSideLength !== "auto") {
+        cfgDetMaxSide.placeholder = "library default";
+      }
+
+      // -- Sample images (fetched from the repo; enabled once models are ready) --
+      const RAW_ASSETS =
+        "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/main/assets/";
+      function setSamplesEnabled(enabled) {
+        for (const chip of sampleChips) chip.disabled = !enabled;
+      }
+      setSamplesEnabled(false);
+      for (const chip of sampleChips) {
+        chip.addEventListener("click", async () => {
+          if (chip.disabled) return;
+          const path = chip.dataset.sample;
+          setSamplesEnabled(false);
+          setStatus("loading", `Fetching ${chip.dataset.label} sample...`);
+          try {
+            const res = await fetch(RAW_ASSETS + path);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const blob = await res.blob();
+            const name = path.split("/").pop();
+            const type = blob.type && blob.type.startsWith("image/")
+              ? blob.type
+              : name.endsWith(".jpg")
+                ? "image/jpeg"
+                : "image/png";
+            await handleFile(new File([blob], name, { type }));
+          } catch (err) {
+            console.error("Sample fetch failed:", err);
+            setStatus("error", "Sample unavailable");
+          } finally {
+            setSamplesEnabled(serviceReady);
+          }
+        });
+      }
       let lastElapsed = 0;
 
       // -- Tabs Logic --
@@ -2073,6 +2607,7 @@
         lastServiceOptions = options;
         serviceReady = false;
         btnProcess.disabled = true;
+        setSamplesEnabled(false);
         modelError.hidden = true;
         if (!loadedImage) resultPlaceholder.style.display = "flex";
         setStatus("loading", "Loading Models…");
@@ -2094,6 +2629,7 @@
           }
           serviceReady = true;
           btnProcess.disabled = !loadedImage;
+          setSamplesEnabled(true);
           setStatus("ready", "Ready");
           console.log("✅ Service initialized successfully");
           return true;
@@ -2126,7 +2662,7 @@
       btnRetryModels.addEventListener("click", async () => {
         btnRetryModels.disabled = true;
         btnRetryModels.textContent = "Loading…";
-        await initService(lastServiceOptions);
+        await initServiceWithProgress(lastServiceOptions);
         btnRetryModels.disabled = false;
         btnRetryModels.textContent = "Retry loading models";
       });
@@ -2177,10 +2713,117 @@
         setStatus("ready", "Ready");
       }
 
-      // Initial boot, followed by the warmup inference.
+      // -- Initial boot: full-screen progress while models download & init --
+      function bootIndeterminate(stageText) {
+        bootBar.classList.add("indeterminate");
+        bootPercent.textContent = "";
+        bootStage.textContent = stageText;
+      }
+
+      async function fetchModelWithProgress(url, onBytes) {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+        const total = Number(res.headers.get("content-length")) || 0;
+        if (!res.body || !total) {
+          const buf = await res.arrayBuffer();
+          onBytes(buf.byteLength, total || buf.byteLength);
+          return buf;
+        }
+        const reader = res.body.getReader();
+        const chunks = [];
+        let received = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.byteLength;
+          onBytes(value.byteLength, 0);
+        }
+        const buf = new Uint8Array(received);
+        let offset = 0;
+        for (const c of chunks) {
+          buf.set(c, offset);
+          offset += c.byteLength;
+        }
+        return buf.buffer;
+      }
+
+      // Full-screen progress for ANY (re)initialization: first boot, Apply
+      // changes with a different model, and the retry button all route
+      // through here, so switching models brings the overlay back.
+      async function initServiceWithProgress(options = {}, { warm = false } = {}) {
+        bootOverlay.classList.remove("hidden");
+        bootBar.classList.remove("indeterminate");
+        bootBarFill.style.width = "0%";
+        bootPercent.textContent = "0%";
+        bootStage.textContent = "Preparing...";
+
+        const opts = { ...options };
+        const allStrings = (m) =>
+          !!m &&
+          ["detection", "recognition", "charactersDictionary"].every(
+            (k) => typeof m[k] === "string"
+          );
+        // Real download percentage needs URLs up front: either the applied
+        // model (preset / custom URLs) or the library's default bundle.
+        // Legacy builds may not export their URLs; those get an
+        // indeterminate bar and fetch for themselves.
+        const urlSet = allStrings(opts.model)
+          ? opts.model
+          : !opts.model && !LIB_VERSION && allStrings(libDefaultModelUrls)
+            ? libDefaultModelUrls
+            : null;
+
+        if (urlSet) {
+          try {
+            bootStage.textContent = "Downloading models...";
+            const files = [urlSet.detection, urlSet.recognition, urlSet.charactersDictionary];
+            let received = 0;
+            let totalKnown = 0;
+            const heads = await Promise.all(
+              files.map((u) => fetch(u, { method: "HEAD" }).catch(() => null))
+            );
+            for (const h of heads) {
+              totalKnown += (h && Number(h.headers.get("content-length"))) || 0;
+            }
+            const onBytes = (n) => {
+              received += n;
+              if (totalKnown > 0) {
+                const pct = Math.min(100, Math.round((received / totalKnown) * 100));
+                bootPercent.textContent = `${pct}%`;
+                bootBarFill.style.width = `${pct}%`;
+              }
+            };
+            if (!totalKnown) bootIndeterminate("Downloading models...");
+            const [det, rec, dict] = await Promise.all(
+              files.map((u) => fetchModelWithProgress(u, onBytes))
+            );
+            opts.model = { detection: det, recognition: rec, charactersDictionary: dict };
+            bootPercent.textContent = "100%";
+            bootBarFill.style.width = "100%";
+          } catch (err) {
+            // Progress prefetch is UX only; the service can fetch by itself.
+            console.warn("Model prefetch failed, falling back to plain init:", err);
+            bootIndeterminate("Downloading models...");
+          }
+        } else {
+          bootIndeterminate(
+            LIB_VERSION ? `Loading ppu-paddle-ocr v${LIB_VERSION}...` : "Downloading models..."
+          );
+        }
+
+        bootIndeterminate("Initializing inference sessions...");
+        const initialized = await initService(opts);
+        if (initialized && warm) {
+          bootStage.textContent = "Warming up...";
+          await warmUpService();
+        }
+        bootOverlay.classList.add("hidden");
+        return initialized;
+      }
+
       (async () => {
-        const initialized = await initService(DEFAULT_OPTIONS);
-        if (initialized) await warmUpService();
+        await initServiceWithProgress(DEFAULT_OPTIONS, { warm: true });
       })();
       btnCopyJson.addEventListener("click", async () => {
         try {
@@ -2241,6 +2884,8 @@
         if (cfgRecStrategy.value) options.recognition.strategy = cfgRecStrategy.value;
         if (cfgRecCrossLineFactor.value)
           options.recognition.crossLineWidthFactor = parseFloat(cfgRecCrossLineFactor.value);
+        if (cfgRecMinConf.value !== "")
+          options.recognition.minimumConfidence = parseFloat(cfgRecMinConf.value);
 
         if (cfgSessionEp.value) options.session.executionProviders = [cfgSessionEp.value];
 
@@ -2250,8 +2895,9 @@
         btnApplyConfig.disabled = true;
         configState.textContent = "Applying changes…";
         configState.classList.remove("pending");
-        const initialized = await initService(options);
-        if (initialized && cfgModelWarm.checked) await warmUpService();
+        const initialized = await initServiceWithProgress(options, {
+          warm: cfgModelWarm.checked,
+        });
         configApplying = false;
 
         if (initialized && configRevision === appliedRevision) {
@@ -2308,6 +2954,7 @@
         fileNameEl.textContent = file.name;
         resultsList.innerHTML = "";
         resultsTitle.style.display = "none";
+        confFilterRow.style.display = "none";
 
         const arrayBuffer = await file.arrayBuffer();
         const blob = new Blob([arrayBuffer], { type: file.type });
@@ -2406,6 +3053,7 @@
         setStatus("loading", "Recognizing Text…");
         resultsList.innerHTML = "";
         resultsTitle.style.display = "none";
+        confFilterRow.style.display = "none";
         loadingText.textContent = "Recognizing…";
         loadingOverlay.classList.add("visible");
         loadingOverlay.setAttribute("aria-hidden", "false");
@@ -2435,23 +3083,7 @@
           lastResults = result.results;
           lastElapsed = elapsed;
 
-          // Render UI list
-          if (result.results && result.results.length > 0) {
-            result.results.forEach((item, i) => {
-              const li = document.createElement("li");
-              li.className = "result-item";
-              li.innerHTML = `
-                    <span class="result-text"><span style="color:var(--text-muted);font-size:0.6rem;margin-right:4px;">${i + 1}</span>${item.text}</span>
-                    <span class="result-conf">Score: ${item.confidence.toFixed(4)}</span>
-                `;
-              resultsList.appendChild(li);
-            });
-          } else {
-            const li = document.createElement("li");
-            li.className = "result-item";
-            li.innerHTML = `<span class="result-text" style="color:var(--warning);">No text detected.</span>`;
-            resultsList.appendChild(li);
-          }
+          renderResultsList();
 
           // Draw boxes onto canvas overlay
           drawBoxes(result.results, elapsed);
