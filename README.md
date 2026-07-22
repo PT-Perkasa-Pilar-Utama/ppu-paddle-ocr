@@ -862,29 +862,25 @@ const service = new PaddleOcrService({
 
 ## Benchmark
 
-Benches use a small zero-dependency harness (`bench/harness.ts`): in-process timing, round-robin scheduling across rounds so thermal/GC drift hits every task equally, reporting the median plus min/max/stddev. Run `bun task bench`. Representative results on Apple M1 / Bun 1.3.14 (20 rounds, opencv + canvas-native):
+Benches use a small zero-dependency harness (`bench/harness.ts`): in-process timing, round-robin scheduling across rounds so thermal/GC drift hits every task equally, reporting the median plus min/max/stddev. Run `bun task bench`. 
+
+Representative results on Apple M1 / Bun 1.3.14 (20 rounds, opencv + canvas-native) at the shipped defaults (PP-OCRv6 tiny, `"auto"` sizing, `minimumConfidence: 0.5`, decode refinements):
 
 ```bash
 task                                   median      +/-stddev        min        max
 --------------------------------------------------------------------------------
-[per-box][opencv][noCache]             233.0 ms      14.6 ms   211.2 ms   254.5 ms
-[per-line][opencv][noCache]            224.7 ms      17.6 ms   194.3 ms   256.0 ms
-[cross-line][opencv][noCache]          213.9 ms      18.7 ms   194.7 ms   266.3 ms
-[per-box][canvas-native][noCache]      242.3 ms      22.0 ms   213.3 ms   301.1 ms
-[per-line][canvas-native][noCache]     224.3 ms      13.9 ms   201.9 ms   245.4 ms
-[cross-line][canvas-native][noCache]   223.3 ms      14.4 ms   198.3 ms   248.6 ms
+[per-box][opencv][noCache]             139.7 ms      18.3 ms   135.3 ms   194.3 ms
+[per-line][opencv][noCache]            138.8 ms      10.9 ms   132.9 ms   171.3 ms
+[cross-line][opencv][noCache]          139.8 ms       8.0 ms   135.5 ms   168.6 ms
+[per-box][canvas-native][noCache]      160.2 ms       7.9 ms   156.6 ms   192.4 ms
+[per-line][canvas-native][noCache]     154.6 ms      10.3 ms   150.2 ms   188.0 ms
+[cross-line][canvas-native][noCache]   161.9 ms      13.1 ms   156.2 ms   211.4 ms
 
 === Accuracy on receipt.jpg (ground truth: 383 chars) ===
-  [opencv]        per-box=96.61%  per-line=95.56%  cross-line=94.52%
-  [canvas-native] per-box=96.61%  per-line=95.82%  cross-line=94.52%
+  [opencv]        per-box=99.48%  per-line=99.48%  cross-line=94.26%
+  [canvas-native] per-box=99.48%  per-line=99.22%  cross-line=94.78%
 ```
 
-Accuracy is measured on the default PP-OCRv6 small model. The unified multilingual
-v6 model trades a few points of English-only accuracy for 50+ language coverage in
-one file; the English-specialized `V5_EN_MOBILE_MODEL` scores higher on Latin-only
-receipts if that is your sole use case.
-
-Absolute timings are thermal-sensitive on fanless hardware (Apple Silicon): sustained benching warms the chip and drags the **median** up, while the **min** column tracks the unthrottled per-call cost. Treat these as relative, same-run comparisons, not cross-machine absolutes. The timing tables above were captured on the previous v5 default; v6 small lands within ~8% on the same hardware.
 
 ### Batch vs. concurrent `recognize()`
 
