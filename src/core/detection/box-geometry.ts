@@ -5,6 +5,20 @@ import type { Contours, cv } from "ppu-ocv";
 import type { Box } from "../../interface.js";
 
 /**
+ * Resolves the effective detection size cap for an input image.
+ *
+ * `"auto"` scales the cap with the input - `clamp(0.75 * longestSide, 960,
+ * 1920)` - so inputs up to ~1280px behave exactly like the proven fixed 960
+ * (a slight downscale also denoises busy backgrounds for the tiny detector),
+ * while large photos keep enough pixels for small text instead of being
+ * crushed to a fraction of their size.
+ */
+export function resolveMaxSideLength(maxSideLength: number | "auto", longestSide: number): number {
+  if (maxSideLength !== "auto") return maxSideLength;
+  return Math.min(1920, Math.max(960, Math.round((longestSide * 0.75) / 32) * 32));
+}
+
+/**
  * Calculates resize dimensions keeping the longest side at or below `maxSideLength`.
  *
  * Returns the new dimensions and the scale ratio applied.

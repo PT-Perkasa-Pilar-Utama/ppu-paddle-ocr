@@ -9,6 +9,7 @@ import {
   calculateResizeDimensions,
   extractBoxesFromContours,
   extractBoxesFromRegions,
+  resolveMaxSideLength,
 } from "./detection/box-geometry.js";
 import { imageToTensor, tensorToCanvas } from "./detection/image-tensor.js";
 
@@ -124,7 +125,10 @@ export class BaseDetectionService {
   private async preprocessDetection(canvas: CoreCanvas): Promise<PreprocessDetectionResult> {
     const { width: originalWidth, height: originalHeight } = canvas;
 
-    const maxSideLength = this.options.maxSideLength ?? 640;
+    const maxSideLength = resolveMaxSideLength(
+      this.options.maxSideLength ?? "auto",
+      Math.max(originalWidth, originalHeight)
+    );
     const {
       width: resizeW,
       height: resizeH,
@@ -294,10 +298,13 @@ export class BaseDetectionService {
     paddingVertical: number,
     paddingHorizontal: number
   ): Box[] {
+    // Match the OpenCV path: cv.findContours treats any nonzero pixel as
+    // foreground, so binarize at >0 instead of >127 - thresholding at 0.5
+    // probability erases weak detections the OpenCV engine keeps.
     const processor = this.platform.canvas
       .createProcessor(canvas)
       .grayscale()
-      .threshold({ thresh: 127 });
+      .threshold({ thresh: 0 });
 
     const regions = processor.findRegions({
       foreground: "light",

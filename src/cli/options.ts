@@ -25,6 +25,7 @@ export const PARSE_OPTIONS: NonNullable<ParseArgsConfig["options"]> = {
   "cross-line-width-factor": { type: "string" },
   engine: { type: "string" },
   "image-height": { type: "string" },
+  "min-confidence": { type: "string" },
   flatten: { type: "boolean" },
   "no-cache": { type: "boolean" },
   model: { type: "string" },
@@ -128,7 +129,8 @@ export function buildPaddleOptions(values: CliValues): PaddleOptions {
 
   const mean = triple(values, "mean");
   const stdDeviation = triple(values, "std");
-  const maxSideLength = num(values, "max-side-length");
+  const maxSideLength =
+    values["max-side-length"] === "auto" ? ("auto" as const) : num(values, "max-side-length");
   const paddingVertical = num(values, "padding-vertical");
   const paddingHorizontal = num(values, "padding-horizontal");
   const minimumAreaThreshold = num(values, "min-area");
@@ -153,13 +155,15 @@ export function buildPaddleOptions(values: CliValues): PaddleOptions {
   const strat = strategy(values);
   const imageHeight = num(values, "image-height");
   const crossLineWidthFactor = num(values, "cross-line-width-factor");
-  // `charactersDictionary: []` is the documented placeholder — initialize()
+  const minimumConfidence = num(values, "min-confidence");
+  // `charactersDictionary: []` is the documented placeholder - initialize()
   // fills it from the recognition model's dictionary.
   options.recognition = {
     charactersDictionary: [],
     ...(strat ? { strategy: strat } : {}),
     ...(imageHeight !== undefined ? { imageHeight } : {}),
     ...(crossLineWidthFactor !== undefined ? { crossLineWidthFactor } : {}),
+    ...(minimumConfidence !== undefined ? { minimumConfidence } : {}),
   };
 
   const eng = engine(values);

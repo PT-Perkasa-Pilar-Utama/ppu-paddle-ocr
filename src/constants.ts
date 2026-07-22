@@ -11,7 +11,7 @@ import type {
   SessionOptions,
 } from "./interface.js";
 
-/** Default debugging options – logging and image dumps disabled. */
+/** Default debugging options - logging and image dumps disabled. */
 export const DEFAULT_DEBUGGING_OPTIONS: DebuggingOptions = {
   verbose: false,
   debug: false,
@@ -22,8 +22,8 @@ export const DEFAULT_DEBUGGING_OPTIONS: DebuggingOptions = {
 export const DEFAULT_DETECTION_OPTIONS: DetectionOptions = {
   mean: [0.485, 0.456, 0.406],
   stdDeviation: [0.229, 0.224, 0.225],
-  maxSideLength: 640,
-  minimumAreaThreshold: 50,
+  maxSideLength: "auto",
+  minimumAreaThreshold: 20,
   paddingVertical: 0.4,
   paddingHorizontal: 0.6,
 };
@@ -31,8 +31,9 @@ export const DEFAULT_DETECTION_OPTIONS: DetectionOptions = {
 /** Default text recognition options. */
 export const DEFAULT_RECOGNITION_OPTIONS: RecognitionOptions = {
   imageHeight: 48,
-  strategy: "per-box",
+  strategy: "per-line",
   crossLineWidthFactor: 1.0,
+  minimumConfidence: 0.5,
   charactersDictionary: [],
 };
 

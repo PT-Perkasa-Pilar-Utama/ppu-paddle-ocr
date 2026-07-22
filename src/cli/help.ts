@@ -6,7 +6,7 @@
  * `--help`, and to stderr (followed by a non-zero exit) on usage errors.
  */
 
-export const USAGE = `ppu-paddle-ocr — PaddleOCR on the command line
+export const USAGE = `ppu-paddle-ocr - PaddleOCR on the command line
 
 Usage:
   ppu-paddle-ocr <command> [args] [flags]
@@ -23,10 +23,11 @@ Commands:
   version                Show the installed version
 
 Recognition flags (recognize / batch / stream):
-  --strategy <s>                 per-box | per-line | cross-line  (default per-box)
+  --strategy <s>                 per-box | per-line | cross-line  (default per-line)
   --cross-line-width-factor <n>  bin-pack width multiplier for cross-line (default 1.0)
   --engine <e>                   opencv | canvas-native  (default opencv)
   --image-height <n>             recognition input height in px (default 48)
+  --min-confidence <n>           drop items below this confidence, 0 disables (default 0.5)
   --flatten                      flat results in reading order instead of grouped lines
   --no-cache                     bypass the in-memory result cache
 
@@ -39,7 +40,7 @@ Model overrides:
 
 Detection tuning (also apply to detect):
   --save-crops <dir>             (detect only) save each region as crop_NNN.png
-  --max-side-length <n>          longest side before downscale (default 640)
+  --max-side-length <n|auto>     longest side before downscale (default auto)
   --padding-vertical <n>         box padding, fraction of height (default 0.4)
   --padding-horizontal <n>       box padding, fraction of height (default 0.6)
   --min-area <n>                 drop boxes smaller than this area in px (default 50)
