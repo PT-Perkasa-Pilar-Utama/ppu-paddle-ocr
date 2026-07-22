@@ -2,7 +2,9 @@
 // Copyright (c) 2026 PT Perkasa Pilar Utama
 
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
-import { existsSync, rmSync } from "node:fs";
+import { cpSync, existsSync, rmSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
 import { DEFAULT_MODEL_URLS } from "../src/model-catalogue.js";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
@@ -191,7 +193,7 @@ describe("input forms and caching", () => {
 
   test("accepts a per-call dictionary as an ArrayBuffer", async () => {
     // Plumbing check: the per-call `dictionary` override must accept an
-    // ArrayBuffer. The v5 en dict is used purely as a convenient fixture — this
+    // ArrayBuffer. The v5 en dict is used purely as a convenient fixture - this
     // asserts the override is wired through, not recognition accuracy (the dict
     // need not match the v6 default recognition model for this path).
     const dictBuffer = await Bun.file(
@@ -283,24 +285,40 @@ describe("error paths and lifecycle", () => {
   }, 30000);
 });
 
-// Kept last: it clears the model cache, then re-downloads (exercising the
-// streaming fetch-with-progress path), leaving the cache warm again.
+// Exercises clearModelCache + downloadModels against a MOCKED fetch: the
+// real download costs minutes of LFS traffic per run and belongs to no
+// test. The cache dir is saved aside and restored so the fake bytes never
+// leak into the warm cache other test files rely on.
 describe("model cache download path", () => {
   test("clearModelCache then downloadModels fetches and re-caches", async () => {
-    // verbose: true exercises the streaming fetch-with-progress logging path;
-    // silence the console so the suite output stays clean.
     const logSpy = spyOn(console, "log").mockImplementation(() => {});
+    const cacheDir = join(homedir(), ".cache", "ppu-paddle-ocr");
+    const backupDir = `${cacheDir}.test-backup`;
+    if (existsSync(cacheDir)) cpSync(cacheDir, backupDir, { recursive: true });
+
+    const realFetch = globalThis.fetch;
+    const fakeBytes = new TextEncoder().encode("fake-model-bytes");
+    globalThis.fetch = (async () => new Response(fakeBytes)) as unknown as typeof fetch;
     try {
       const service = new PaddleOcrService();
       service.clearModelCache();
+      expect(existsSync(cacheDir)).toBe(false);
+
       await PaddleOcrService.downloadModels({ verbose: true });
 
-      await service.initialize();
-      const result = await service.recognize(imageBuffer, { noCache: true });
-      expect(result.text.length).toBeGreaterThan(0);
-      await service.destroy();
+      for (const url of Object.values(DEFAULT_MODEL_URLS)) {
+        const file = join(cacheDir, url.slice(url.lastIndexOf("/") + 1));
+        expect(existsSync(file)).toBe(true);
+        expect((await Bun.file(file).arrayBuffer()).byteLength).toBe(fakeBytes.byteLength);
+      }
     } finally {
+      globalThis.fetch = realFetch;
       logSpy.mockRestore();
+      if (existsSync(backupDir)) {
+        rmSync(cacheDir, { recursive: true, force: true });
+        cpSync(backupDir, cacheDir, { recursive: true });
+        rmSync(backupDir, { recursive: true, force: true });
+      }
     }
-  }, 600000); // cold re-download of ~30 MB v6 models needs ample time
+  }, 30000);
 });

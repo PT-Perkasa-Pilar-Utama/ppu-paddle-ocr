@@ -61,7 +61,7 @@ function createServiceWithMocks() {
 describe("PaddleOcrService canvas compatibility", () => {
   // Save the real initRuntime so afterAll can put it back. The previous
   // restore called defineProperty without a `value`, which (per spec) keeps
-  // the current value — i.e. the no-op stub leaked to every test file that
+  // the current value - i.e. the no-op stub leaked to every test file that
   // ran after this one, OpenCV never initialized, and all opencv-engine OCR
   // silently returned empty results (the 25-fail CI runs on PR 60).
   const realInitRuntime = ImageProcessor.initRuntime;

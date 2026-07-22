@@ -1,7 +1,10 @@
 [test]
-# `bun test` discovers the whole repo — the main suite AND apps/serve — so
+# `bun test` discovers the whole repo - the main suite AND apps/serve - so
 # coverage spans src, src/cli, and apps/serve/src. apps/serve resolves its own
 # deps from apps/serve/node_modules, so those must be installed first (CI does
 # it before the test step; locally run `bun install` in apps/serve once).
 # Enforce the coverage we already hold (~94%) so it can only go up.
 coverageThreshold = { line = 0.9, function = 0.9 }
+# Warm the default model cache before any test file: a cold-cache download
+# inside a 5s beforeEach hook is a flaky timeout on slow networks.
+preload = ["./tests/preload-warm-cache.ts"]

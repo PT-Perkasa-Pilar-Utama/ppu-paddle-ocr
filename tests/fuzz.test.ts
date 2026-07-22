@@ -33,7 +33,7 @@ describe("fuzz: OCR is robust to malformed image input", () => {
           // If random bytes happened to decode, the result must be well-formed.
           expect(Array.isArray(result.lines)).toBe(true);
         } catch (error) {
-          // Malformed input must fail gracefully with a normal Error — never a
+          // Malformed input must fail gracefully with a normal Error - never a
           // native crash, hang, or non-Error throw.
           expect(error).toBeInstanceOf(Error);
         }
