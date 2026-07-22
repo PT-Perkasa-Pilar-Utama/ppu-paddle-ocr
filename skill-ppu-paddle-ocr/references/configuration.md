@@ -42,11 +42,11 @@ Controls preprocessing and post-filtering for the detection model.
 | `maxSideLength`        | `number`                   | `640`                   | Longest input side in px. Larger images get scaled down before inference.                    |
 | `paddingVertical`      | `number`                   | `0.4`                   | Fractional padding added to each detected box vertically.                                    |
 | `paddingHorizontal`    | `number`                   | `0.6`                   | Same, horizontally.                                                                          |
-| `minimumAreaThreshold` | `number`                   | `50`                    | Drop detected boxes smaller than this area (px^2). Filters noise.                            |
+| `minimumAreaThreshold` | `number`                   | `20`                    | Drop detected boxes smaller than this area (px^2). Filters noise.                            |
 
 **When to tune:**
 
-- `maxSideLength`: raise to `960` or `1280` for high-res scans where small text is being missed; lower (e.g. `480`) for throughput-critical pipelines on low-res inputs.
+- `maxSideLength`: `"auto"` (default) scales the cap with the input, clamp(0.75 x longest, 960, 1920); pin a number for a fixed cap (lower for throughput, higher for small text on mid-size images).
 - `paddingHorizontal` / `paddingVertical`: increase if recognition is clipping the first/last character of lines (a sign the box is too tight). Decrease if neighbouring lines are merging.
 - `minimumAreaThreshold`: raise if you're getting spurious boxes on noise; lower if you're missing single-character or punctuation-only boxes.
 - `mean` / `stdDeviation`: don't touch unless you're using a custom-trained model with different normalization stats.
@@ -60,8 +60,9 @@ Controls the recognition stage's preprocessing and batching strategy.
 | Property               | Type                                      | Default     | Notes                                                                          |
 | ---------------------- | ----------------------------------------- | ----------- | ------------------------------------------------------------------------------ |
 | `imageHeight`          | `number`                                  | `48`        | Fixed height (px) for resized text-line crops; widths are proportional.        |
-| `strategy`             | `"per-box" \| "per-line" \| "cross-line"` | `"per-box"` | Batching strategy. See SKILL.md for trade-offs.                                |
+| `strategy`             | `"per-box" \| "per-line" \| "cross-line"` | `"per-line"` | Batching strategy. See SKILL.md for trade-offs.                                |
 | `crossLineWidthFactor` | `number`                                  | `1.0`       | Width multiplier for `cross-line` bin-packing. Only used with `cross-line`.    |
+| `minimumConfidence`    | `number`                                  | `0.5`       | Drop items below this confidence (0 disables); symbol-only items need +0.3.    |
 | `charactersDictionary` | `string[]`                                | `[]`        | Loaded dict for decoding. Set automatically by `initialize()`; don't override. |
 
 **When to tune:**

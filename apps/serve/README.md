@@ -108,9 +108,11 @@ See [`.env.example`](.env.example) for the full annotated list.
 | `MAX_UPLOAD_BYTES`                                     | `10485760`         | Per-image cap                                                       |
 | `MAX_BATCH_IMAGES`                                     | `32`               |                                                                     |
 | `EXECUTION_PROVIDERS`                                  | `cpu`              | Comma list, e.g. `cuda,cpu`                                         |
-| `DEFAULT_STRATEGY`                                     | `per-box`          | `per-box` \| `per-line` \| `cross-line`                             |
+| `DEFAULT_STRATEGY`                                     | `per-line`          | `per-box` \| `per-line` \| `cross-line`                             |
 | `DEFAULT_ENGINE`                                       | `opencv`           | `opencv` \| `canvas-native`                                         |
-| `MODEL_DETECTION` / `MODEL_RECOGNITION` / `MODEL_DICT` | default v6 small   | Override model sources                                              |
+| `MIN_CONFIDENCE`                                       | `0.5` (library)    | Drop recognized items below this confidence; `0` disables           |
+| `MAX_SIDE_LENGTH`                                      | `auto` (library)   | Detection size cap in px, or `auto` (scales with the input)         |
+| `MODEL_DETECTION` / `MODEL_RECOGNITION` / `MODEL_DICT` | default v6 tiny    | Override model sources                                              |
 | `MAX_CONCURRENCY`                                      | `0` (auto)         | Auto = 1 on an accelerator, 4 on CPU                                |
 | `MAX_QUEUE_DEPTH`                                      | `100`              | Excess inferences get `429` + `Retry-After`                         |
 | `TASK_TTL_SECONDS`                                     | `600`              | Async task retention                                                |

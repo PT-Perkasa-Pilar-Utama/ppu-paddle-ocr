@@ -2,9 +2,9 @@
 
 [![Slack](https://img.shields.io/badge/Slack-Community-4A154B?logo=slack&logoColor=white)](https://join.slack.com/t/ppupaddleocrcommunity/shared_invite/zt-3uzp1uuma-lrkEq8OYBYhGdUtzRoVmUg) [![NPM](https://img.shields.io/npm/dw/ppu-paddle-ocr)](https://www.npmjs.com/package/ppu-paddle-ocr) [![npm version](https://img.shields.io/npm/v/ppu-paddle-ocr)](https://www.npmjs.com/package/ppu-paddle-ocr) [![Provenance](https://img.shields.io/badge/npm-signed%20provenance-blue?logo=npm)](https://www.npmjs.com/package/ppu-paddle-ocr#provenance) [![License: MIT](https://img.shields.io/npm/l/ppu-paddle-ocr)](./LICENSE) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/badge)](https://scorecard.dev/viewer/?uri=github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr) [![Socket Badge](https://socket.dev/api/badge/npm/package/ppu-paddle-ocr)](https://socket.dev/npm/package/ppu-paddle-ocr) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/12963/badge)](https://www.bestpractices.dev/projects/12963)
 
-Lightweight, probably the fastest PaddleOCR SDK in TypeScript. Multilingual Support. Runs anywhere JavaScript runs: Node.js, Bun, Deno, web browsers, browser extensions, and React Native (iOS/Android). Docker & CLI supported. The official SDK is browser-only and significantly slower. [Compare it for yourself](https://paddle-ocr-comparison.snowfluke.workers.dev/).
+Lightweight, probably the fastest PaddleOCR SDK in TypeScript. Multilingual Support. Runs anywhere JavaScript runs: Node.js, Bun, Deno, web browsers, browser extensions, and React Native (iOS/Android). Docker & CLI supported. The official SDK is browser-only and significantly slower. [Compare it for yourself](https://paddle-ocr-comparison.snowfluke.workers.dev/). 
 
-Need it as HTTP-service? dockerized? we've got you covered! Quickly spins up ppu-paddle-ocr REST API here: [ppu-paddle-ocr-serve](/apps/serve/README.md). Need a CLI instead? sure here: [ppu-paddle-ocr CLI support](#command-line).
+Need it as HTTP-service? dockerized? we've got you covered! Quickly spins up ppu-paddle-ocr REST API here: [ppu-paddle-ocr-serve](/apps/serve/README.md). Need a CLI instead? sure here: [ppu-paddle-ocr CLI support](#command-line). Adjust the config & model for your use case, [see config recommendation](#choosing-a-model-and-configuration).
 
 ![ppu-paddle-ocr demo](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/refs/heads/main/assets/ppu-paddle-ocr-demo.jpg)
 
@@ -35,6 +35,7 @@ await service.destroy();
 - [Command Line](#command-line)
 - [Batch Recognition](#batch-recognition)
 - [Recognition Strategies](#recognition-strategies)
+- [Choosing a Model and Configuration](#choosing-a-model-and-configuration)
 - [Image Preprocessing](#image-preprocessing)
 - [Processing Engine](#processing-engine)
 - [Web / Browser Support](#web--browser-support)
@@ -44,7 +45,6 @@ await service.destroy();
   - [Multithreaded WASM (Cross-Origin Isolation)](#multithreaded-wasm-cross-origin-isolation)
 - [React Native (Mobile)](#react-native-mobile)
 - [Models and Language Support](#models-and-language-support)
-  - [Default Models](#default-models)
   - [PP-OCRv6 Models](#pp-ocrv6-models)
   - [Cache Location](#cache-location-node--bun)
   - [Multilingual Support](#multilingual-support)
@@ -73,7 +73,7 @@ await service.destroy();
 ## Why ppu-paddle-ocr?
 
 - **Lightweight**, minimal dependencies, optimized for performance.
-- **Pre-packed models**, PP-OCRv6 small models (50+ languages, unified) are fetched and cached automatically on first run. Supports additional variants via [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models).
+- **Pre-packed models**, PP-OCRv6 tiny models (~6 MB, multilingual) are fetched and cached automatically on first run; the full-dictionary small/medium tiers and language-specific variants are one option away. Supports additional variants via [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models).
 - **Runs everywhere**, Node.js, Bun, Deno, web browsers, browser extensions, and React Native (iOS/Android). The official SDK is browser-only.
 - **Customizable**, custom models, dictionaries, and per-call overrides.
 - **TypeScript**, full type definitions.
@@ -143,7 +143,7 @@ await service.destroy();
 ```ts
 import { PaddleOcrService, V6_SMALL_MODEL, V5_EN_MOBILE_MODEL } from "ppu-paddle-ocr";
 
-// PP-OCRv6 small (default)
+// PP-OCRv6 small (full dictionary; the default is PP-OCRv6 tiny)
 const service = new PaddleOcrService({ model: V6_SMALL_MODEL });
 
 // Switch to PP-OCRv5 English
@@ -152,7 +152,7 @@ const service = new PaddleOcrService({ model: V5_EN_MOBILE_MODEL });
 
 **Available presets:**
 
-- **v6**: `V6_SMALL_MODEL` (default), `V6_MEDIUM_MODEL`, `V6_TINY_MODEL`
+- **v6**: `V6_TINY_MODEL` (default), `V6_SMALL_MODEL`, `V6_MEDIUM_MODEL`
 - **v5**: `V5_EN_MOBILE_MODEL`, `V5_EN_MOBILE_INT8_MODEL`, `V5_EN_SERVER_MODEL`, `V5_MOBILE_MODEL`, `V5_SERVER_MODEL`
 - **v5 languages**: `V5_ARABIC_MOBILE_MODEL`, `V5_CYRILLIC_MOBILE_MODEL`, `V5_DEVANAGARI_MOBILE_MODEL`, `V5_GREEK_MOBILE_MODEL`, `V5_ESLAV_MOBILE_MODEL`, `V5_KOREAN_MOBILE_MODEL`, `V5_LATIN_MOBILE_MODEL`, `V5_TAMIL_MOBILE_MODEL`, `V5_TELUGU_MOBILE_MODEL`, `V5_THAI_MOBILE_MODEL`
 - **v4**: `V4_EN_MOBILE_MODEL`, `V4_MOBILE_MODEL`, `V4_SERVER_MODEL`, `V4_SERVER_DOC_MODEL`
@@ -285,9 +285,22 @@ bunx ppu-paddle-ocr clear-cache
 bunx ppu-paddle-ocr models --json
 ```
 
-Every `PaddleOptions` / `RecognizeOptions` field maps to a flag: `--strategy`, `--engine`, `--flatten`, `--no-cache`, `--image-height`, `--model <preset>` (catalogue presets like `v6-small`, `v6-tiny`, `v5-en-mobile`, see `models --json`), `--model-detection/-recognition/-dict` (raw paths/URLs that override the preset), detection tuning (`--max-side-length`, `--padding-vertical`, `--padding-horizontal`, `--min-area`, `--mean`, `--std` - these also apply to `detect`), `--save-crops <dir>` (detect only), `--execution-providers`, and for `batch`/`stream` `--concurrency`. Output is controlled by `--json`, `--pretty`, `-o/--output`, `-q/--quiet`, and `--verbose`.
+Every `PaddleOptions` / `RecognizeOptions` field maps to a flag:
 
-Recognized text goes to **stdout**; progress and logs go to **stderr**, so output pipes cleanly. Exit codes: `0` success, `1` runtime error, `2` usage error. Run `bunx ppu-paddle-ocr help` for the full reference. The CLI uses the default v6 models unless you select a `--model` preset or override the `--model-*` flags.
+| Flags                                                                                      | Applies to        | Purpose                                                                            |
+| :----------------------------------------------------------------------------------------- | :---------------- | :--------------------------------------------------------------------------------- |
+| `--model <preset>`                                                                          | all commands      | Catalogue preset (`v6-tiny`, `v6-small`, `v5-en-mobile`, ...); list: `models --json` |
+| `--model-detection`, `--model-recognition`, `--model-dict`                                  | all commands      | Raw paths/URLs; each overrides that part of the preset                              |
+| `--strategy`, `--flatten`, `--no-cache`, `--image-height`, `--min-confidence`               | recognition       | Recognition behavior (strategy, flat output, confidence filter, ...)               |
+| `--engine`, `--execution-providers`                                                         | all commands      | `opencv` \| `canvas-native`; ONNX providers (e.g. `cuda,cpu`)                       |
+| `--max-side-length`, `--padding-vertical`, `--padding-horizontal`, `--min-area`, `--mean`, `--std` | all incl. `detect` | Detection tuning (`--max-side-length` accepts `auto`)                        |
+| `--save-crops <dir>`                                                                        | `detect` only     | Write one PNG per detected box                                                      |
+| `--concurrency`                                                                             | `batch`, `stream` | Images processed in parallel                                                        |
+| `--json`, `--pretty`, `-o`/`--output`, `-q`/`--quiet`, `--verbose`                          | all commands      | Output format and destination                                                       |
+
+Recognized text goes to **stdout**; progress and logs go to **stderr**, so output pipes cleanly. Exit codes: `0` success, `1` runtime error, `2` usage error. 
+
+Run `bunx ppu-paddle-ocr help` for the full reference. The CLI uses the default v6 tiny models unless you select a `--model` preset or override the `--model-*` flags.
 
 ## Batch Recognition
 
@@ -341,10 +354,11 @@ Recognition strategies control how detected text regions are cropped from the ca
 | Strategy     | Description                                                                 |
 | :----------- | :-------------------------------------------------------------------------- |
 | `per-box`    | Each detected box is recognized individually, _n_ boxes, _n_ inferences.    |
-| `per-line`   | Boxes on the same line are merged into a single crop, fewer inferences.     |
+| `per-line`   | Boxes on the same line are merged into a single crop, fewer inferences. (Default)    |
 | `cross-line` | Crops are bin-packed across lines into uniform-width batches, fewest calls. |
 
-**Default**: `per-box` (highest accuracy; on PP-OCRv6 small it leads the receipt benchmark at 96.61% vs 95.56% for `per-line`, with the strategies within ~1% on speed). Switch to `per-line` or `cross-line` to cut inference calls on dense, multi-word-per-line documents.
+
+See [Choosing a model and configuration](#choosing-a-model-and-configuration) for a workload-based selection matrix.
 
 Strategies are set in `RecognitionOptions`:
 
@@ -356,6 +370,41 @@ await service.initialize();
 ```
 
 ![recognition strategies](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/refs/heads/main/assets/recognition-strategies.jpg)
+
+## Choosing a Model and Configuration
+
+The defaults (PP-OCRv6 tiny, `per-line`, `maxSideLength: "auto"`, `minimumAreaThreshold: 20`, `minimumConfidence: 0.5`, `opencv` engine) are tuned to be fast and accurate across the tested corpus, including the receipt photo. 
+
+For dense document pages or full multilingual coverage, step up to `V6_SMALL_MODEL`. Each recipe below was validated against the committed example image it names.
+
+### Model families
+
+v5 models are single-language specialists; v6 models are multilingual (one model, 50+ languages). If your documents are always one known language, the matching v5 model avoids cross-language confusion; if the language varies or mixes, stay on v6.
+
+| Model                              | Languages                              | Download | Speed (vs small)  | Reach for it when                                          |
+| :--------------------------------- | :------------------------------------- | :------- | :---------------- | :--------------------------------------------------------- |
+| `V6_TINY_MODEL` (default)          | multilingual, ~6.9k-char dictionary    | ~6 MB    | 3-4x faster       | screenshots, UIs, latency-sensitive pipelines              |
+| `V6_SMALL_MODEL`                   | 50+ languages, full dictionary         | ~30 MB   | baseline          | dense pages, rare CJK or kana, full-dictionary coverage    |
+| `V6_MEDIUM_MODEL`                  | 50+ languages, full dictionary         | ~139 MB  | ~3x slower        | photos, low contrast, the crops other tiers misread        |
+| `V5_EN_MOBILE_MODEL` and v5 family | one language each (en, arabic, ...)    | ~12 MB   | comparable        | input language is fixed and known                          |
+
+Parameter counts, file names, and preset-switching code live in
+[PP-OCRv6 Models](#pp-ocrv6-models).
+
+### Input characteristics
+
+| Input looks like                   | What to set                                        | Why                                                                          |
+| :--------------------------------- | :------------------------------------------------- | :--------------------------------------------------------------------------- |
+| Dark theme (light text on dark)    | nothing, keep defaults                             | models read inverted text natively; pre-inverting hurt accuracy in our tests |
+| Light theme, clean digital render  | defaults                                           | high-contrast digital text is the easy case                                  |
+| Dense lines (documents, tables)    | `V6_SMALL_MODEL`; `cross-line` for max throughput  | full dictionary and a more sensitive detector for small body text            |
+| Sparse short labels (UI, forms)    | defaults                                           | merged line context fixes short-label misreads that isolated crops produce   |
+| Tiny text / fine print             | `"auto"` (default) scales the cap with input size  | text below ~10px after downscale stops being detected; override with a fixed `maxSideLength` only if it persists |
+| Landscape / wide pages             | defaults; the cap applies to the longest side      | `"auto"` keeps mid-size pages near native scale instead of downscaling sooner |
+| Low contrast                       | `V6_MEDIUM_MODEL` if defaults fall short           | weak probability responses need more pixels or a stronger model              |
+| Photo (camera, uneven lighting)    | defaults (99.5% on the receipt); medium for the hardest shots | decode refinements beat small (97.4%) here; `"auto"` sizing keeps large photos near native scale |
+| Tilted / rotated                   | deskew first with `ppu-ocv` `DeskewService`        | every model tier degrades sharply past a few degrees of skew                 |
+| One known language                 | the matching v5 model                              | single-language dictionary, no cross-language confusion                      |
 
 ## Image Preprocessing
 
@@ -504,19 +553,53 @@ Notes:
 
 ## Models and Language Support
 
-### Default Models
+### PP-OCRv6 Models
 
-The default **PP-OCRv6 small** models cover 50+ languages (Latin, CJK, Arabic, Indic, ...) with a
-single unified model and dictionary. They ship in ONNX Runtime's `.ort` FlatBuffers format
-(3-5x faster session creation than `.onnx`):
+PP-OCRv6 ships a **single unified model family** covering 50+ languages
+(Simplified/Traditional Chinese, English, Japanese, 46+ Latin-script
+languages, Arabic, Indic, ...), no per-language model files needed. The
+package default is the **tiny** tier; which tier fits which workload is
+covered in [Choosing a Model and Configuration](#choosing-a-model-and-configuration).
 
-| Component   | File                     |
-| :---------- | :----------------------- |
-| Detection   | `PP-OCRv6_small_det.ort` |
-| Recognition | `PP-OCRv6_small_rec.ort` |
-| Dictionary  | `ppocrv6_dict.txt`       |
+| Tier     | Det + rec params | Notes                                                          |
+| :------- | :--------------- | :------------------------------------------------------------- |
+| `tiny`   | ~1.5M + ~19.9M   | **Default.** Fastest on all platforms; ~6.9k-char dictionary.  |
+| `small`  | ~5.1M + ~19.9M   | Full dictionary. Matches PP-OCRv5 mobile latency.              |
+| `medium` | ~14.6M + ~19.9M  | Server-grade, full dictionary. +5.1% accuracy vs v5 server.    |
+
+The default resolves to these files, downloaded and cached on first run:
+
+| Component   | File                    |
+| :---------- | :---------------------- |
+| Detection   | `PP-OCRv6_tiny_det.ort` |
+| Recognition | `PP-OCRv6_tiny_rec.ort` |
+| Dictionary  | `ppocrv6_tiny_dict.txt` |
 
 Portable `.onnx` variants are available at [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models), point `model.detection` / `model.recognition` at the `.onnx` URLs.
+
+**Quick switching with presets:**
+
+```ts
+import {
+  PaddleOcrService,
+  V6_SMALL_MODEL,
+  V6_MEDIUM_MODEL,
+  V6_TINY_MODEL,
+  V5_EN_MOBILE_MODEL,
+} from "ppu-paddle-ocr";
+
+// Default (v6 tiny) - same as passing no model option
+const service = new PaddleOcrService({ model: V6_TINY_MODEL });
+
+// Full dictionary
+const serviceFull = new PaddleOcrService({ model: V6_SMALL_MODEL });
+
+// Server-grade
+const serviceServer = new PaddleOcrService({ model: V6_MEDIUM_MODEL });
+
+// Pre-6.0.0 default (PP-OCRv5 English mobile)
+const v5 = new PaddleOcrService({ model: V5_EN_MOBILE_MODEL });
+```
 
 ### Cache Location (Node / Bun)
 
@@ -537,46 +620,6 @@ service.clearModelCache();
 ```
 
 > In the browser, model files are fetched via `fetch()` on every page load and rely on the browser's HTTP cache. For persistent offline caching, use a Service Worker or store the `ArrayBuffer` in IndexedDB.
-
-### PP-OCRv6 Models
-
-PP-OCRv6 is the default since v6.0.0. It ships a **single unified model** covering 50+ languages
-(Simplified/Traditional Chinese, English, Japanese, 46+ Latin-script languages, Arabic, Indic, ...),
-no per-language model files needed.
-
-| Tier     | Detection params | Notes                                                         |
-| :------- | :--------------- | :------------------------------------------------------------ |
-| `small`  | ~5.1M + ~19.9M   | **Default.** Matches PP-OCRv5 mobile latency.                 |
-| `medium` | ~14.6M + ~19.9M  | Server-grade. +5.1% accuracy vs PP-OCRv5 server.              |
-| `tiny`   | ~1.5M + ~19.9M   | Fastest across all platforms (6.1x vs v5 mobile on Apple M4). |
-
-**Quick switching with presets:**
-
-```ts
-import { PaddleOcrService, V6_SMALL_MODEL, V6_MEDIUM_MODEL, V6_TINY_MODEL } from "ppu-paddle-ocr";
-
-// Default (v6 small) same as passing no model option
-const service = new PaddleOcrService({ model: V6_SMALL_MODEL });
-
-// Server-grade
-const serviceServer = new PaddleOcrService({ model: V6_MEDIUM_MODEL });
-
-// Fastest
-const serviceFast = new PaddleOcrService({ model: V6_TINY_MODEL });
-```
-
-**Staying on the previous v5 English default:**
-
-```ts
-import { PaddleOcrService, V5_EN_MOBILE_MODEL } from "ppu-paddle-ocr";
-
-// Keep the pre-6.0.0 default (PP-OCRv5 English mobile)
-const v5 = new PaddleOcrService({ model: V5_EN_MOBILE_MODEL });
-```
-
-> `DEFAULT_MODEL` (alias: the deprecated `DEFAULT_MODEL_URLS`) always points to the
-> current default, PP-OCRv6 small. So `new PaddleOcrService()` and
-> `new PaddleOcrService({ model: DEFAULT_MODEL })` are equivalent.
 
 ### Multilingual Support
 
@@ -760,10 +803,10 @@ Controls preprocessing and filtering during text detection.
 | :--------------------- | :------------------------: | :---------------------: | :------------------------------------------------------ |
 | `mean`                 | `[number, number, number]` | `[0.485, 0.456, 0.406]` | Per-channel mean for input normalization [R, G, B].     |
 | `stdDeviation`         | `[number, number, number]` | `[0.229, 0.224, 0.225]` | Per-channel std dev for input normalization.            |
-| `maxSideLength`        |          `number`          |          `640`          | Longest side limit (px); larger images are scaled down. |
+| `maxSideLength`        |    `number \| "auto"`     |        `"auto"`         | Longest side limit (px). `"auto"` = clamp(0.75 x longest, 960, 1920): fixed-960 behavior up to ~1280px inputs, more pixels for large photos. |
 | `paddingVertical`      |          `number`          |          `0.4`          | Fractional vertical padding per detected box.           |
 | `paddingHorizontal`    |          `number`          |          `0.6`          | Fractional horizontal padding per detected box.         |
-| `minimumAreaThreshold` |          `number`          |          `50`           | Minimum box area (px^2); smaller boxes are discarded.   |
+| `minimumAreaThreshold` |          `number`          |          `20`           | Minimum box area (px^2); smaller boxes are discarded.   |
 
 ### `RecognitionOptions`
 
@@ -772,8 +815,9 @@ Controls recognition preprocessing and strategy.
 | Property               |                   Type                    |   Default   | Description                                       |
 | :--------------------- | :---------------------------------------: | :---------: | :------------------------------------------------ |
 | `imageHeight`          |                 `number`                  |    `48`     | Fixed height for resized text line images (px).   |
-| `strategy`             | `"per-box" \| "per-line" \| "cross-line"` | `"per-box"` | Recognition strategy (see above).                 |
+| `strategy`             | `"per-box" \| "per-line" \| "cross-line"` | `"per-line"` | Recognition strategy (see above).                 |
 | `crossLineWidthFactor` |                 `number`                  |    `1.0`    | Batch width multiplier for `cross-line` strategy. |
+| `minimumConfidence`    |                 `number`                  |    `0.5`    | Drop items below this confidence (0 disables). Mirrors upstream `drop_score`; noise reads at 0.2-0.45, real text at 0.65+. |
 | `charactersDictionary` |                `string[]`                 |    `[]`     | Loaded character dictionary for result decoding.  |
 
 ### `DebuggingOptions`
@@ -856,7 +900,11 @@ batchRecognize (c=4)         3653.8 ms     239.1 ms  3170.1 ms  3804.1 ms    102
 batchRecognize (c=8)         3605.7 ms     187.6 ms  3202.1 ms  3786.6 ms    1096 MB
 ```
 
-On CPU, throughput is bound by ONNX Runtime's native thread pool (which already saturates all cores per inference), so every parallel approach lands within ~4% on time, JS-level concurrency cannot add cores that are already busy. The real difference is **memory**: unbounded `Promise.all` peaks at ~1430 MB and grows with batch size, while `batchRecognize` stays **bounded at ~1030-1100 MB regardless of `N`**. So `batchRecognize` matches the fastest approach at lower, bounded peak memory, and the throughput win from concurrency shows up on GPU (overlapping host<->device) or I/O-bound inputs. Tune `BATCH_N` / `ROUNDS` via env.
+On CPU, throughput is bound by ONNX Runtime's native thread pool (which already saturates all cores per inference), so every parallel approach lands within ~4% on time, JS-level concurrency cannot add cores that are already busy. 
+
+The real difference is **memory**: unbounded `Promise.all` peaks at ~1430 MB and grows with batch size, while `batchRecognize` stays **bounded at ~1030-1100 MB regardless of `N`**. 
+
+So `batchRecognize` matches the fastest approach at lower, bounded peak memory, and the throughput win from concurrency shows up on GPU (overlapping host<->device) or I/O-bound inputs. Tune `BATCH_N` / `ROUNDS` via env.
 
 ## Ecosystem
 
