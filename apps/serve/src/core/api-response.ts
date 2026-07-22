@@ -3,7 +3,7 @@ import type { Context } from "hono";
 import type { Env } from "./types.js";
 
 /** API version surfaced in every response envelope. */
-export const API_VERSION = "0.2.2";
+export const API_VERSION = "0.3.0";
 
 /** oksara-style success envelope: `{ status, version, metadata: { id, … }, data }`. */
 export function success<T>(
