@@ -1,0 +1,3 @@
+val/word_14.png	44,900
+val/word_15.png	1 44,900
+val/word_16.png	MARLBORO LGT 20

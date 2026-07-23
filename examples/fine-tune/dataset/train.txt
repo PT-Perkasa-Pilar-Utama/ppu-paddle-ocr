@@ -1,0 +1,19 @@
+train/word_0.png	SMS/WA: 081110640888
+train/word_1.png	Kritik&Saran:1500959
+train/word_3.png	Tgl. 17-01-2024 15:31:44 V.2023.11.0
+train/word_4.png	V.2023.11.0
+train/word_5.png	0)
+train/word_6.png	PPN (
+train/word_7.png	081294665105
+train/word_8.png	Kembalian
+train/word_9.png	44,900
+train/word_10.png	Tunai
+train/word_11.png	44,900
+train/word_12.png	081294665105
+train/word_13.png	Total Item
+train/word_20.png	Bon JA19-789-17015H94 Kasir : MARDIYAN
+train/word_23.png	KOMP. RUKO ARTHA GADING NIAGA KELAPA GAD
+train/word_24.png	NPWP : 01.336.238.9-054.000
+train/word_25.png	ALFA TOWER LT.12, ALAM SUTERA, TANGERANG
+train/word_26.png	PT.SUMBER ALFARIA TRIJAYA, TBK
+train/word_27.png	ALFAMART ARTHA GADING N / 081294665105
