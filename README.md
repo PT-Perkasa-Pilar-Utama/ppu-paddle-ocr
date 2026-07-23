@@ -53,6 +53,7 @@ await service.destroy();
   - [INT8 Quantization](#int8-quantization)
   - [Model Output Limitations](#model-output-limitations)
   - [Converting Custom Models](#converting-custom-paddlepaddle-models)
+  - [Fine-Tuning on Your Data](#fine-tuning-on-your-data)
 - [Configuration Reference](#configuration-reference)
   - [PaddleOptions](#paddleoptions)
   - [RecognizeOptions](#recognizeoptions)
@@ -732,6 +733,17 @@ INT8 `.ort` variants are also available in the [ppu-paddle-ocr-models](https://g
 ### Converting Custom PaddlePaddle Models
 
 See the [ONNX conversion guide](./examples/convert-onnx.ipynb).
+
+### Fine-Tuning on Your Data
+
+When stock accuracy on your documents is limited by domain quirks (dropped
+inter-word spaces, unusual fonts, ID-card hatching) rather than image quality,
+fine-tune the recognition model on your own labeled word crops. The
+[fine-tuning starter kit](./examples/fine-tune/README.md) has per-tier
+training configs (the tiny/small/medium YAMLs differ in neck, head, and
+dictionary — they are not interchangeable), a dataset preparation script that
+builds train/val/test splits from images with line-level ground truth, and
+the full train → export → ONNX → `model.recognition` walkthrough.
 
 ## Configuration Reference
 
