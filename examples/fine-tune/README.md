@@ -77,7 +77,34 @@ python tools/export_model.py -c fine-tune/configs/PP-OCRv6_tiny_rec_ft.yml \
      Global.save_inference_dir=fine-tune/output/tiny_infer
 ```
 
-Convert the inference model to ONNX with [`examples/convert-onnx.ipynb`](../convert-onnx.ipynb) (optionally quantize with [`examples/quantize-onnx.py`](../quantize-onnx.py)).
+> On PaddlePaddle < 3.0 this fails with a bare `AssertionError` in
+> `export_single_model`: the default export format (PIR) needs paddle >= 3.0.
+> Append `Global.export_with_pir=False` to the `-o` list to export the classic
+> format instead — everything downstream works with either.
+
+Convert to ONNX:
+
+```bash
+pip install paddle2onnx
+paddle2onnx --model_dir fine-tune/output/tiny_infer \
+  --model_filename inference.pdmodel \
+  --params_filename inference.pdiparams \
+  --save_file fine-tune/output/tiny_rec.onnx \
+  --opset_version 14 \
+  --enable_onnx_checker True
+```
+
+`--model_filename` is `inference.pdmodel` for the classic format, `inference.json`
+for PIR exports.
+
+> paddle2onnx 2.x refuses to run against paddle < 3.0 (`ValueError: The
+> paddlepaddle version should not be less than 3.0.0...`). If you trained on
+> paddle 2.x, swap to a CPU paddle 3 for this one step — training and export
+> are already done, and conversion does not need a GPU:
+> `pip uninstall -y paddlepaddle-gpu paddlepaddle && pip install paddlepaddle==3.0.0 paddle2onnx`
+
+See [`examples/convert-onnx.ipynb`](../convert-onnx.ipynb) for optional INT8
+quantization and `.ort` packaging.
 
 ## 5. Load it in ppu-paddle-ocr
 
