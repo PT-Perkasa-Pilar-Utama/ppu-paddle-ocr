@@ -2,7 +2,7 @@
 
 [![Slack](https://img.shields.io/badge/Slack-Community-4A154B?logo=slack&logoColor=white)](https://join.slack.com/t/ppupaddleocrcommunity/shared_invite/zt-3uzp1uuma-lrkEq8OYBYhGdUtzRoVmUg) [![NPM](https://img.shields.io/npm/dw/ppu-paddle-ocr)](https://www.npmjs.com/package/ppu-paddle-ocr) [![npm version](https://img.shields.io/npm/v/ppu-paddle-ocr)](https://www.npmjs.com/package/ppu-paddle-ocr) [![Provenance](https://img.shields.io/badge/npm-signed%20provenance-blue?logo=npm)](https://www.npmjs.com/package/ppu-paddle-ocr#provenance) [![License: MIT](https://img.shields.io/npm/l/ppu-paddle-ocr)](./LICENSE) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/badge)](https://scorecard.dev/viewer/?uri=github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr) [![Socket Badge](https://socket.dev/api/badge/npm/package/ppu-paddle-ocr)](https://socket.dev/npm/package/ppu-paddle-ocr) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/12963/badge)](https://www.bestpractices.dev/projects/12963)
 
-Lightweight, probably the fastest PaddleOCR SDK in TypeScript. Multilingual Support. Runs anywhere JavaScript runs: Node.js, Bun, Deno, web browsers, browser extensions, and React Native (iOS/Android). Docker & CLI supported. The official SDK is browser-only and significantly slower. [Compare it for yourself](https://paddle-ocr-comparison.snowfluke.workers.dev/).
+Lightweight, probably the fastest PaddleOCR SDK in TypeScript. Multilingual Support. Runs anywhere JavaScript runs: Node.js, Bun, Deno, web browsers, browser extensions, and React Native (iOS/Android). Docker & CLI supported. The official SDK is browser-only and significantly slower. [Compare it for yourself](https://paddle-ocr-comparison.snowfluke.workers.dev/). Fine tune it? [fine-tuning on your data](#fine-tuning-on-your-data).
 
 Need it as HTTP-service? dockerized? we've got you covered! Quickly spins up ppu-paddle-ocr REST API here: [ppu-paddle-ocr-serve](/apps/serve/README.md). Need a CLI instead? sure here: [ppu-paddle-ocr CLI support](#command-line). Adjust the config & model for your use case, [see config recommendation](#choosing-a-model-and-configuration). Are you AI Agents? you can learn quickly by using the skill in the `skill-ppu-paddle-ocr` folder.
 
@@ -736,14 +736,7 @@ See the [ONNX conversion guide](./examples/convert-onnx.ipynb).
 
 ### Fine-Tuning on Your Data
 
-When stock accuracy on your documents is limited by domain quirks (dropped
-inter-word spaces, unusual fonts, ID-card hatching) rather than image quality,
-fine-tune the recognition model on your own labeled word crops. The
-[fine-tuning starter kit](./examples/fine-tune/README.md) has per-tier
-training configs (the tiny/small/medium YAMLs differ in neck, head, and
-dictionary — they are not interchangeable), a dataset preparation script that
-builds train/val/test splits from images with line-level ground truth, and
-the full train → export → ONNX → `model.recognition` walkthrough.
+When stock accuracy on your documents is limited by domain quirks (dropped inter-word spaces, unusual fonts, ID-card hatching) rather than image quality, fine-tune the recognition model on your own labeled word crops. The [fine-tuning starter kit](./examples/fine-tune/README.md) has per-tier training configs (the tiny/small/medium YAMLs differ in neck, head, and dictionary, they are not interchangeable), a dataset preparation script that builds train/val/test splits from images with line-level ground truth, and the full train -> export -> ONNX -> `model.recognition` walkthrough.
 
 ## Configuration Reference
 
