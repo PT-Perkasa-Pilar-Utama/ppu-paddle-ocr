@@ -98,7 +98,7 @@ paddle2onnx --model_dir fine-tune/output/tiny_infer \
 for PIR exports.
 
 > paddle2onnx 2.x refuses to run against paddle < 3.0 (`ValueError: The
-> paddlepaddle version should not be less than 3.0.0...`). If you trained on
+paddlepaddle version should not be less than 3.0.0...`). If you trained on
 > paddle 2.x, swap to a CPU paddle 3 for this one step — training and export
 > are already done, and conversion does not need a GPU:
 > `pip uninstall -y paddlepaddle-gpu paddlepaddle && pip install paddlepaddle==3.0.0 paddle2onnx`
