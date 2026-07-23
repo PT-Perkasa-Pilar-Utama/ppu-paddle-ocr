@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Recognition fine-tuning starter kit (`examples/fine-tune/`): per-tier
+  PP-OCRv6 training configs, a dataset preparation script that builds
+  train/val/test splits from images with line-level ground truth, and a
+  sample dataset generated from the bundled receipt.
+
 ## [6.2.0] - 2026-07-22
 
 ### Changed
