@@ -136,10 +136,11 @@ describe("Web services do not import Node-specific modules", () => {
     expect(ocr).toContain("onnxruntime-web");
   });
 
-  test("web platform provider uses ppu-ocv/web", async () => {
+  test("web platform provider uses the browser canvas backend", async () => {
     const platform = await Bun.file("./src/web/platform.web.ts").text();
 
-    expect(platform).toContain("ppu-ocv/web");
+    expect(platform).toContain('from "ppu-ocv/canvas-web"');
+    expect(platform).not.toContain("@napi-rs/canvas");
   });
 });
 

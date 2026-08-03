@@ -23,10 +23,19 @@ const KEYS = [
   "document",
 ] as const;
 
-export function installWebCanvas(): void {
+/** Options for {@link installWebCanvas}. */
+export type WebCanvasOptions = {
+  /**
+   * Install only the globals a Web Worker exposes: `OffscreenCanvas`,
+   * `ImageData`, and `createImageBitmap`, leaving `document` and
+   * `HTMLCanvasElement` undefined the way a real worker scope does.
+   */
+  worker?: boolean;
+};
+
+export function installWebCanvas(options: WebCanvasOptions = {}): void {
   const g = globalThis as unknown as Record<string, unknown>;
   g.OffscreenCanvas = Canvas;
-  g.HTMLCanvasElement = Canvas;
   g.ImageData = NapiImageData;
   g.createImageBitmap = async (blob: Blob) => {
     const buf = Buffer.from(await blob.arrayBuffer());
@@ -34,6 +43,10 @@ export function installWebCanvas(): void {
     img.close = () => {};
     return img;
   };
+
+  if (options.worker) return;
+
+  g.HTMLCanvasElement = Canvas;
   g.document = {
     createElement: (tag: string) => {
       if (tag === "canvas") return createCanvas(1, 1);
