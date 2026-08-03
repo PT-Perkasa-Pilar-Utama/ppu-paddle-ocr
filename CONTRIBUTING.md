@@ -36,10 +36,10 @@ Thank you for taking the time to contribute. This document covers how to set up 
 
 The recommended development environment is Linux-based. macOS works fine too; Windows users may encounter path differences in some scripts.
 
-Bun is the primary runtime and package manager. The CI pipeline pins Bun at **1.2.23** due to a known SIGILL/segfault in the 1.3.x test runner - use the same version locally to avoid false failures:
+Bun is the primary runtime and package manager. Every CI workflow pins Bun at **1.3.14**; earlier versions carried test-runner bugs that produced false failures on Linux. Use the same version locally:
 
 ```bash
-curl -fsSL https://bun.sh/install | bash -s "bun-v1.2.23"
+curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.14"
 ```
 
 Pre-commit hooks are set up via Husky and run automatically after `bun install`. They enforce formatting and linting before every commit.
@@ -152,12 +152,12 @@ git checkout -b release/6.4.0
 bun bump minor            # or major, patch, fix, or an explicit 6.4.0
 ```
 
-| Touchpoint                 | What it does                                       |
-| :------------------------- | :------------------------------------------------- |
-| `package.json`, `jsr.json` | the published version, kept in lockstep            |
-| `playground/index.html`    | the CDN fallback pin, which otherwise goes stale   |
-| `CHANGELOG.md`             | promotes `## [Unreleased]` to a dated heading      |
-| `apps/serve` (4 files)     | the REST envelope version, patch-bumped by default |
+| Touchpoint                 | What it does                                                                                    |
+| :------------------------- | :---------------------------------------------------------------------------------------------- |
+| `package.json`, `jsr.json` | the published version, kept in lockstep                                                         |
+| `playground/index.html`    | the CDN fallback pin, which otherwise goes stale                                                |
+| `CHANGELOG.md`             | promotes `## [Unreleased]` to a dated heading, sorting its sections into Keep a Changelog order |
+| `apps/serve` (4 files)     | the REST envelope version, patch-bumped by default                                              |
 
 The CLI reads `package.json` at runtime, so it needs no edit.
 
