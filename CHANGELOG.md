@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`ort.env.wasm.wasmPaths` gets its CDN default inside workers too.** The
   default was gated on `typeof window !== "undefined"`, which is false in a
   worker, so CDN and unbundled worker setups 404ed on the WASM binaries
+- **The default WASM CDN URL now tracks the loaded `onnxruntime-web`.** It was
+  pinned to 1.26.0 while the package resolves 1.27.0, so anyone who did not set
+  `wasmPaths` handed a 1.27 loader 1.26 binaries. The version is read from
+  `ort.env.versions` at call time and can no longer drift
 
 ### Added
 

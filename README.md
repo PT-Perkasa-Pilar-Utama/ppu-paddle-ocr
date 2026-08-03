@@ -75,7 +75,7 @@ await service.destroy();
 
 - **Lightweight**, minimal dependencies, optimized for performance.
 - **Pre-packed models**, PP-OCRv6 tiny models (~6 MB, multilingual) are fetched and cached automatically on first run; the full-dictionary small/medium tiers and language-specific variants are one option away. Supports additional variants via [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models).
-- **Runs everywhere**, Node.js, Bun, Deno, web browsers, browser extensions, and React Native (iOS/Android). The official SDK is browser-only.
+- **Runs everywhere**, Node.js, Bun, Deno, web browsers, web workers, browser extensions, and React Native (iOS/Android). The official SDK is browser-only.
 - **Customizable**, custom models, dictionaries, and per-call overrides.
 - **TypeScript**, full type definitions.
 
@@ -89,6 +89,7 @@ The same package, the same API, every JavaScript runtime:
 | **Bun**                   | `bun add ppu-paddle-ocr onnxruntime-node`                                                                   | [npm package](https://www.npmjs.com/package/ppu-paddle-ocr)                                      |
 | **Deno**                  | `deno add jsr:@snowfluke/ppu-paddle-ocr`                                                                    | [JSR package](https://jsr.io/@snowfluke/ppu-paddle-ocr)                                          |
 | **Web browser**           | `npm install ppu-paddle-ocr onnxruntime-web` (import `/web` subpath)                                        | [Live demo](https://ppu-paddle-ocr.snowfluke.workers.dev/)                                       |
+| **Web worker**            | Same as web; the `/web` subpath runs in workers and MV3 service workers unchanged.                          | [Web Workers](#web-workers)                                                                      |
 | **Browser extension**     | Same as web; bundle `ppu-paddle-ocr/web` with your extension's bundler.                                     | [Example extension repo](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-extension)     |
 | **Mobile (React Native)** | `npm install ppu-paddle-ocr onnxruntime-react-native @shopify/react-native-skia` (import `/mobile` subpath) | [Example app](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-mobile-react-native-demo) |
 
@@ -541,7 +542,7 @@ const service = new PaddleOcrService({
 });
 ```
 
-> The WASM binaries are still required even when WebGPU is the primary provider (used for graph optimization and fallback ops). Set `ort.env.wasm.wasmPaths` before `initialize()` if you self-host them.
+> The WASM binaries are still required even when WebGPU is the primary provider (used for graph optimization and fallback ops). When `ort.env.wasm.wasmPaths` is unset, pages and workers fall back to the jsDelivr copy of the exact `onnxruntime-web` version you loaded, so the binaries and the loader never disagree. Set it yourself before `initialize()` to self-host.
 
 ### Multithreaded WASM (Cross-Origin Isolation)
 
