@@ -11,6 +11,7 @@ Thank you for taking the time to contribute. This document covers how to set up 
 - [How tests run](#how-tests-run)
 - [Developer Certificate of Origin](#developer-certificate-of-origin)
 - [Submitting a Pull Request](#submitting-a-pull-request)
+- [Cutting a release](#cutting-a-release)
 - [Reporting Issues](#reporting-issues)
 - [Community](#community)
 
@@ -140,6 +141,41 @@ bun bench/batch.bench.ts   # batch vs concurrent recognize(), peak RSS
 PRs are rebase-merged to keep each logically distinct commit on `main`. Keep your
 commit history clean - squash fixup commits locally before review, and make every
 commit message follow the project's Conventional Commits format.
+
+## Cutting a release
+
+Maintainers only. The version lives in more places than the two manifests, so
+`bun bump` rewrites all of them in one pass and commits the result:
+
+```bash
+git checkout -b release/6.4.0
+bun bump minor            # or major, patch, fix, or an explicit 6.4.0
+```
+
+| Touchpoint                 | What it does                                       |
+| :------------------------- | :------------------------------------------------- |
+| `package.json`, `jsr.json` | the published version, kept in lockstep            |
+| `playground/index.html`    | the CDN fallback pin, which otherwise goes stale   |
+| `CHANGELOG.md`             | promotes `## [Unreleased]` to a dated heading      |
+| `apps/serve` (4 files)     | the REST envelope version, patch-bumped by default |
+
+The CLI reads `package.json` at runtime, so it needs no edit.
+
+Options: `--serve <spec>` gives the serve app its own bump level, `--serve none`
+leaves it alone, and `--no-commit` writes the files without staging them. The
+command refuses to run on `main` and refuses to promote an empty `[Unreleased]`
+section, so write the release notes first.
+
+After the release PR merges:
+
+```bash
+git tag -s v6.4.0 -m "v6.4.0" && git push origin v6.4.0
+gh release create v6.4.0 --title "6.4.0" --notes "<the CHANGELOG section>"
+gh workflow run deploy-serve.yml
+```
+
+Publishing to npm and JSR is triggered by the GitHub release, so the signed tag
+has to be pushed first. Sync the wiki for any user-visible API change.
 
 ## Reporting Issues
 
