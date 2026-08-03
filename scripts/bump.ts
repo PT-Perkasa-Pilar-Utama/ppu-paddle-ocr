@@ -36,6 +36,9 @@ const SERVE_TOUCHPOINTS: Touchpoint[] = [
 const CHANGELOG = "CHANGELOG.md";
 const UNRELEASED = "## [Unreleased]";
 
+/** Keep a Changelog's section order. Anything else keeps its relative place at the end. */
+const SECTION_ORDER = ["Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"];
+
 /** One rewritten file. */
 export type VersionChange = {
   /** Path relative to the repo root. */
@@ -112,7 +115,34 @@ export function releaseDate(when: Date): string {
   return `${when.getFullYear()}-${pad(when.getMonth() + 1)}-${pad(when.getDate())}`;
 }
 
-/** Insert a dated release heading under `## [Unreleased]`, leaving that heading in place. */
+/** Where a `### Heading` block sorts. A preamble stays on top, unknown headings sink. */
+function sectionRank(block: string): number {
+  if (!block.startsWith("### ")) return -1;
+  const name = (block.split("\n", 1)[0] ?? "").slice(4).trim();
+  const rank = SECTION_ORDER.indexOf(name);
+  return rank === -1 ? SECTION_ORDER.length : rank;
+}
+
+/**
+ * Sort the `###` blocks of one release into {@link SECTION_ORDER}, verbatim.
+ *
+ * The sort is stable, so repeated or unrecognised headings keep the order the
+ * author wrote them in.
+ */
+export function orderSections(notes: string): string {
+  return notes
+    .split(/^(?=### )/m)
+    .map((block) => block.trim())
+    .filter((block) => block.length > 0)
+    .sort((a, b) => sectionRank(a) - sectionRank(b))
+    .join("\n\n");
+}
+
+/**
+ * Insert a dated release heading under `## [Unreleased]`, leaving that heading in
+ * place, and sort the promoted notes into Keep a Changelog's section order.
+ * Earlier releases are never touched.
+ */
 export function promoteChangelog(text: string, version: string, date: string): string {
   const heading = `## [${version}]`;
   if (text.includes(heading)) {
@@ -131,7 +161,9 @@ export function promoteChangelog(text: string, version: string, date: string): s
     throw new Error(`${CHANGELOG} ${UNRELEASED} section is empty - write the release notes first`);
   }
 
-  return `${text.slice(0, start + UNRELEASED.length)}\n\n${heading} - ${date}${rest}`;
+  const earlier = nextHeading === -1 ? "" : rest.slice(nextHeading);
+  const body = earlier ? `${orderSections(notes)}\n\n${earlier}` : `${orderSections(notes)}\n`;
+  return `${text.slice(0, start + UNRELEASED.length)}\n\n${heading} - ${date}\n\n${body}`;
 }
 
 /** Rewrite every version this pattern matches, reporting the first one it found. */

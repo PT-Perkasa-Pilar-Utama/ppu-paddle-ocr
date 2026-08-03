@@ -147,6 +147,74 @@ describe("promoteChangelog", () => {
     expect(promoted).toContain("## [6.1.0] - 2026-07-13");
   });
 
+  test("sorts the promoted notes into Keep a Changelog order", () => {
+    const source = `# Changelog
+
+## [Unreleased]
+
+### Fixed
+
+- a fix
+
+### Added
+
+- an addition
+
+## [6.1.0] - 2026-07-13
+
+### Fixed
+
+- older news
+`;
+
+    const promoted = promoteChangelog(source, "6.3.0", "2026-08-03");
+
+    expect(promoted).toContain(
+      "## [6.3.0] - 2026-08-03\n\n### Added\n\n- an addition\n\n### Fixed\n\n- a fix\n\n## [6.1.0]"
+    );
+  });
+
+  test("leaves earlier releases in the order they were written", () => {
+    const source = `# Changelog
+
+## [Unreleased]
+
+### Added
+
+- new
+
+## [6.1.0] - 2026-07-13
+
+### Fixed
+
+- old fix
+
+### Added
+
+- old addition
+`;
+
+    const promoted = promoteChangelog(source, "6.3.0", "2026-08-03");
+
+    expect(promoted).toContain("## [6.1.0] - 2026-07-13\n\n### Fixed\n\n- old fix\n\n### Added");
+  });
+
+  test("keeps a section it does not recognise, after the ones it does", () => {
+    const source = "# Changelog\n\n## [Unreleased]\n\n### Notes\n\n- note\n\n### Added\n\n- new\n";
+
+    const promoted = promoteChangelog(source, "6.3.0", "2026-08-03");
+
+    expect(promoted).toContain("### Added\n\n- new\n\n### Notes\n\n- note");
+  });
+
+  test("keeps a preamble above the sections", () => {
+    const source = "# Changelog\n\n## [Unreleased]\n\nHeads up.\n\n### Added\n\n- new\n";
+
+    const promoted = promoteChangelog(source, "6.3.0", "2026-08-03");
+
+    expect(promoted).toContain("## [6.3.0] - 2026-08-03\n\nHeads up.\n\n### Added");
+  });
+
   test("refuses an empty Unreleased section", () => {
     expect(() => promoteChangelog(EMPTY_CHANGELOG, "6.3.0", "2026-08-03")).toThrow("is empty");
   });
