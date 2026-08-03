@@ -470,6 +470,47 @@ const result = await service.recognize(canvas);
 console.log(result.text);
 ```
 
+### Web Workers
+
+The web build runs unchanged inside a Web Worker, a shared worker, or a Manifest V3 extension service worker. Every intermediate canvas comes from `OffscreenCanvas`, so the pipeline never touches `document` or `HTMLCanvasElement` and needs no shims.
+
+Keep the service inside the worker and send image bytes across the boundary, so inference never blocks the main thread:
+
+```ts
+// worker.ts
+import { PaddleOcrService } from "ppu-paddle-ocr/web";
+
+const service = new PaddleOcrService();
+const ready = service.initialize();
+
+self.onmessage = async (event: MessageEvent<ArrayBuffer>) => {
+  await ready;
+  const result = await service.recognize(event.data);
+  self.postMessage(result);
+};
+```
+
+```ts
+// main.ts
+const worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
+worker.onmessage = (event) => console.log(event.data.text);
+
+const bytes = await file.arrayBuffer();
+worker.postMessage(bytes, [bytes]); // transferred, not copied
+```
+
+`recognize()` also accepts an `OffscreenCanvas` directly, which is what `canvas.transferControlToOffscreen()` hands the worker.
+
+Notes:
+
+- WebGPU detection behaves the same way in a worker and falls back to WASM when `navigator.gpu` is absent.
+- Cross-origin isolation still governs WASM threading, see [Multithreaded WASM](#multithreaded-wasm-cross-origin-isolation). It is a property of the page, not of the worker.
+- `isWebWorker()` is exported if you need to branch on the scope yourself.
+
+```ts
+import { isWebWorker } from "ppu-paddle-ocr/web";
+```
+
 ### CDN (No Bundler)
 
 See the [live demo](https://ppu-paddle-ocr.snowfluke.workers.dev/) for a complete ESM/CDN setup.

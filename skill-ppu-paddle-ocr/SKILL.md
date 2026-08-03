@@ -289,6 +289,27 @@ The WASM binaries are still required even when WebGPU is the primary provider - 
 
 For CDN / no-bundler setups, point at the published ESM build directly (see the live demo at https://ppu-paddle-ocr.snowfluke.workers.dev/ for a complete reference).
 
+## Running in a Web Worker
+
+`ppu-paddle-ocr/web` runs unchanged in a dedicated worker, a shared worker, or an MV3 extension service worker. Every canvas it allocates is an `OffscreenCanvas`, so it never touches `document` or `HTMLCanvasElement`. No shims are needed. If a user is patching `self.document` or `self.HTMLCanvasElement` to make it work, that is a workaround for a bug that has since been fixed - tell them to drop it and update.
+
+Keep the service inside the worker and transfer image bytes in, so inference never blocks the main thread:
+
+```ts
+// worker.ts
+import { PaddleOcrService } from "ppu-paddle-ocr/web";
+
+const service = new PaddleOcrService();
+const ready = service.initialize();
+
+self.onmessage = async (event: MessageEvent<ArrayBuffer>) => {
+  await ready;
+  self.postMessage(await service.recognize(event.data));
+};
+```
+
+`recognize()` also accepts an `OffscreenCanvas` directly, which is what `transferControlToOffscreen()` hands the worker. `isWebWorker()` is exported for host code that needs to branch on the scope itself.
+
 ## The React Native (mobile) entry point
 
 `ppu-paddle-ocr/mobile` runs the same pipeline on iOS/Android via `onnxruntime-react-native` (native JSI) and `ppu-ocv/canvas-mobile` (Skia). Install `onnxruntime-react-native` and `@shopify/react-native-skia`, and use a dev client / `expo prebuild` (Expo Go can't load the native modules). Feed `recognize()` an `ArrayBuffer` - e.g. a bundled asset or a frame from `expo-camera` / `react-native-vision-camera`:
