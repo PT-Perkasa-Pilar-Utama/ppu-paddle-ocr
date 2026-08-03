@@ -67,6 +67,7 @@
   },
   "scripts": {
     "task": "bun scripts/task.ts",
+    "bump": "bun scripts/bump.ts",
     "build": "bun task build",
     "build:test": "bun task build && bun test",
     "build:publish": "bun task build && bun task report-size && bun task publish",
