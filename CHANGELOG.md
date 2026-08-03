@@ -7,8 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The web build runs inside a Web Worker** ([#84](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/issues/84)).
+  `createCanvas()` called `document.createElement("canvas")` and `isCanvas()`
+  evaluated `image instanceof HTMLCanvasElement`, and neither global exists in a
+  worker scope, so both threw a `ReferenceError`. Canvas creation now goes
+  through `ppu-ocv`, which prefers `OffscreenCanvas`, and the canvas check is
+  duck-typed. Manifest V3 extension service workers are covered by the same fix.
+  No shims needed on the caller's side
+- **`ort.env.wasm.wasmPaths` gets its CDN default inside workers too.** The
+  default was gated on `typeof window !== "undefined"`, which is false in a
+  worker, so CDN and unbundled worker setups 404ed on the WASM binaries
+
 ### Added
 
+- **`isWebWorker()` export on `ppu-paddle-ocr/web`** for host apps that need to
+  branch on the scope themselves
 - Recognition fine-tuning starter kit (`examples/fine-tune/`): per-tier
   PP-OCRv6 training configs, a dataset preparation script that builds
   train/val/test splits from images with line-level ground truth, and a
