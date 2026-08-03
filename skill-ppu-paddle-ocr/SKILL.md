@@ -285,7 +285,7 @@ const service = new PaddleOcrService({
 });
 ```
 
-The WASM binaries are still required even when WebGPU is the primary provider - they're used for graph optimization and fallback ops. If the user is self-hosting onnxruntime-web's WASM files, they must set `ort.env.wasm.wasmPaths` **before** `initialize()`.
+The WASM binaries are still required even when WebGPU is the primary provider - they're used for graph optimization and fallback ops. When `ort.env.wasm.wasmPaths` is unset, the web build points it at the jsDelivr copy of the exact `onnxruntime-web` version the page loaded, so the binaries always match the loader. If the user is self-hosting those files, they must set `ort.env.wasm.wasmPaths` **before** `initialize()`.
 
 For CDN / no-bundler setups, point at the published ESM build directly (see the live demo at https://ppu-paddle-ocr.snowfluke.workers.dev/ for a complete reference).
 
