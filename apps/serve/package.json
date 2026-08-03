@@ -1,6 +1,6 @@
 {
   "name": "ppu-paddle-ocr-serve",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "description": "Production-grade REST API serving ppu-paddle-ocr (Hono + Bun).",
