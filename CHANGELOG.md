@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.3.0] - 2026-08-03
+
+### Added
+
+- **`isWebWorker()` export on `ppu-paddle-ocr/web`** for host apps that need to
+  branch on the scope themselves
+- Recognition fine-tuning starter kit (`examples/fine-tune/`): per-tier
+  PP-OCRv6 training configs, a dataset preparation script that builds
+  train/val/test splits from images with line-level ground truth, and a
+  sample dataset generated from the bundled receipt.
+
 ### Fixed
 
 - **The web build runs inside a Web Worker** ([#84](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/issues/84)).
@@ -23,15 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pinned to 1.26.0 while the package resolves 1.27.0, so anyone who did not set
   `wasmPaths` handed a 1.27 loader 1.26 binaries. The version is read from
   `ort.env.versions` at call time and can no longer drift
-
-### Added
-
-- **`isWebWorker()` export on `ppu-paddle-ocr/web`** for host apps that need to
-  branch on the scope themselves
-- Recognition fine-tuning starter kit (`examples/fine-tune/`): per-tier
-  PP-OCRv6 training configs, a dataset preparation script that builds
-  train/val/test splits from images with line-level ground truth, and a
-  sample dataset generated from the bundled receipt.
 
 ## [6.2.0] - 2026-07-22
 
