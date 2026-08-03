@@ -167,6 +167,19 @@ describe("environment probes", () => {
     expect(String(ort.env.wasm.wasmPaths)).toContain("onnxruntime-web");
   });
 
+  test("applyDefaultWasmPaths matches the CDN copy to the loaded runtime version", () => {
+    enterWorkerScope();
+    ort.env.wasm.wasmPaths = undefined;
+
+    applyDefaultWasmPaths();
+
+    // A pinned version would drift from the installed one and serve binaries
+    // the JS glue cannot load.
+    expect(String(ort.env.wasm.wasmPaths)).toBe(
+      `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ort.env.versions.web}/dist/`
+    );
+  });
+
   test("applyDefaultWasmPaths never overrides a path the host app chose", () => {
     enterWorkerScope();
     ort.env.wasm.wasmPaths = "/vendor/ort/";

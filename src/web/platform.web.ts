@@ -9,8 +9,19 @@ import type {
 } from "ppu-ocv/canvas";
 import type { CanvasOps, CoreCanvas, PlatformProvider } from "../core/platform.js";
 
-/** CDN copy of the ONNX Runtime WASM binaries, used when the host app picks no location. */
-const DEFAULT_WASM_PATHS = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/";
+/**
+ * CDN copy of the ONNX Runtime WASM binaries, used when the host app picks no
+ * location.
+ *
+ * The version comes from the runtime that is actually loaded rather than a pin,
+ * so the binaries always match the JS glue that fetches them. A pin goes stale
+ * on the next `onnxruntime-web` bump and then hands a 1.27 loader 1.26 binaries,
+ * which fails at session-build time.
+ */
+function defaultWasmPaths(): string {
+  const version = ort.env.versions.web ?? ort.env.versions.common;
+  return `https://cdn.jsdelivr.net/npm/onnxruntime-web@${version}/dist/`;
+}
 
 /**
  * 2D context options. `CanvasLike.getContext` is declared with one parameter in
@@ -39,7 +50,7 @@ export function isWebWorker(): boolean {
 export function applyDefaultWasmPaths(): void {
   const inBrowser = typeof window !== "undefined" || isWebWorker();
   if (!inBrowser || ort.env.wasm.wasmPaths) return;
-  ort.env.wasm.wasmPaths = DEFAULT_WASM_PATHS;
+  ort.env.wasm.wasmPaths = defaultWasmPaths();
 }
 
 applyDefaultWasmPaths();
