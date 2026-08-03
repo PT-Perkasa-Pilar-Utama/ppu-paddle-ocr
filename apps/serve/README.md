@@ -80,12 +80,12 @@ Every JSON response uses a consistent envelope and carries the request id (also 
 // success
 {
   "status": "success",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "metadata": { "id": "<request-id>", "speed": 0.27, "confidence": 0.95, "engine": "opencv", "strategy": "per-line" },
   "data": { "text": "...", "lines": [ ... ], "confidence": 0.95 }
 }
 // error
-{ "status": "error", "version": "0.3.0", "data": { "message": "...", "requestId": "<request-id>" } }
+{ "status": "error", "version": "0.3.1", "data": { "message": "...", "requestId": "<request-id>" } }
 ```
 
 `/metrics` is the only exception (Prometheus text). The spec at `/openapi.json` (rendered at `/docs`) is generated from the zod schemas via `@hono/zod-openapi`.
