@@ -7,18 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
+### Added
 
-- **Recognition no longer crops from the full-resolution source on far-
-  oversized images.** A source image much larger than detection's own "auto"
-  cap ever reaches (e.g. a 4961x7016 full-page scan) paid seconds of decode +
-  repeated per-line crop cost per image, unrelated to detection or model
-  inference itself - `detection.maxSideLength` never touched this path since
-  it only resizes the detector's own input tensor. Recognition now crops from
-  a canvas capped at 2000px on the longest side (well above detection's own
-  1920px ceiling, so ordinary photos are never touched), with box coordinates
-  scaled back to original-image space in the returned results. Measured 2-4x
-  faster on affected images with no measurable accuracy loss.
+- **`recognition.maxCropSourceSideLength` option** (default `2000`) caps the
+  longest side of the canvas recognition crops are cut from, independent of
+  and above `detection.maxSideLength` (which only resizes the detector's own
+  input tensor, never the recognition crop source). Previously, recognition
+  always cropped from the full-resolution source canvas regardless of size -
+  a source far larger than any normal photo (e.g. a 4961x7016 full-page scan)
+  paid seconds of decode plus dozens of full-res per-line crop ops per image.
+  The default of `2000` keeps ordinary photos (up to ~2000px) untouched with
+  today's crop fidelity, and measured 2-4x faster on far-oversized images
+  with no measurable accuracy loss on the fixture set. This is a
+  speed/accuracy trade-off, not a one-size-fits-all fix: lower the value for
+  more speed on large sources at some accuracy cost, or raise it to always
+  crop at native resolution regardless of input size. Box coordinates are
+  scaled back to original-image space in the returned results either way.
 
 ## [6.3.0] - 2026-08-03
 

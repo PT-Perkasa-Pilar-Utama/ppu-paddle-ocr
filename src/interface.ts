@@ -181,6 +181,27 @@ export type RecognitionOptions = {
    * recognition result decoding.
    */
   charactersDictionary: string[];
+
+  /**
+   * Maximum dimension (longest side) for the canvas recognition crops are
+   * cut from, in pixels. Images above this size are downscaled first
+   * (boxes are rescaled to match, then results are scaled back up to
+   * original-image coordinates); images below it are cropped at native
+   * resolution, unaffected by this option.
+   *
+   * This is independent of `detection.maxSideLength` - that only resizes
+   * the detector's own input tensor and never touches the source canvas
+   * recognition crops come from. On a far-oversized source (e.g. a
+   * 4961x7016 full-page scan), skipping this cap means paying full-resolution
+   * decode plus dozens of full-res per-line crop costs, unrelated to
+   * detection or model inference itself.
+   *
+   * This is a speed/accuracy trade-off you control: lower it for faster
+   * recognition on large sources at some accuracy cost; raise it (or set it
+   * near your largest expected input) to always crop at native resolution.
+   * @default 2000
+   */
+  maxCropSourceSideLength?: number;
 };
 
 /**

@@ -64,6 +64,7 @@ Controls the recognition stage's preprocessing and batching strategy.
 | `crossLineWidthFactor` | `number`                                  | `1.0`        | Width multiplier for `cross-line` bin-packing. Only used with `cross-line`.    |
 | `minimumConfidence`    | `number`                                  | `0.5`        | Drop items below this confidence (0 disables); symbol-only items need +0.3.    |
 | `charactersDictionary` | `string[]`                                | `[]`         | Loaded dict for decoding. Set automatically by `initialize()`; don't override. |
+| `maxCropSourceSideLength` | `number`                               | `2000`       | Longest side (px) for the canvas recognition crops are cut from. Independent of `detection.maxSideLength` (that only resizes the detector's own input tensor). |
 
 **When to tune:**
 
@@ -71,6 +72,7 @@ Controls the recognition stage's preprocessing and batching strategy.
 - `strategy`: pick based on workload - see the strategy table in SKILL.md.
 - `crossLineWidthFactor`: only meaningful with `cross-line`. Try `1.2`-`1.5` for slight throughput wins; `2.0+` starts to hurt accuracy on receipts.
 - `charactersDictionary`: this is set internally from `model.charactersDictionary` during `initialize()`. Setting it directly is a footgun - use `model.charactersDictionary` instead, or `recognize(image, { dictionary })` for one-off overrides.
+- `maxCropSourceSideLength`: this is a speed/accuracy trade-off, not a bug fix with one right answer - lower it (e.g. `1000`) if you'd rather trade some accuracy for speed on large sources; raise it (or set it near your largest expected input's longest side) if you want recognition to always crop at native resolution regardless of source size.
 
 ---
 
