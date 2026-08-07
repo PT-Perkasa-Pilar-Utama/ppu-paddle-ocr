@@ -10,7 +10,16 @@ import type {
   RecognitionOptions,
   RecognitionStrategy,
 } from "../interface.js";
+import { calculateResizeDimensions } from "./detection/box-geometry.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
+
+/**
+ * Recognition crops are cut from the source canvas as-is, so this is
+ * deliberately well above detection's own cap (max 1920, see
+ * `resolveMaxSideLength`) - it only catches images far larger than any
+ * normal photo, not ordinary inputs detection would already downsize.
+ */
+const MAX_CROP_SOURCE_SIDE_LENGTH = 2000;
 import type { RecognitionContext } from "./recognition/strategies.js";
 import {
   runCrossLineStrategy,
@@ -107,36 +116,43 @@ export class BaseRecognitionService {
         return [];
       }
 
+      // Crops are cut straight from the source canvas, once per (merged)
+      // line - on a full-resolution scan (e.g. a 4961x7016 photo) that means
+      // dozens of full-res crop ops per image, unrelated to how detection
+      // sized its own input. Cap the crop source so far-oversized images
+      // don't pay for it; boxes are scaled down to match for cropping, then
+      // results are scaled back up so callers keep seeing original-image
+      // coordinates.
+      const { canvas: cropCanvas, ratio: cropRatio } = this.buildCropCanvas(sourceCanvasForCrop);
+      const cropBoxes =
+        cropRatio === 1
+          ? validBoxes
+          : validBoxes.map((v) => ({ ...v, box: scaleBox(v.box, cropRatio) }));
+
       const ctx = this.buildContext();
 
       let results: RecognitionResult[];
       switch (strategy) {
         case "cross-line":
-          results = await runCrossLineStrategy(
-            sourceCanvasForCrop,
-            validBoxes,
-            ctx,
-            charactersDictionary
-          );
+          results = await runCrossLineStrategy(cropCanvas, cropBoxes, ctx, charactersDictionary);
           break;
         case "per-line":
-          results = await runLineStrategy(
-            sourceCanvasForCrop,
-            validBoxes,
-            ctx,
-            charactersDictionary
-          );
+          results = await runLineStrategy(cropCanvas, cropBoxes, ctx, charactersDictionary);
           break;
         case "per-box":
         default:
           results = await runPerBoxStrategy(
-            sourceCanvasForCrop,
-            validBoxes,
+            cropCanvas,
+            cropBoxes,
             ctx,
             (canvas, box, index, total, debugPath, dict) =>
               this.processBox(canvas, box, index, total, debugPath, dict),
             charactersDictionary
           );
+      }
+
+      if (cropRatio !== 1) {
+        results = results.map((r) => ({ ...r, box: scaleBox(r.box, 1 / cropRatio) }));
       }
 
       // Drop hallucinated noise regions (hatch patterns, logos, barcodes read
@@ -183,6 +199,33 @@ export class BaseRecognitionService {
     return boxes
       .map((box, index) => ({ box, index }))
       .filter(({ box, index }) => this.isValidBox(box, index));
+  }
+
+  /**
+   * Downsizes the crop source when it's far larger than detection's own
+   * "auto" cap ever reaches (max 1920, see `resolveMaxSideLength`) - e.g. a
+   * 4961x7016 full-resolution scan mixed into an otherwise phone-photo-sized
+   * dataset costs seconds per image in decode + repeated per-line crops,
+   * unrelated to detection or recognition compute itself. Deliberately well
+   * above detection's own ceiling so ordinary photos (up to ~2000px) are
+   * never touched here and keep today's crop fidelity exactly as-is.
+   * Returns the source unchanged (ratio 1) when it's already within the cap.
+   */
+  private buildCropCanvas(source: CoreCanvas): { canvas: CoreCanvas; ratio: number } {
+    const { width, height } = source;
+    const {
+      width: resizeW,
+      height: resizeH,
+      ratio,
+    } = calculateResizeDimensions(width, height, MAX_CROP_SOURCE_SIDE_LENGTH);
+
+    if (ratio === 1) {
+      return { canvas: source, ratio: 1 };
+    }
+
+    const resized = this.platform.createCanvas(resizeW, resizeH);
+    resized.getContext("2d").drawImage(source, 0, 0, width, height, 0, 0, resizeW, resizeH);
+    return { canvas: resized, ratio };
   }
 
   /**
@@ -297,4 +340,14 @@ export class BaseRecognitionService {
 
     return outputTensor;
   }
+}
+
+/** Scales a box's coordinates and dimensions by `ratio`, rounding to whole pixels. */
+function scaleBox(box: Box, ratio: number): Box {
+  return {
+    x: Math.round(box.x * ratio),
+    y: Math.round(box.y * ratio),
+    width: Math.round(box.width * ratio),
+    height: Math.round(box.height * ratio),
+  };
 }
