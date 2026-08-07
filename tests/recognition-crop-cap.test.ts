@@ -50,4 +50,26 @@ describe("recognition crop cap on oversized sources", () => {
 
     await service.destroy();
   }, 30000);
+
+  test("maxCropSourceSideLength is a caller-tunable trade-off, not a fixed constant", async () => {
+    const defaultService = new PaddleOcrService();
+    await defaultService.initialize();
+    const defaultResult = await defaultService.recognize(bigImageBuffer, { noCache: true });
+    await defaultService.destroy();
+
+    // Forcing a much tighter cap than the 2000 default on the same
+    // far-oversized source loses real detail in the crop. If
+    // maxCropSourceSideLength weren't actually wired through to
+    // buildCropCanvas, this run would score identically to the default one
+    // above instead of measurably worse.
+    const cappedService = new PaddleOcrService({
+      recognition: { charactersDictionary: [], maxCropSourceSideLength: 300 },
+    });
+    await cappedService.initialize();
+    const cappedResult = await cappedService.recognize(bigImageBuffer, { noCache: true });
+    await cappedService.destroy();
+
+    expect(accuracy(defaultResult.text)).toBeGreaterThan(90);
+    expect(accuracy(cappedResult.text)).toBeLessThan(accuracy(defaultResult.text));
+  }, 30000);
 });

@@ -12,14 +12,6 @@ import type {
 } from "../interface.js";
 import { calculateResizeDimensions } from "./detection/box-geometry.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
-
-/**
- * Recognition crops are cut from the source canvas as-is, so this is
- * deliberately well above detection's own cap (max 1920, see
- * `resolveMaxSideLength`) - it only catches images far larger than any
- * normal photo, not ordinary inputs detection would already downsize.
- */
-const MAX_CROP_SOURCE_SIDE_LENGTH = 2000;
 import type { RecognitionContext } from "./recognition/strategies.js";
 import {
   runCrossLineStrategy,
@@ -119,10 +111,12 @@ export class BaseRecognitionService {
       // Crops are cut straight from the source canvas, once per (merged)
       // line - on a full-resolution scan (e.g. a 4961x7016 photo) that means
       // dozens of full-res crop ops per image, unrelated to how detection
-      // sized its own input. Cap the crop source so far-oversized images
-      // don't pay for it; boxes are scaled down to match for cropping, then
-      // results are scaled back up so callers keep seeing original-image
-      // coordinates.
+      // sized its own input. `options.maxCropSourceSideLength` caps the crop
+      // source so far-oversized images don't pay for it by default, while
+      // still letting callers trade it away for full-resolution crops (or
+      // tighten it further) as their own speed/accuracy call; boxes are
+      // scaled down to match for cropping, then results are scaled back up
+      // so callers keep seeing original-image coordinates.
       const { canvas: cropCanvas, ratio: cropRatio } = this.buildCropCanvas(sourceCanvasForCrop);
       const cropBoxes =
         cropRatio === 1
@@ -202,22 +196,25 @@ export class BaseRecognitionService {
   }
 
   /**
-   * Downsizes the crop source when it's far larger than detection's own
-   * "auto" cap ever reaches (max 1920, see `resolveMaxSideLength`) - e.g. a
-   * 4961x7016 full-resolution scan mixed into an otherwise phone-photo-sized
-   * dataset costs seconds per image in decode + repeated per-line crops,
-   * unrelated to detection or recognition compute itself. Deliberately well
-   * above detection's own ceiling so ordinary photos (up to ~2000px) are
-   * never touched here and keep today's crop fidelity exactly as-is.
-   * Returns the source unchanged (ratio 1) when it's already within the cap.
+   * Downsizes the crop source when it's larger than `options.maxCropSourceSideLength`
+   * (default 2000, independent of and deliberately above detection's own
+   * "auto" cap - max 1920, see `resolveMaxSideLength`) - e.g. a 4961x7016
+   * full-resolution scan mixed into an otherwise phone-photo-sized dataset
+   * costs seconds per image in decode + repeated per-line crops, unrelated
+   * to detection or recognition compute itself. The default keeps ordinary
+   * photos (up to ~2000px) untouched with today's crop fidelity; callers
+   * can raise it for full-resolution crops on larger sources, or lower it to
+   * trade accuracy for speed. Returns the source unchanged (ratio 1) when
+   * it's already within the cap.
    */
   private buildCropCanvas(source: CoreCanvas): { canvas: CoreCanvas; ratio: number } {
     const { width, height } = source;
+    const maxCropSourceSideLength = this.options.maxCropSourceSideLength ?? 2000;
     const {
       width: resizeW,
       height: resizeH,
       ratio,
-    } = calculateResizeDimensions(width, height, MAX_CROP_SOURCE_SIDE_LENGTH);
+    } = calculateResizeDimensions(width, height, maxCropSourceSideLength);
 
     if (ratio === 1) {
       return { canvas: source, ratio: 1 };

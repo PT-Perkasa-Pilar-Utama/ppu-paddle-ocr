@@ -35,6 +35,7 @@ export const DEFAULT_RECOGNITION_OPTIONS: RecognitionOptions = {
   crossLineWidthFactor: 1.0,
   minimumConfidence: 0.5,
   charactersDictionary: [],
+  maxCropSourceSideLength: 2000,
 };
 
 /** Default ONNX Runtime session options. */

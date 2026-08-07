@@ -865,6 +865,7 @@ Controls recognition preprocessing and strategy.
 | `crossLineWidthFactor` |                 `number`                  |    `1.0`     | Batch width multiplier for `cross-line` strategy.                                                                          |
 | `minimumConfidence`    |                 `number`                  |    `0.5`     | Drop items below this confidence (0 disables). Mirrors upstream `drop_score`; noise reads at 0.2-0.45, real text at 0.65+. |
 | `charactersDictionary` |                `string[]`                 |     `[]`     | Loaded character dictionary for result decoding.                                                                           |
+| `maxCropSourceSideLength` |               `number`                 |    `2000`    | Longest side (px) the recognition crop source is capped at; independent of `detection.maxSideLength`. Lower for speed on large sources, raise for full-resolution crops. |
 
 ### `DebuggingOptions`
 

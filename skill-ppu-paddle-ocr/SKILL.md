@@ -356,6 +356,7 @@ type PaddleOptions = {
     imageHeight?: number;
     strategy?: "per-box" | "per-line" | "cross-line";
     crossLineWidthFactor?: number;
+    maxCropSourceSideLength?: number; // default 2000 - speed/accuracy trade-off on large sources
   };
   debugging?: { verbose?: boolean; debug?: boolean; debugFolder?: string };
   session?: InferenceSession.SessionOptions; // any onnxruntime SessionOptions
