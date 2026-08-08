@@ -43,6 +43,7 @@ const EnvSchema = z.object({
   DEFAULT_ENGINE: z.enum(["opencv", "canvas-native"]).default("opencv"),
   MIN_CONFIDENCE: z.coerce.number().min(0).max(1).optional(),
   MAX_SIDE_LENGTH: z.union([z.literal("auto"), z.coerce.number().int().positive()]).optional(),
+  MAX_CROP_SOURCE_SIDE_LENGTH: z.coerce.number().int().positive().optional(),
   MODEL_DETECTION: z.string().optional(),
   MODEL_RECOGNITION: z.string().optional(),
   MODEL_DICT: z.string().optional(),
@@ -108,6 +109,7 @@ function build(raw: NodeJS.ProcessEnv) {
     defaultEngine: e.DEFAULT_ENGINE,
     minConfidence: e.MIN_CONFIDENCE,
     maxSideLength: e.MAX_SIDE_LENGTH,
+    maxCropSourceSideLength: e.MAX_CROP_SOURCE_SIDE_LENGTH,
     model,
 
     concurrency: e.MAX_CONCURRENCY > 0 ? e.MAX_CONCURRENCY : autoConcurrency,

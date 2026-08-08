@@ -57,14 +57,14 @@ Controls preprocessing and post-filtering for the detection model.
 
 Controls the recognition stage's preprocessing and batching strategy.
 
-| Property               | Type                                      | Default      | Notes                                                                          |
-| ---------------------- | ----------------------------------------- | ------------ | ------------------------------------------------------------------------------ |
-| `imageHeight`          | `number`                                  | `48`         | Fixed height (px) for resized text-line crops; widths are proportional.        |
-| `strategy`             | `"per-box" \| "per-line" \| "cross-line"` | `"per-line"` | Batching strategy. See SKILL.md for trade-offs.                                |
-| `crossLineWidthFactor` | `number`                                  | `1.0`        | Width multiplier for `cross-line` bin-packing. Only used with `cross-line`.    |
-| `minimumConfidence`    | `number`                                  | `0.5`        | Drop items below this confidence (0 disables); symbol-only items need +0.3.    |
-| `charactersDictionary` | `string[]`                                | `[]`         | Loaded dict for decoding. Set automatically by `initialize()`; don't override. |
-| `maxCropSourceSideLength` | `number`                               | `2000`       | Longest side (px) for the canvas recognition crops are cut from. Independent of `detection.maxSideLength` (that only resizes the detector's own input tensor). |
+| Property                  | Type                                      | Default      | Notes                                                                                                                                                          |
+| ------------------------- | ----------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `imageHeight`             | `number`                                  | `48`         | Fixed height (px) for resized text-line crops; widths are proportional.                                                                                        |
+| `strategy`                | `"per-box" \| "per-line" \| "cross-line"` | `"per-line"` | Batching strategy. See SKILL.md for trade-offs.                                                                                                                |
+| `crossLineWidthFactor`    | `number`                                  | `1.0`        | Width multiplier for `cross-line` bin-packing. Only used with `cross-line`.                                                                                    |
+| `minimumConfidence`       | `number`                                  | `0.5`        | Drop items below this confidence (0 disables); symbol-only items need +0.3.                                                                                    |
+| `charactersDictionary`    | `string[]`                                | `[]`         | Loaded dict for decoding. Set automatically by `initialize()`; don't override.                                                                                 |
+| `maxCropSourceSideLength` | `number`                                  | `2000`       | Longest side (px) for the canvas recognition crops are cut from. Independent of `detection.maxSideLength` (that only resizes the detector's own input tensor). |
 
 **When to tune:**
 

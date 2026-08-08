@@ -112,6 +112,7 @@ See [`.env.example`](.env.example) for the full annotated list.
 | `DEFAULT_ENGINE`                                       | `opencv`           | `opencv` \| `canvas-native`                                         |
 | `MIN_CONFIDENCE`                                       | `0.5` (library)    | Drop recognized items below this confidence; `0` disables           |
 | `MAX_SIDE_LENGTH`                                      | `auto` (library)   | Detection size cap in px, or `auto` (scales with the input)         |
+| `MAX_CROP_SOURCE_SIDE_LENGTH`                          | `2000` (library)   | Recognition crop-source cap in px; lower is faster on large uploads |
 | `MODEL_DETECTION` / `MODEL_RECOGNITION` / `MODEL_DICT` | default v6 tiny    | Override model sources                                              |
 | `MAX_CONCURRENCY`                                      | `0` (auto)         | Auto = 1 on an accelerator, 4 on CPU                                |
 | `MAX_QUEUE_DEPTH`                                      | `100`              | Excess inferences get `429` + `Retry-After`                         |

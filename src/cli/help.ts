@@ -28,6 +28,9 @@ Recognition flags (recognize / batch / stream):
   --engine <e>                   opencv | canvas-native  (default opencv)
   --image-height <n>             recognition input height in px (default 48)
   --min-confidence <n>           drop items below this confidence, 0 disables (default 0.5)
+  --max-crop-source-side-length <n>
+                                 longest side (px) the crop source is capped at (default 2000);
+                                 lower is faster on large scans, higher keeps native-res crops
   --flatten                      flat results in reading order instead of grouped lines
   --no-cache                     bypass the in-memory result cache
 

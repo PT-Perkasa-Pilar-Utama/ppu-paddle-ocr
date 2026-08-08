@@ -23,6 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   more speed on large sources at some accuracy cost, or raise it to always
   crop at native resolution regardless of input size. Box coordinates are
   scaled back to original-image space in the returned results either way.
+  Exposed as `--max-crop-source-side-length` on the CLI and as
+  `MAX_CROP_SOURCE_SIDE_LENGTH` on `apps/serve`, keeping the documented 1:1
+  option-to-flag mapping intact.
+
+### Fixed
+
+- Scaled recognition boxes now clamp to a 1px floor, so an aggressive
+  `recognition.maxCropSourceSideLength` on a very large source cannot round a
+  thin box to zero width/height and turn a degenerate crop into an empty
+  result for the whole image.
 
 ## [6.3.0] - 2026-08-03
 
