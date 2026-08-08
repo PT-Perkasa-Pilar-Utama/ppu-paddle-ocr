@@ -26,6 +26,7 @@ export const PARSE_OPTIONS: NonNullable<ParseArgsConfig["options"]> = {
   engine: { type: "string" },
   "image-height": { type: "string" },
   "min-confidence": { type: "string" },
+  "max-crop-source-side-length": { type: "string" },
   flatten: { type: "boolean" },
   "no-cache": { type: "boolean" },
   model: { type: "string" },
@@ -156,6 +157,7 @@ export function buildPaddleOptions(values: CliValues): PaddleOptions {
   const imageHeight = num(values, "image-height");
   const crossLineWidthFactor = num(values, "cross-line-width-factor");
   const minimumConfidence = num(values, "min-confidence");
+  const maxCropSourceSideLength = num(values, "max-crop-source-side-length");
   // `charactersDictionary: []` is the documented placeholder - initialize()
   // fills it from the recognition model's dictionary.
   options.recognition = {
@@ -164,6 +166,7 @@ export function buildPaddleOptions(values: CliValues): PaddleOptions {
     ...(imageHeight !== undefined ? { imageHeight } : {}),
     ...(crossLineWidthFactor !== undefined ? { crossLineWidthFactor } : {}),
     ...(minimumConfidence !== undefined ? { minimumConfidence } : {}),
+    ...(maxCropSourceSideLength !== undefined ? { maxCropSourceSideLength } : {}),
   };
 
   const eng = engine(values);

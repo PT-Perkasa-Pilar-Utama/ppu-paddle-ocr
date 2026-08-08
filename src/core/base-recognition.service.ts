@@ -339,12 +339,19 @@ export class BaseRecognitionService {
   }
 }
 
-/** Scales a box's coordinates and dimensions by `ratio`, rounding to whole pixels. */
+/**
+ * Scales a box's coordinates and dimensions by `ratio`, rounding to whole pixels.
+ *
+ * Width/height clamp to a 1px floor: an aggressive `maxCropSourceSideLength`
+ * on a very large source (e.g. 300 on a 10000px scan, ratio 0.03) can round a
+ * thin box to zero, and a zero-size crop throws inside the strategy - which
+ * `run()`'s catch-all would turn into an empty result for the whole image.
+ */
 function scaleBox(box: Box, ratio: number): Box {
   return {
     x: Math.round(box.x * ratio),
     y: Math.round(box.y * ratio),
-    width: Math.round(box.width * ratio),
-    height: Math.round(box.height * ratio),
+    width: Math.max(1, Math.round(box.width * ratio)),
+    height: Math.max(1, Math.round(box.height * ratio)),
   };
 }

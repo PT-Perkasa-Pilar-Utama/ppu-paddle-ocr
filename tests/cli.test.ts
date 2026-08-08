@@ -9,6 +9,7 @@ import {
   buildBatchOptions,
   buildPaddleOptions,
   buildRecognizeOptions,
+  PARSE_OPTIONS,
 } from "../src/cli/options.js";
 import { V6_SMALL_MODEL, V6_TINY_MODEL } from "../src/model-catalogue.js";
 import { main } from "../src/cli/run.js";
@@ -85,6 +86,21 @@ describe("option builders", () => {
     expect(opts.processing).toEqual({ engine: "canvas-native" });
     expect(opts.session).toEqual({ executionProviders: ["cuda", "cpu"] });
     expect(opts.debugging).toEqual({ verbose: true });
+  });
+
+  test("--max-crop-source-side-length is registered and maps onto recognition", () => {
+    // The CLI documents a 1:1 flag mapping for every RecognitionOptions field,
+    // so a new sibling of --image-height / --min-confidence has to be both
+    // parseable and forwarded, not just present in the library options type.
+    expect(PARSE_OPTIONS["max-crop-source-side-length"]).toEqual({ type: "string" });
+
+    const opts = buildPaddleOptions({ "max-crop-source-side-length": "1200" });
+    expect(opts.recognition?.maxCropSourceSideLength).toBe(1200);
+
+    // Omitted leaves it unset so the library's own 2000 default applies.
+    expect(buildPaddleOptions({}).recognition?.maxCropSourceSideLength).toBeUndefined();
+
+    expect(() => buildPaddleOptions({ "max-crop-source-side-length": "abc" })).toThrow();
   });
 
   test("buildPaddleOptions resolves --model presets, with --model-* overriding parts", () => {

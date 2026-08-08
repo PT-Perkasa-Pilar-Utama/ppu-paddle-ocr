@@ -20,6 +20,9 @@ function build(engine: ProcessingEngine): PaddleOcrService {
       charactersDictionary: [],
       strategy: config.defaultStrategy,
       ...(config.minConfidence !== undefined ? { minimumConfidence: config.minConfidence } : {}),
+      ...(config.maxCropSourceSideLength !== undefined
+        ? { maxCropSourceSideLength: config.maxCropSourceSideLength }
+        : {}),
     },
     ...(config.maxSideLength !== undefined
       ? { detection: { maxSideLength: config.maxSideLength } }

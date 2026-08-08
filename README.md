@@ -289,16 +289,16 @@ bunx ppu-paddle-ocr models --json
 
 Every `PaddleOptions` / `RecognizeOptions` field maps to a flag:
 
-| Flags                                                                                              | Applies to         | Purpose                                                                              |
-| :------------------------------------------------------------------------------------------------- | :----------------- | :----------------------------------------------------------------------------------- |
-| `--model <preset>`                                                                                 | all commands       | Catalogue preset (`v6-tiny`, `v6-small`, `v5-en-mobile`, ...); list: `models --json` |
-| `--model-detection`, `--model-recognition`, `--model-dict`                                         | all commands       | Raw paths/URLs; each overrides that part of the preset                               |
-| `--strategy`, `--flatten`, `--no-cache`, `--image-height`, `--min-confidence`                      | recognition        | Recognition behavior (strategy, flat output, confidence filter, ...)                 |
-| `--engine`, `--execution-providers`                                                                | all commands       | `opencv` \| `canvas-native`; ONNX providers (e.g. `cuda,cpu`)                        |
-| `--max-side-length`, `--padding-vertical`, `--padding-horizontal`, `--min-area`, `--mean`, `--std` | all incl. `detect` | Detection tuning (`--max-side-length` accepts `auto`)                                |
-| `--save-crops <dir>`                                                                               | `detect` only      | Write one PNG per detected box                                                       |
-| `--concurrency`                                                                                    | `batch`, `stream`  | Images processed in parallel                                                         |
-| `--json`, `--pretty`, `-o`/`--output`, `-q`/`--quiet`, `--verbose`                                 | all commands       | Output format and destination                                                        |
+| Flags                                                                                                          | Applies to         | Purpose                                                                               |
+| :------------------------------------------------------------------------------------------------------------- | :----------------- | :------------------------------------------------------------------------------------ |
+| `--model <preset>`                                                                                             | all commands       | Catalogue preset (`v6-tiny`, `v6-small`, `v5-en-mobile`, ...); list: `models --json`  |
+| `--model-detection`, `--model-recognition`, `--model-dict`                                                     | all commands       | Raw paths/URLs; each overrides that part of the preset                                |
+| `--strategy`, `--flatten`, `--no-cache`, `--image-height`, `--min-confidence`, `--max-crop-source-side-length` | recognition        | Recognition behavior (strategy, flat output, confidence filter, crop-source cap, ...) |
+| `--engine`, `--execution-providers`                                                                            | all commands       | `opencv` \| `canvas-native`; ONNX providers (e.g. `cuda,cpu`)                         |
+| `--max-side-length`, `--padding-vertical`, `--padding-horizontal`, `--min-area`, `--mean`, `--std`             | all incl. `detect` | Detection tuning (`--max-side-length` accepts `auto`)                                 |
+| `--save-crops <dir>`                                                                                           | `detect` only      | Write one PNG per detected box                                                        |
+| `--concurrency`                                                                                                | `batch`, `stream`  | Images processed in parallel                                                          |
+| `--json`, `--pretty`, `-o`/`--output`, `-q`/`--quiet`, `--verbose`                                             | all commands       | Output format and destination                                                         |
 
 Recognized text goes to **stdout**; progress and logs go to **stderr**, so output pipes cleanly. Exit codes: `0` success, `1` runtime error, `2` usage error.
 
@@ -858,14 +858,14 @@ Controls preprocessing and filtering during text detection.
 
 Controls recognition preprocessing and strategy.
 
-| Property               |                   Type                    |   Default    | Description                                                                                                                |
-| :--------------------- | :---------------------------------------: | :----------: | :------------------------------------------------------------------------------------------------------------------------- |
-| `imageHeight`          |                 `number`                  |     `48`     | Fixed height for resized text line images (px).                                                                            |
-| `strategy`             | `"per-box" \| "per-line" \| "cross-line"` | `"per-line"` | Recognition strategy (see above).                                                                                          |
-| `crossLineWidthFactor` |                 `number`                  |    `1.0`     | Batch width multiplier for `cross-line` strategy.                                                                          |
-| `minimumConfidence`    |                 `number`                  |    `0.5`     | Drop items below this confidence (0 disables). Mirrors upstream `drop_score`; noise reads at 0.2-0.45, real text at 0.65+. |
-| `charactersDictionary` |                `string[]`                 |     `[]`     | Loaded character dictionary for result decoding.                                                                           |
-| `maxCropSourceSideLength` |               `number`                 |    `2000`    | Longest side (px) the recognition crop source is capped at; independent of `detection.maxSideLength`. Lower for speed on large sources, raise for full-resolution crops. |
+| Property                  |                   Type                    |   Default    | Description                                                                                                                                                              |
+| :------------------------ | :---------------------------------------: | :----------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `imageHeight`             |                 `number`                  |     `48`     | Fixed height for resized text line images (px).                                                                                                                          |
+| `strategy`                | `"per-box" \| "per-line" \| "cross-line"` | `"per-line"` | Recognition strategy (see above).                                                                                                                                        |
+| `crossLineWidthFactor`    |                 `number`                  |    `1.0`     | Batch width multiplier for `cross-line` strategy.                                                                                                                        |
+| `minimumConfidence`       |                 `number`                  |    `0.5`     | Drop items below this confidence (0 disables). Mirrors upstream `drop_score`; noise reads at 0.2-0.45, real text at 0.65+.                                               |
+| `charactersDictionary`    |                `string[]`                 |     `[]`     | Loaded character dictionary for result decoding.                                                                                                                         |
+| `maxCropSourceSideLength` |                 `number`                  |    `2000`    | Longest side (px) the recognition crop source is capped at; independent of `detection.maxSideLength`. Lower for speed on large sources, raise for full-resolution crops. |
 
 ### `DebuggingOptions`
 
