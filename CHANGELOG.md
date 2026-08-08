@@ -34,6 +34,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   thin box to zero width/height and turn a degenerate crop into an empty
   result for the whole image.
 
+### Security
+
+- Removed `onnxruntime-react-native` from `devDependencies` (it remains an
+  optional peer dependency, so consumers are unaffected). Its `react-native`
+  peer dragged `metro` and `image-size` 1.2.1 into `bun.lock`; `image-size`
+  carries two unfixed High denial-of-service advisories
+  (GHSA-5p2g-fcmc-qvqq, GHSA-w3rx-r6r6-pgpr) with no patched release, which
+  failed the SCA gate. The mobile entry now type-checks against a local
+  ambient declaration re-exporting `onnxruntime-common`, matching the real
+  package's own typings.
+
 ## [6.3.0] - 2026-08-03
 
 ### Added
