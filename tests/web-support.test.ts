@@ -279,3 +279,26 @@ describe("WebGPU execution-provider detection", () => {
     }
   });
 });
+
+describe("mainThreadYieldMs web default", () => {
+  test("main thread gets the 10ms default, workers and servers stay disabled", async () => {
+    const { withMainThreadYieldDefault } = await import("../src/web/recognition.service.web.js");
+    const { DEFAULT_WEB_MAIN_THREAD_YIELD_MS } = await import("../src/constants.js");
+
+    expect(withMainThreadYieldDefault({}, true).mainThreadYieldMs).toBe(
+      DEFAULT_WEB_MAIN_THREAD_YIELD_MS
+    );
+    // Off the main thread the options pass through untouched, so the shared
+    // default (0, disabled) applies.
+    expect(withMainThreadYieldDefault({}, false).mainThreadYieldMs).toBeUndefined();
+    // Bun has no `window`, so the auto-detect resolves to "not main thread".
+    expect(withMainThreadYieldDefault({}).mainThreadYieldMs).toBeUndefined();
+  });
+
+  test("an explicit caller value wins, including an explicit 0", async () => {
+    const { withMainThreadYieldDefault } = await import("../src/web/recognition.service.web.js");
+
+    expect(withMainThreadYieldDefault({ mainThreadYieldMs: 0 }, true).mainThreadYieldMs).toBe(0);
+    expect(withMainThreadYieldDefault({ mainThreadYieldMs: 32 }, true).mainThreadYieldMs).toBe(32);
+  });
+});

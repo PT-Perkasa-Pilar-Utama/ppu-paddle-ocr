@@ -321,6 +321,14 @@ export class BaseRecognitionService {
    * Runs the ONNX inference session with the prepared tensor
    */
   private async runInference(inputTensor: Tensor): Promise<Tensor> {
+    // A macrotask boundary before each inference lets a browser main thread
+    // paint and handle input between WASM blocks; plain `await`s only queue
+    // microtasks, which the renderer cannot interleave with.
+    const yieldMs = this.options.mainThreadYieldMs ?? 0;
+    if (yieldMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, yieldMs));
+    }
+
     const feeds = { x: inputTensor };
     const results = await this.session.run(feeds);
 
