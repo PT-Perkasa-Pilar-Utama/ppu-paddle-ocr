@@ -31,6 +31,8 @@ Recognition flags (recognize / batch / stream):
   --max-crop-source-side-length <n>
                                  longest side (px) the crop source is capped at (default 2000);
                                  lower is faster on large scans, higher keeps native-res crops
+  --main-thread-yield-ms <n>     pause (ms) before each recognition inference; keeps a browser
+                                 page responsive, no effect worth using in a CLI (default 0)
   --flatten                      flat results in reading order instead of grouped lines
   --no-cache                     bypass the in-memory result cache
 

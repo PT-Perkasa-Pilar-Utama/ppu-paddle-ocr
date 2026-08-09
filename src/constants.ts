@@ -36,7 +36,15 @@ export const DEFAULT_RECOGNITION_OPTIONS: RecognitionOptions = {
   minimumConfidence: 0.5,
   charactersDictionary: [],
   maxCropSourceSideLength: 2000,
+  mainThreadYieldMs: 0,
 };
+
+/**
+ * Default `mainThreadYieldMs` applied by the web entry on the main thread
+ * (never in workers): one macrotask pause per recognition inference keeps
+ * the page painting and handling input while WASM blocks the thread.
+ */
+export const DEFAULT_WEB_MAIN_THREAD_YIELD_MS = 10;
 
 /** Default ONNX Runtime session options. */
 export const DEFAULT_SESSION_OPTIONS: SessionOptions = {

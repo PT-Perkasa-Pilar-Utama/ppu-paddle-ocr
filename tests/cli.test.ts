@@ -103,6 +103,18 @@ describe("option builders", () => {
     expect(() => buildPaddleOptions({ "max-crop-source-side-length": "abc" })).toThrow();
   });
 
+  test("--main-thread-yield-ms is registered and maps onto recognition", () => {
+    expect(PARSE_OPTIONS["main-thread-yield-ms"]).toEqual({ type: "string" });
+
+    const opts = buildPaddleOptions({ "main-thread-yield-ms": "16" });
+    expect(opts.recognition?.mainThreadYieldMs).toBe(16);
+
+    // Omitted leaves it unset so the library default (0, disabled) applies.
+    expect(buildPaddleOptions({}).recognition?.mainThreadYieldMs).toBeUndefined();
+
+    expect(() => buildPaddleOptions({ "main-thread-yield-ms": "abc" })).toThrow();
+  });
+
   test("buildPaddleOptions resolves --model presets, with --model-* overriding parts", () => {
     expect(buildPaddleOptions({ model: "v6-tiny" }).model).toEqual(V6_TINY_MODEL);
 

@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`recognition.mainThreadYieldMs` option** pauses before each recognition
+  inference to yield the event loop. On the web main thread the `/web` entry
+  defaults it to `10`, so a page running `recognize()` without a Web Worker
+  keeps painting and handling input between WASM inference blocks instead of
+  freezing for the whole image; consecutive `await`s alone only queue
+  microtasks, which the renderer cannot interleave with. Defaults to `0`
+  (disabled) in workers, Node, Bun, and React Native, and an explicit caller
+  value always wins. Also exposed as `--main-thread-yield-ms` on the CLI. A
+  Web Worker remains the recommended home for OCR; this closes the gap for
+  script-tag/main-thread setups.
 - **`recognition.maxCropSourceSideLength` option** (default `2000`) caps the
   longest side of the canvas recognition crops are cut from, independent of
   and above `detection.maxSideLength` (which only resizes the detector's own

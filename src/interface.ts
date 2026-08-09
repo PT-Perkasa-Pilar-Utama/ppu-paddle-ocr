@@ -202,6 +202,22 @@ export type RecognitionOptions = {
    * @default 2000
    */
   maxCropSourceSideLength?: number;
+
+  /**
+   * Milliseconds to pause before each recognition inference, yielding the
+   * event loop so a browser page stays responsive. WASM inference blocks
+   * the thread it runs on, and consecutive `await`s resolve as microtasks -
+   * without a macrotask boundary between inferences, the page cannot paint
+   * or handle input until the whole image is done. `0` disables the pause.
+   *
+   * Only meaningful on the web main thread; a Web Worker is still the
+   * better home for OCR (see the README's Web Workers section), and Node,
+   * Bun, workers, and React Native have nothing to yield to.
+   *
+   * @default 0 - except `ppu-paddle-ocr/web` on the main thread, where it
+   * defaults to 10.
+   */
+  mainThreadYieldMs?: number;
 };
 
 /**
