@@ -182,7 +182,17 @@ export function buildPaddleOptions(values: CliValues): PaddleOptions {
   };
 
   const eng = engine(values);
-  if (eng) options.processing = { engine: eng };
+  // Slim standalone binaries exclude OpenCV entirely; the flag is baked in at
+  // compile time by scripts/binary/build-binaries.ts via --define, so this
+  // branch is dead code everywhere else.
+  if (process.env.PPU_BINARY_SLIM) {
+    if (eng === "opencv") {
+      usageError("--engine opencv is not available in the slim binary; use the full binary");
+    }
+    options.processing = { engine: "canvas-native" };
+  } else if (eng) {
+    options.processing = { engine: eng };
+  }
 
   const providers = values["execution-providers"] as string | undefined;
   if (providers) {

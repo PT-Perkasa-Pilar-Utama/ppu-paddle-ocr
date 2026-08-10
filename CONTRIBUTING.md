@@ -174,6 +174,11 @@ gh release create v6.4.0 --title "6.4.0" --notes "<the CHANGELOG section>"
 gh workflow run deploy-serve.yml
 ```
 
+The release also triggers `cli-binaries.yml`, which builds the standalone CLI
+executables, smoke-tests them on all four OS runners, signs them, and attaches
+them to the release - it finishes some minutes after the release is published,
+so don't be surprised if the binaries appear late.
+
 Publishing to npm and JSR is triggered by the GitHub release, so the signed tag
 has to be pushed first. Sync the wiki for any user-visible API change.
 

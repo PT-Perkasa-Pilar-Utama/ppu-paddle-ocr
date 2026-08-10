@@ -69,6 +69,11 @@ export function expandPatterns(patterns: string[]): string[] {
 
 /** Walk up from this module to the nearest `ppu-paddle-ocr` package.json. */
 export function readVersion(): string {
+  // Standalone binaries carry no package.json; scripts/binary/build-binaries.ts
+  // bakes the version into this expression via `bun build --define`.
+  const injected = process.env.PPU_BINARY_VERSION;
+  if (injected) return injected;
+
   let dir = import.meta.dirname;
   for (;;) {
     const pkgPath = join(dir, "package.json");

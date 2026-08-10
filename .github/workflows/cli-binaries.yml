@@ -1,0 +1,166 @@
+# Builds standalone CLI executables with `bun build --compile`, smoke-tests
+# each on its real OS, and (on release) signs and attaches them to the
+# GitHub release.
+#
+# Cross-compiles all targets from one Linux runner: onnxruntime-node ships
+# every platform's native libraries in one package, and the build script
+# downloads the missing @napi-rs/canvas platform bindings from the registry.
+name: CLI Binaries
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/binary/**"
+      - "src/cli/**"
+      - ".github/workflows/cli-binaries.yml"
+      - "bun.lock"
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build all targets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          # Keep in lockstep with ci.yml: the compiled binaries embed this
+          # exact Bun runtime, so it must be a pinned stable release.
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build binaries
+        run: bun scripts/binary/build-binaries.ts --all
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cli-binaries
+          path: .bin-build/ppu-paddle-ocr-*
+          if-no-files-found: error
+          # .bin-build is a dot-directory; the action's default hidden-file
+          # filter would silently match nothing.
+          include-hidden-files: true
+          # ~700 MB per run and the PR trigger fires on every src/cli change;
+          # a week is plenty for review, releases re-upload to the release.
+          retention-days: 7
+
+  smoke:
+    name: Smoke test (${{ matrix.target }})
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x64
+            suffix: ""
+          - os: ubuntu-24.04-arm
+            target: linux-arm64
+            suffix: ""
+          - os: macos-latest
+            target: darwin-arm64
+            suffix: ""
+          - os: windows-latest
+            target: windows-x64
+            suffix: ".exe"
+    runs-on: ${{ matrix.os }}
+    steps:
+      # For assets/receipt.jpg (smoke input) and package.json (version check).
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: cli-binaries
+          path: binaries
+
+      - name: Run the binaries against the bundled receipt
+        shell: bash
+        run: |
+          EXPECTED=$(grep -m1 '"version"' package.json | sed 's/.*: *"\([^"]*\)".*/\1/')
+
+          for VARIANT in "" "-slim"; do
+            BIN="./binaries/ppu-paddle-ocr-${{ matrix.target }}${VARIANT}${{ matrix.suffix }}"
+            chmod +x "$BIN"
+
+            ACTUAL=$("$BIN" --version)
+            echo "$BIN version: $ACTUAL (expected $EXPECTED)"
+            test "$ACTUAL" = "$EXPECTED"
+
+            # Full OCR: downloads the default models (~6 MB) on first run,
+            # then must read a known token off the bundled receipt.
+            "$BIN" recognize assets/receipt.jpg | grep -F "44,900"
+          done
+
+          # The slim binary excludes OpenCV and must reject the opencv engine
+          # with a clear usage error rather than crashing into the stub.
+          SLIM="./binaries/ppu-paddle-ocr-${{ matrix.target }}-slim${{ matrix.suffix }}"
+          if "$SLIM" recognize assets/receipt.jpg --engine opencv 2>slim-err.txt; then
+            echo "slim binary accepted --engine opencv"; exit 1
+          fi
+          grep -qi "slim" slim-err.txt
+
+  attach:
+    name: Sign and attach to release
+    if: github.event_name == 'release'
+    needs: smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: cli-binaries
+          path: binaries
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      # ~150-190 MB raw compresses to ~50 MB; users download the archive, so
+      # the archive is what gets attested, signed, and uploaded.
+      - name: Compress for distribution
+        run: |
+          mkdir -p dist
+          for f in binaries/ppu-paddle-ocr-*; do
+            name=$(basename "$f")
+            case "$name" in
+              *.exe) (cd binaries && zip -q "../dist/${name%.exe}.zip" "$name") ;;
+              *)     tar czf "dist/$name.tar.gz" -C binaries "$name" ;;
+            esac
+          done
+          ls -lh dist
+
+      # SLSA build provenance, verifiable with:
+      #   gh attestation verify <file> --repo PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+      # Runs before signing so the subject glob cannot match the
+      # .sigstore.json bundles the signing step creates.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*
+
+      # Keyless signing via OIDC, same scheme as the npm tarball in
+      # publish.yml: one .sigstore.json bundle per archive.
+      - name: Sign the archives (keyless)
+        env:
+          COSIGN_YES: "true"
+        run: |
+          for f in dist/*.tar.gz dist/*.zip; do
+            cosign sign-blob "$f" --bundle "$f.sigstore.json"
+          done
+
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" \
+            dist/* --repo "${{ github.repository }}" --clobber
