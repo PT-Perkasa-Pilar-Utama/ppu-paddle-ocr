@@ -676,6 +676,7 @@ await service.destroy();
 
 Notes:
 
+- **npm only, not JSR.** The mobile entry is published to npm but excluded from the JSR package: `onnxruntime-react-native` and `@shopify/react-native-skia` are native React Native modules that only resolve through npm/Metro, and JSR's Deno-based publish cannot resolve them (React Native itself cannot consume JSR packages). Install via npm/yarn/bun as shown above.
 - **Native modules required.** Both `onnxruntime-react-native` and `@shopify/react-native-skia` ship native code, so you need a dev client or `expo prebuild`, **Expo Go is not supported**. Targets RN >= 0.74 / Expo SDK >= 51 (Hermes).
 - **CPU inference.** Mobile runs on CPU by default; pass `session: { executionProviders: ["nnapi"] }` (Android) or `["coreml"]` (iOS) to opt into hardware acceleration. There is no WebGPU on React Native.
 - **Camera capture is out of scope.** Pass a decoded frame from `react-native-vision-camera` or `expo-camera` as an `ArrayBuffer`.
