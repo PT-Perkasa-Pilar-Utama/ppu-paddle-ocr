@@ -33,6 +33,9 @@ Recognition flags (recognize / batch / stream):
                                  lower is faster on large scans, higher keeps native-res crops
   --main-thread-yield-ms <n>     pause (ms) before each recognition inference; keeps a browser
                                  page responsive, no effect worth using in a CLI (default 0)
+  --rec-batch-size <n>           crops per batched recognition inference (default 6; 1 = sequential)
+  --no-rotate-vertical-crops     keep tall (vertical-text) crops unrotated before recognition
+  --space-recovery               recover word spaces the CTC decode drops (Latin text)
   --flatten                      flat results in reading order instead of grouped lines
   --no-cache                     bypass the in-memory result cache
 

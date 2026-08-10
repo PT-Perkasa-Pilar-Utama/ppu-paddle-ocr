@@ -214,10 +214,42 @@ export type RecognitionOptions = {
    * better home for OCR (see the README's Web Workers section), and Node,
    * Bun, workers, and React Native have nothing to yield to.
    *
+   * With batched recognition (`recBatchSize` > 1) the pause fires once per
+   * batch rather than per crop.
    * @default 0 - except `ppu-paddle-ocr/web` on the main thread, where it
    * defaults to 10.
    */
   mainThreadYieldMs?: number;
+
+  /**
+   * Crops per batched recognition inference. Crops are width-sorted and
+   * stacked into one `[N, 3, height, W]` tensor per chunk, cutting per-call
+   * overhead on images with many lines. `1` disables batching (the previous
+   * one-crop-per-inference behavior). Automatically forced to `1` when the
+   * loaded recognition model has a fixed batch dimension. Padding
+   * replicates each crop's edge pixels and rows decode only their own
+   * share of the output sequence, so batched accuracy matches or beats
+   * sequential on the reference corpus while running ~35% faster.
+   * @default 6
+   */
+  recBatchSize?: number;
+
+  /**
+   * Rotate a detected crop 90 degrees counter-clockwise before recognition
+   * when it is markedly taller than wide (height/width >= 1.5), upstream
+   * PaddleOCR's convention for vertical text lines. No model involved.
+   * @default true
+   */
+  rotateVerticalCrops?: boolean;
+
+  /**
+   * Recover inter-word spaces the greedy CTC decode drops: when the space
+   * class is a strong runner-up at a character timestep, emit the space.
+   * Helps Latin text where models collapse word gaps; off by default because
+   * it can add spurious spaces in dense symbol runs.
+   * @default false
+   */
+  spaceRecovery?: boolean;
 };
 
 /**

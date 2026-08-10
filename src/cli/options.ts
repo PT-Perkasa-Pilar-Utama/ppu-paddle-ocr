@@ -28,6 +28,10 @@ export const PARSE_OPTIONS: NonNullable<ParseArgsConfig["options"]> = {
   "min-confidence": { type: "string" },
   "max-crop-source-side-length": { type: "string" },
   "main-thread-yield-ms": { type: "string" },
+  "rec-batch-size": { type: "string" },
+  "rotate-vertical-crops": { type: "boolean" },
+  "no-rotate-vertical-crops": { type: "boolean" },
+  "space-recovery": { type: "boolean" },
   flatten: { type: "boolean" },
   "no-cache": { type: "boolean" },
   model: { type: "string" },
@@ -160,6 +164,7 @@ export function buildPaddleOptions(values: CliValues): PaddleOptions {
   const minimumConfidence = num(values, "min-confidence");
   const maxCropSourceSideLength = num(values, "max-crop-source-side-length");
   const mainThreadYieldMs = num(values, "main-thread-yield-ms");
+  const recBatchSize = num(values, "rec-batch-size");
   // `charactersDictionary: []` is the documented placeholder - initialize()
   // fills it from the recognition model's dictionary.
   options.recognition = {
@@ -170,6 +175,10 @@ export function buildPaddleOptions(values: CliValues): PaddleOptions {
     ...(minimumConfidence !== undefined ? { minimumConfidence } : {}),
     ...(maxCropSourceSideLength !== undefined ? { maxCropSourceSideLength } : {}),
     ...(mainThreadYieldMs !== undefined ? { mainThreadYieldMs } : {}),
+    ...(recBatchSize !== undefined ? { recBatchSize } : {}),
+    ...(values["rotate-vertical-crops"] ? { rotateVerticalCrops: true } : {}),
+    ...(values["no-rotate-vertical-crops"] ? { rotateVerticalCrops: false } : {}),
+    ...(values["space-recovery"] ? { spaceRecovery: true } : {}),
   };
 
   const eng = engine(values);

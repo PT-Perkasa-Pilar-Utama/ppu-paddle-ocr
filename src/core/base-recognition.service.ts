@@ -12,6 +12,7 @@ import type {
 } from "../interface.js";
 import { calculateResizeDimensions } from "./detection/box-geometry.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
+import { supportsDynamicBatch } from "./recognition/batched.js";
 import type { RecognitionContext } from "./recognition/strategies.js";
 import {
   runCrossLineStrategy,
@@ -179,7 +180,11 @@ export class BaseRecognitionService {
   private buildContext(): RecognitionContext {
     return {
       platform: this.platform,
-      options: this.options,
+      // Fixed-batch model exports cannot take stacked tensors; clamp to the
+      // sequential path rather than failing at session.run.
+      options: supportsDynamicBatch(this.session)
+        ? this.options
+        : { ...this.options, recBatchSize: 1 },
       debugging: this.debugging,
       engine: this.engine,
       runInference: (t) => this.runInference(t),
@@ -300,7 +305,13 @@ export class BaseRecognitionService {
       ]);
       const result = await ctx.runInference(inputTensor);
       const dict = charactersDictionary ?? ctx.options.charactersDictionary ?? [];
-      return decodeResults(result, dict, tensorWidth, this.debugging.verbose);
+      return decodeResults(
+        result,
+        dict,
+        tensorWidth,
+        this.debugging.verbose,
+        ctx.options.spaceRecovery ?? false
+      );
     } finally {
       inputTensor?.dispose();
     }
