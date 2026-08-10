@@ -4,8 +4,7 @@
   "license": "MIT",
   "exports": {
     ".": "./src/index.ts",
-    "./web": "./src/web/index.ts",
-    "./mobile": "./src/mobile/index.ts"
+    "./web": "./src/web/index.ts"
   },
   "publish": {
     "include": [
@@ -25,7 +24,8 @@
       "examples",
       "models",
       "out",
-      ".claude"
+      ".claude",
+      "src/mobile"
     ]
   }
 }
