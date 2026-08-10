@@ -115,6 +115,29 @@ describe("option builders", () => {
     expect(() => buildPaddleOptions({ "main-thread-yield-ms": "abc" })).toThrow();
   });
 
+  test("recognition quality flags are registered and map onto recognition", () => {
+    expect(PARSE_OPTIONS["rec-batch-size"]).toEqual({ type: "string" });
+    expect(PARSE_OPTIONS["space-recovery"]).toEqual({ type: "boolean" });
+    expect(PARSE_OPTIONS["no-rotate-vertical-crops"]).toEqual({ type: "boolean" });
+
+    const opts = buildPaddleOptions({
+      "rec-batch-size": "12",
+      "space-recovery": true,
+      "no-rotate-vertical-crops": true,
+    });
+    expect(opts.recognition?.recBatchSize).toBe(12);
+    expect(opts.recognition?.spaceRecovery).toBe(true);
+    expect(opts.recognition?.rotateVerticalCrops).toBe(false);
+
+    // Omitted leaves them unset so library defaults apply.
+    const bare = buildPaddleOptions({}).recognition;
+    expect(bare?.recBatchSize).toBeUndefined();
+    expect(bare?.spaceRecovery).toBeUndefined();
+    expect(bare?.rotateVerticalCrops).toBeUndefined();
+
+    expect(() => buildPaddleOptions({ "rec-batch-size": "abc" })).toThrow();
+  });
+
   test("buildPaddleOptions resolves --model presets, with --model-* overriding parts", () => {
     expect(buildPaddleOptions({ model: "v6-tiny" }).model).toEqual(V6_TINY_MODEL);
 

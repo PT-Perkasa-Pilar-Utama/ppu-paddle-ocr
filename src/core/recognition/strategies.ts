@@ -7,6 +7,7 @@ import type { CanvasOps, CoreCanvas, PlatformProvider } from "../platform.js";
 import { decodeResults } from "./ctc.js";
 import { MIN_CROP_WIDTH } from "./ctc.js";
 import { preprocessImage } from "./image-tensor.js";
+import { recognizeCropsBatched } from "./batched.js";
 import {
   groupBoxesIntoLines,
   mergeLineCrop,
@@ -23,6 +24,24 @@ export type RecognitionContext = {
   engine: "opencv" | "canvas-native";
   runInference: (inputTensor: Tensor) => Promise<Tensor>;
 };
+
+/**
+ * Rotates a crop 90 degrees counter-clockwise when it is markedly taller than
+ * wide (height/width >= 1.5, upstream PaddleOCR's convention via np.rot90):
+ * vertical text lines become horizontal for the recognition model without
+ * needing an orientation-classifier model. Controlled by
+ * `recognition.rotateVerticalCrops`.
+ */
+export function rotateTallCropIfNeeded(crop: CoreCanvas, ctx: RecognitionContext): CoreCanvas {
+  if (!(ctx.options.rotateVerticalCrops ?? true)) return crop;
+  if (crop.height / crop.width < 1.5) return crop;
+  const rotated = ctx.platform.createCanvas(crop.height, crop.width);
+  const c = rotated.getContext("2d");
+  c.translate(0, crop.width);
+  c.rotate(-Math.PI / 2);
+  c.drawImage(crop, 0, 0);
+  return rotated;
+}
 
 function cropRegion(sourceCanvas: CoreCanvas, box: Box, canvasOps: CanvasOps): CoreCanvas {
   return canvasOps.getToolkit().crop({
@@ -98,6 +117,21 @@ export async function runPerBoxStrategy(
     }
   }
 
+  if (!ctx.debugging.debug) {
+    const crops = validBoxes.map(({ box }) =>
+      rotateTallCropIfNeeded(cropRegion(sourceCanvas, box, ctx.platform.canvas), ctx)
+    );
+    const recognized = await recognizeCropsBatched(crops, ctx, charactersDictionary);
+    const results = validBoxes.map(({ box }, i) => ({
+      text: recognized[i]?.text ?? "",
+      box,
+      confidence: recognized[i]?.confidence ?? 0,
+    }));
+    return sortByReadingOrder(results);
+  }
+
+  // Debug mode keeps the sequential path: it saves each crop to disk with
+  // its per-box timing, which batching would interleave.
   const results: RecognitionResult[] = [];
   for (const { box, index } of validBoxes) {
     const result = await processBox(
@@ -125,16 +159,18 @@ export async function runLineStrategy(
   charactersDictionary?: string[]
 ): Promise<RecognitionResult[]> {
   const lines = groupBoxesIntoLines(validBoxes);
-  const results: RecognitionResult[] = [];
 
+  type LineJob = { lineBoxes: typeof validBoxes; cropWidths: number[] | null };
+  const jobs: LineJob[] = [];
+  const crops: CoreCanvas[] = [];
   for (const lineBoxes of lines) {
+    const first = lineBoxes[0];
+    if (!first) continue;
     if (lineBoxes.length === 1) {
-      const lineBox = lineBoxes[0];
-      if (!lineBox) continue;
-      const { box } = lineBox;
-      const cropCanvas = cropRegion(sourceCanvas, box, ctx.platform.canvas);
-      const { text, confidence } = await recognizeText(cropCanvas, ctx, charactersDictionary);
-      results.push({ text, box, confidence });
+      crops.push(
+        rotateTallCropIfNeeded(cropRegion(sourceCanvas, first.box, ctx.platform.canvas), ctx)
+      );
+      jobs.push({ lineBoxes, cropWidths: null });
     } else {
       const { mergedCanvas, cropWidths } = mergeLineCrop(
         sourceCanvas,
@@ -142,19 +178,29 @@ export async function runLineStrategy(
         ctx.platform.createCanvas.bind(ctx.platform),
         ctx.platform.canvas
       );
-      const {
-        text: lineText,
-        confidence: lineConf,
-        positions,
-      } = await recognizeText(mergedCanvas, ctx, charactersDictionary);
-      const pieces = splitTextByPositions(lineText, positions, cropWidths);
-      for (let i = 0; i < lineBoxes.length; i++) {
-        const lb = lineBoxes[i];
-        if (!lb) continue;
-        results.push({ text: (pieces[i] ?? "").trim(), box: lb.box, confidence: lineConf });
-      }
+      crops.push(mergedCanvas);
+      jobs.push({ lineBoxes, cropWidths });
     }
   }
+
+  const recognized = await recognizeCropsBatched(crops, ctx, charactersDictionary);
+
+  const results: RecognitionResult[] = [];
+  jobs.forEach((job, i) => {
+    const rec = recognized[i];
+    if (!rec) return;
+    if (job.cropWidths === null) {
+      const first = job.lineBoxes[0];
+      if (first) results.push({ text: rec.text, box: first.box, confidence: rec.confidence });
+    } else {
+      const pieces = splitTextByPositions(rec.text, rec.positions, job.cropWidths);
+      for (let i2 = 0; i2 < job.lineBoxes.length; i2++) {
+        const lb = job.lineBoxes[i2];
+        if (!lb) continue;
+        results.push({ text: (pieces[i2] ?? "").trim(), box: lb.box, confidence: rec.confidence });
+      }
+    }
+  });
 
   return sortByReadingOrder(results);
 }

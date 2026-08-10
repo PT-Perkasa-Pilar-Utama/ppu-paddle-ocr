@@ -131,7 +131,8 @@ export function ctcGreedyDecode(
   logits: Float32Array,
   sequenceLength: number,
   numClasses: number,
-  charDict: string[]
+  charDict: string[],
+  spaceRecovery = false
 ): { text: string; confidence: number; positions: number[] } {
   const dictLen = charDict.length;
   const lastDictIndex = dictLen - 1;
@@ -162,6 +163,20 @@ export function ctcGreedyDecode(
     // Out-of-bounds indices are skipped silently; a dictionary/model size
     // mismatch is reported once by decodeResults() rather than per timestep.
     if (maxIndex >= 0 && maxIndex < dictLen) {
+      // Recognition models drop inter-word spaces: at a word boundary the
+      // space class often scores just under the next letter. When enabled,
+      // a strong space runner-up emits the space the argmax swallowed.
+      // ponytail: fixed 0.001 threshold (eSearch-OCR's field value) - make it
+      // an option if a corpus needs tuning.
+      if (
+        spaceRecovery &&
+        maxIndex !== lastDictIndex &&
+        (logits[base + lastDictIndex] ?? 0) > 0.001 &&
+        emitted[emitted.length - 1] !== " "
+      ) {
+        emitted.push(" ");
+        positions.push((t + 0.5) / sequenceLength);
+      }
       const char = charDict[maxIndex] ?? "";
       if (maxIndex === lastDictIndex) {
         if (char !== UNK_TOKEN) {
@@ -201,7 +216,8 @@ export function decodeResults(
   outputTensor: Tensor,
   charactersDictionary: string[],
   numClassesFromShape: number,
-  verbose = false
+  verbose = false,
+  spaceRecovery = false
 ): { text: string; confidence: number; positions: number[] } {
   const outputData = outputTensor.data as Float32Array;
   const outputShape = outputTensor.dims;
@@ -222,5 +238,23 @@ export function decodeResults(
     );
   }
 
-  return ctcGreedyDecode(outputData, sequenceLength, numClasses, dict);
+  return ctcGreedyDecode(outputData, sequenceLength, numClasses, dict, spaceRecovery);
+}
+
+/**
+ * Decodes one row of a batched recognition output (`[N, seq, classes]`),
+ * applying the same dictionary padding rules as {@link decodeResults}.
+ */
+export function decodeLogitsRow(
+  rowData: Float32Array,
+  sequenceLength: number,
+  numClasses: number,
+  charactersDictionary: string[],
+  spaceRecovery = false
+): { text: string; confidence: number; positions: number[] } {
+  let dict = charactersDictionary;
+  if (charactersDictionary.length === numClasses - 1) {
+    dict = ["", ...charactersDictionary];
+  }
+  return ctcGreedyDecode(rowData, sequenceLength, numClasses, dict, spaceRecovery);
 }

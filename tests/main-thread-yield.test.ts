@@ -26,7 +26,9 @@ describe("recognition.mainThreadYieldMs", () => {
 
   test("yields once per recognition inference and leaves results intact", async () => {
     const service = new PaddleOcrService({
-      recognition: { charactersDictionary: [], mainThreadYieldMs: YIELD_MS },
+      // recBatchSize 1 pins the original one-yield-per-inference contract;
+      // with batching (default 6) the yield fires once per batch instead.
+      recognition: { charactersDictionary: [], mainThreadYieldMs: YIELD_MS, recBatchSize: 1 },
     });
     await service.initialize();
 

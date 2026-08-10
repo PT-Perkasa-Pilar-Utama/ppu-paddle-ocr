@@ -37,6 +37,9 @@ export const DEFAULT_RECOGNITION_OPTIONS: RecognitionOptions = {
   charactersDictionary: [],
   maxCropSourceSideLength: 2000,
   mainThreadYieldMs: 0,
+  recBatchSize: 6,
+  rotateVerticalCrops: true,
+  spaceRecovery: false,
 };
 
 /**

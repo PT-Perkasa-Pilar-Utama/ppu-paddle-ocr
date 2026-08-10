@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+<<<<<<< ours
+
 - **`recognition.mainThreadYieldMs` option** pauses before each recognition
   inference to yield the event loop. On the web main thread the `/web` entry
   defaults it to `10`, so a page running `recognize()` without a Web Worker
@@ -19,6 +21,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   value always wins. Also exposed as `--main-thread-yield-ms` on the CLI. A
   Web Worker remains the recommended home for OCR; this closes the gap for
   script-tag/main-thread setups.
+  \=======
+- **Batched recognition inference** (`recognition.recBatchSize`, default `6`,
+  CLI `--rec-batch-size`): crops are width-sorted and stacked into one
+  `[N, 3, 48, W]` tensor per chunk - one `session.run` per chunk instead of
+  per crop. Each row decodes only its own share of the padded output
+  sequence, and padding replicates the crop's edge pixels so convolution
+  receptive fields never see a hard boundary. Benched ~35% faster with
+  equal-or-better accuracy vs sequential on the reference receipt (per-line
+  99.48% -> 99.48%, per-box 99.48% -> 99.74%). `1` restores the previous
+  sequential behavior; fixed-batch models are detected and clamped to `1`
+  automatically.
+- **`recognition.rotateVerticalCrops`** (default `true`, CLI
+  `--no-rotate-vertical-crops` to disable): crops with height/width >= 1.5
+  rotate 90 degrees counter-clockwise before recognition (upstream
+  PaddleOCR's convention), so vertical text lines read correctly with no
+  orientation model.
+- **`recognition.spaceRecovery`** (default `false`, CLI `--space-recovery`):
+  emits inter-word spaces the greedy CTC decode drops when the space class is
+  a strong runner-up at a character timestep.
+- README: a Document Correction section showing how to compose with
+  ppu-doc-correction (page orientation, unwarping) instead of paying for
+  orientation models inside the OCR path.
+
+> > > > > > > theirs
+
 - **`recognition.maxCropSourceSideLength` option** (default `2000`) caps the
   longest side of the canvas recognition crops are cut from, independent of
   and above `detection.maxSideLength` (which only resizes the detector's own

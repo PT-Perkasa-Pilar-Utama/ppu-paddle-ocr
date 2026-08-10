@@ -358,6 +358,9 @@ type PaddleOptions = {
     crossLineWidthFactor?: number;
     maxCropSourceSideLength?: number; // default 2000 - speed/accuracy trade-off on large sources
     mainThreadYieldMs?: number; // default 0; web main thread defaults to 10 to keep the page responsive
+    recBatchSize?: number; // default 6 - batched inference, ~35% faster; 1 = sequential
+    rotateVerticalCrops?: boolean; // default true - rotate tall crops 90deg CCW
+    spaceRecovery?: boolean; // default false - recover dropped word spaces
   };
   debugging?: { verbose?: boolean; debug?: boolean; debugFolder?: string };
   session?: InferenceSession.SessionOptions; // any onnxruntime SessionOptions
