@@ -9,7 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-<<<<<<< ours
+- **Standalone CLI binaries** for Linux x64/arm64, macOS Apple Silicon, and
+  Windows x64, built with `bun build --compile` and attached to every GitHub
+  release - no Node, Bun, or npm install required (models still download on
+  first run). Each binary embeds ONNX Runtime's shared libraries and preloads
+  them at startup so the native binding resolves inside the single-file
+  executable. Distributed as `.tar.gz`/`.zip` archives (~50 MB download,
+  ~140-200 MB extracted), each with a `-slim` variant that drops the OpenCV
+  engine for ~28 MB less on disk (~5 MB less to download), pinned to
+  `canvas-native` (rejects `--engine opencv` with a usage error). Binaries
+  are smoke-tested on all four OS runners in CI, cosign-signed (Sigstore
+  bundle attached per archive), and covered by GitHub build provenance
+  attestations (`gh attestation verify`). Intel macOS and musl (Alpine) are
+  not covered because onnxruntime ships no builds for them.
 
 - **`recognition.mainThreadYieldMs` option** pauses before each recognition
   inference to yield the event loop. On the web main thread the `/web` entry
@@ -21,7 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   value always wins. Also exposed as `--main-thread-yield-ms` on the CLI. A
   Web Worker remains the recommended home for OCR; this closes the gap for
   script-tag/main-thread setups.
-  \=======
 - **Batched recognition inference** (`recognition.recBatchSize`, default `6`,
   CLI `--rec-batch-size`): crops are width-sorted and stacked into one
   `[N, 3, 48, W]` tensor per chunk - one `session.run` per chunk instead of
@@ -43,8 +54,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README: a Document Correction section showing how to compose with
   ppu-doc-correction (page orientation, unwarping) instead of paying for
   orientation models inside the OCR path.
-
-> > > > > > > theirs
 
 - **`recognition.maxCropSourceSideLength` option** (default `2000`) caps the
   longest side of the canvas recognition crops are cut from, independent of

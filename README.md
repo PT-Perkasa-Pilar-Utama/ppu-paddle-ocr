@@ -33,6 +33,7 @@ await service.destroy();
   - [Per-Call Options](#per-call-options)
   - [Detection Only](#detection-only)
 - [Command Line](#command-line)
+  - [Standalone Binaries](#standalone-binaries)
 - [Batch Recognition](#batch-recognition)
 - [Recognition Strategies](#recognition-strategies)
 - [Choosing a Model and Configuration](#choosing-a-model-and-configuration)
@@ -115,7 +116,43 @@ ppu-paddle-ocr recognize receipt.jpg
 
 - **bun**: ensure `~/.bun/bin` is on your `PATH` (npm's global bin usually already is).
 - **Updates are manual**, re-run the install with `@latest` to upgrade. (`bunx`/`npx` always fetch the latest but can serve a stale cache; a global install pins the version and you own upgrades.)
-- It's still the Node/Bun build, a global install gives you a global command, not a standalone binary, so Node or Bun must be present.
+- It's still the Node/Bun build, a global install gives you a global command, not a standalone binary, so Node or Bun must be present. For a true standalone binary, see [Standalone Binaries](#standalone-binaries) below.
+
+### Standalone Binaries
+
+Every release attaches self-contained executables, no Node, Bun, or `npm install` required. Download, extract, run:
+
+```bash
+curl -L https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/releases/latest/download/ppu-paddle-ocr-linux-x64.tar.gz | tar xz
+./ppu-paddle-ocr-linux-x64 recognize receipt.jpg
+```
+
+| Asset                                | Platform                                                       |
+| :----------------------------------- | :------------------------------------------------------------- |
+| `ppu-paddle-ocr-linux-x64.tar.gz`    | Linux x86-64 (glibc; Debian, Ubuntu, Fedora, ...)              |
+| `ppu-paddle-ocr-linux-arm64.tar.gz`  | Linux ARM64 (glibc; Raspberry Pi OS 64-bit, AWS Graviton, ...) |
+| `ppu-paddle-ocr-darwin-arm64.tar.gz` | macOS on Apple Silicon                                         |
+| `ppu-paddle-ocr-windows-x64.zip`     | Windows x86-64 (contains the `.exe`)                           |
+
+Notes:
+
+- **Size and first run.** ~50 MB download, ~140-200 MB extracted (the executable embeds the Bun runtime, ONNX Runtime, and the canvas engine; `tar` preserves the executable bit). Models (~6 MB) still download to `~/.cache/ppu-paddle-ocr` on first run, exactly like the npm CLI.
+- **Slim variant.** Each target also ships a `-slim` archive (e.g. `ppu-paddle-ocr-linux-x64-slim.tar.gz`) that excludes the OpenCV engine: ~28 MB smaller extracted, though only ~5 MB smaller to download (the OpenCV payload compresses well). It always uses the `canvas-native` engine and rejects `--engine opencv`; accuracy on the reference receipt is near-identical (see [Benchmark](#benchmark)). Pick slim for disk and memory footprint; pick full if you want the opencv engine.
+- **macOS Gatekeeper.** The binaries are ad-hoc signed but not Apple-notarized. If macOS blocks a downloaded binary, clear the quarantine flag: `xattr -d com.apple.quarantine ./ppu-paddle-ocr-darwin-arm64` (or right-click, Open, once).
+- **Windows SmartScreen.** Unrecognized-app warning on first run: "More info", then "Run anyway".
+- **Intel Macs and Alpine (musl) are not covered**, onnxruntime ships no darwin-x64 or musl builds; use `npx`/`bunx` there.
+- **Verify a download** (checks run against the archive, before extraction; both are attached per release):
+
+```bash
+# Sigstore signature (bundle is attached next to each archive)
+cosign verify-blob ppu-paddle-ocr-linux-x64.tar.gz \
+  --bundle ppu-paddle-ocr-linux-x64.tar.gz.sigstore.json \
+  --certificate-identity-regexp "github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+
+# GitHub build provenance (SLSA)
+gh attestation verify ppu-paddle-ocr-linux-x64.tar.gz --repo PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
+```
 
 ## Core Usage
 
@@ -290,8 +327,6 @@ bunx ppu-paddle-ocr models --json
 
 Every `PaddleOptions` / `RecognizeOptions` field maps to a flag:
 
-<<<<<<< ours
-
 | Flags                                                                                                                                                                                | Applies to         | Purpose                                                                               |
 | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------- | :------------------------------------------------------------------------------------ |
 | `--model <preset>`                                                                                                                                                                   | all commands       | Catalogue preset (`v6-tiny`, `v6-small`, `v5-en-mobile`, ...); list: `models --json`  |
@@ -313,8 +348,6 @@ Every `PaddleOptions` / `RecognizeOptions` field maps to a flag:
 | `--save-crops <dir>`                                                                                                                                                                 | `detect` only      | Write one PNG per detected box                                                        |
 | `--concurrency`                                                                                                                                                                      | `batch`, `stream`  | Images processed in parallel                                                          |
 | `--json`, `--pretty`, `-o`/`--output`, `-q`/`--quiet`, `--verbose`                                                                                                                   | all commands       | Output format and destination                                                         |
-
-> > > > > > > theirs
 
 Recognized text goes to **stdout**; progress and logs go to **stderr**, so output pipes cleanly. Exit codes: `0` success, `1` runtime error, `2` usage error.
 
@@ -913,8 +946,6 @@ Controls preprocessing and filtering during text detection.
 
 Controls recognition preprocessing and strategy.
 
-<<<<<<< ours
-
 | Property                  |                   Type                    |           Default           | Description                                                                                                                                                                                  |
 | :------------------------ | :---------------------------------------: | :-------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `imageHeight`             |                 `number`                  |            `48`             | Fixed height for resized text line images (px).                                                                                                                                              |
@@ -936,8 +967,6 @@ Controls recognition preprocessing and strategy.
 | `recBatchSize`            |                 `number`                  |             `6`             | Crops per batched recognition inference (width-bucketed, one tensor per chunk, ~35% faster at equal-or-better accuracy). `1` restores sequential; auto-forced to `1` for fixed-batch models. |
 | `rotateVerticalCrops`     |                 `boolean`                 |           `true`            | Rotate crops with height/width >= 1.5 by 90 degrees CCW before recognition, so vertical text lines read correctly without an orientation model.                                              |
 | `spaceRecovery`           |                 `boolean`                 |           `false`           | Emit inter-word spaces the greedy CTC decode drops when the space class is a strong runner-up. Helps Latin text; may add spurious spaces in dense symbol runs.                               |
-
-> > > > > > > theirs
 
 ### `DebuggingOptions`
 

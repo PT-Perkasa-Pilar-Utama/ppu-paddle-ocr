@@ -20,3 +20,4 @@ out-test-debug/
 
 # Cloudflare deploy output
 playground/dist
+.bin-build/
