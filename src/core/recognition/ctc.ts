@@ -145,10 +145,13 @@ export function ctcGreedyDecode(
 
   for (let t = 0; t < sequenceLength; t++) {
     const base = t * numClasses;
-    let maxProb = logits[base] ?? -Infinity;
+    // In-bounds by construction (t < sequenceLength, c < numClasses), so the
+    // typed-array reads below can never be undefined; keeping the argmax free
+    // of per-element nullish checks keeps this hot loop monomorphic.
+    let maxProb = logits[base];
     let maxIndex = 0;
     for (let c = 1; c < numClasses; c++) {
-      const prob = logits[base + c] ?? -Infinity;
+      const prob = logits[base + c];
       if (prob > maxProb) {
         maxProb = prob;
         maxIndex = c;

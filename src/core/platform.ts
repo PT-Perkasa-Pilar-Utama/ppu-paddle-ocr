@@ -34,7 +34,7 @@ export type ImageProcessorProvider<TCanvas = CoreCanvas> = {
   prepareCanvas: (image: unknown) => Promise<TCanvas>;
 
   /** Wrapper class handling matrix transformations */
-  ImageProcessor: new (canvas: TCanvas) => ImageProcessor;
+  ImageProcessor: new (source: TCanvas | cv.Mat) => ImageProcessor;
 
   /** Wrapper class handling mathematical OpenCV contours */
   Contours: new (mat: cv.Mat, options: { mode: number; method: number }) => Contours;

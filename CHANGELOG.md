@@ -7,17 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- **CLI:** `help` listed `v6-small` as the default preset; the default is
-  `v6-tiny` (`DEFAULT_MODEL` in the model catalogue).
-- **Docs:** removed leftover rebase conflict remnants that duplicated the CLI
-  flag table and the `RecognitionOptions` table (README and the
-  `skill-ppu-paddle-ocr` configuration reference), which broke their rendering
-  on GitHub.
-
 ### Changed
 
+- **Faster OpenCV-engine pipeline on Node/Bun** (default engine): detection
+  postprocessing builds its single-channel contour input Mat directly from
+  the probability tensor instead of rendering it to a canvas and reading it
+  back through `grayscale()`; recognition preprocessing reads the resized
+  Mat's bytes directly instead of routing each crop through `toCanvas()` +
+  `getImageData`. The CTC argmax loop also drops per-element nullish checks.
+  Output is bit-identical on the regression samples (receipt accuracy
+  unchanged at 99.74%/99.48%/94.26% across strategies); interleaved
+  benchmarks show ~2-2.5% lower median `recognize()` latency on the OpenCV
+  engine (detection postprocess -8%) and neutral on `canvas-native`.
 - **Docs:** the README "CLI (global install)" and "Standalone Binaries"
   sections now lead with the command; the notes moved into collapsible
   sections. The CLI flag table is split into "Models and engine" and
@@ -35,6 +36,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Docs:** README "Fine-Tuning on Your Data" splits the one-paragraph wall
   into what the starter kit covers, and points at Image Preprocessing first.
   Unwrapped the hard-wrapped PP-OCRv6 intro paragraph.
+
+### Fixed
+
+- **CLI:** `help` listed `v6-small` as the default preset; the default is
+  `v6-tiny` (`DEFAULT_MODEL` in the model catalogue).
+- **Docs:** removed leftover rebase conflict remnants that duplicated the CLI
+  flag table and the `RecognitionOptions` table (README and the
+  `skill-ppu-paddle-ocr` configuration reference), which broke their rendering
+  on GitHub.
 
 ## [6.4.0] - 2026-08-10
 
