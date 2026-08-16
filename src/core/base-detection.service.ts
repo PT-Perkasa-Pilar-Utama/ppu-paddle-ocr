@@ -208,17 +208,16 @@ export class BaseDetectionService {
     this.log("Post-processing detection results...");
 
     const { width, height, resizeRatio, originalWidth, originalHeight } = input;
-    const canvas = tensorToCanvas(
-      detection,
-      width,
-      height,
-      this.platform.createCanvas.bind(this.platform)
-    );
-    this.lastDetectionCanvas = canvas;
 
     if (this.engine === "opencv" && this.platform.imageProcessor) {
+      // The contour pass consumes the probability map as pixels; the canvas
+      // form is only materialized when a debug dump is requested.
+      this.lastDetectionCanvas =
+        this.debugging.debug && this.debugging.debugFolder
+          ? tensorToCanvas(detection, width, height, this.platform.createCanvas.bind(this.platform))
+          : null;
       return this.postprocessWithOpenCV(
-        canvas,
+        detection,
         width,
         height,
         resizeRatio,
@@ -229,6 +228,14 @@ export class BaseDetectionService {
         paddingHorizontal
       );
     }
+
+    const canvas = tensorToCanvas(
+      detection,
+      width,
+      height,
+      this.platform.createCanvas.bind(this.platform)
+    );
+    this.lastDetectionCanvas = canvas;
 
     return this.postprocessWithCanvasNative(
       canvas,
@@ -245,7 +252,7 @@ export class BaseDetectionService {
    * Post-process detection using OpenCV contours (v4-compatible, more accurate)
    */
   private postprocessWithOpenCV(
-    canvas: CoreCanvas,
+    detection: Float32Array,
     width: number,
     height: number,
     resizeRatio: number,
@@ -256,10 +263,21 @@ export class BaseDetectionService {
     paddingHorizontal: number
   ): Box[] {
     const ip = this.platform.imageProcessor as NonNullable<typeof this.platform.imageProcessor>;
-    const processor = new ip.ImageProcessor(canvas);
-    try {
-      processor.grayscale().convert({ rtype: ip.cv.CV_8UC1 });
+    // Build the single-channel mat straight from the probability map: the
+    // previous path (probability map -> RGBA canvas -> grayscale) produced
+    // exactly round(p * 255) per pixel, because grayscaling equal RGB
+    // channels is the identity - so the contours see identical bytes while
+    // skipping two canvas copies and a cvtColor. The processor owns (and on
+    // destroy() frees) the mat we hand it, so it must not be deleted here.
+    const mat = new ip.cv.Mat(height, width, ip.cv.CV_8UC1);
+    const matData = mat.data;
+    const pixelCount = width * height;
+    for (let i = 0; i < pixelCount; i++) {
+      matData[i] = Math.round((detection[i] || 0) * 255);
+    }
 
+    const processor = new ip.ImageProcessor(mat);
+    try {
       const contours = new ip.Contours(processor.toMat(), {
         mode: ip.cv.RETR_LIST,
         method: ip.cv.CHAIN_APPROX_SIMPLE,

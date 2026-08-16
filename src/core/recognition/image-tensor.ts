@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 PT Perkasa Pilar Utama
 
+import type { cv } from "ppu-ocv";
 import type { CanvasProcessor } from "ppu-ocv/canvas";
 import type { CoreCanvas, ImageProcessorProvider } from "../platform.js";
 import { MIN_CROP_WIDTH } from "./ctc.js";
@@ -30,6 +31,15 @@ export async function preprocessImage(
     const imgProcessor = new imageProcessor.ImageProcessor(cropCanvas);
     try {
       imgProcessor.resize({ width: resizedWidth, height: targetHeight });
+      // Reading the resized Mat's bytes directly skips the toCanvas()
+      // render-plus-readback round trip; the resize output is CV_8UC4
+      // (RGBA, straight from matFromImageData), so the red channel is the
+      // same byte createImageTensorFromCanvas would read.
+      const mat = imgProcessor.toMat();
+      if (mat.channels() === 4 || mat.channels() === 1) {
+        const imageTensor = createImageTensorFromMat(mat, resizedWidth, targetHeight);
+        return { imageTensor, tensorWidth: resizedWidth, tensorHeight: targetHeight };
+      }
       const imageTensor = createImageTensorFromCanvas(
         imgProcessor.toCanvas(),
         resizedWidth,
@@ -82,6 +92,47 @@ export function createImageTensorFromCanvas(
   const INV_127_5 = 1 / 127.5;
   for (let i = 0, p = 0; i < channelSize; i++, p += 4) {
     imageTensor[i] = (pixelData[p] ?? 0) * INV_127_5 - 1.0;
+  }
+
+  imageTensor.copyWithin(channelSize, 0, channelSize);
+  imageTensor.copyWithin(channelSize * 2, 0, channelSize);
+
+  return imageTensor;
+}
+
+/**
+ * Creates a normalized float tensor directly from an 8-bit OpenCV Mat.
+ *
+ * Same normalization as {@link createImageTensorFromCanvas} (red channel for
+ * RGBA mats), but reads `mat.data` in place instead of routing the pixels
+ * through a canvas render and `getImageData` readback. Rows are walked via
+ * `step1(0)` so non-contiguous (row-padded) mats are read correctly.
+ */
+export function createImageTensorFromMat(mat: cv.Mat, width: number, height: number): Float32Array {
+  const channels = mat.channels();
+  const stride = mat.step1(0);
+  const data = mat.data;
+
+  const channelSize = height * width;
+  const imageTensor = new Float32Array(3 * channelSize);
+
+  const INV_127_5 = 1 / 127.5;
+  if (channels === 4) {
+    for (let y = 0; y < height; y++) {
+      let src = y * stride;
+      const rowEnd = y * width + width;
+      for (let dst = y * width; dst < rowEnd; dst++, src += 4) {
+        imageTensor[dst] = data[src] * INV_127_5 - 1.0;
+      }
+    }
+  } else {
+    for (let y = 0; y < height; y++) {
+      let src = y * stride;
+      const rowEnd = y * width + width;
+      for (let dst = y * width; dst < rowEnd; dst++, src++) {
+        imageTensor[dst] = data[src] * INV_127_5 - 1.0;
+      }
+    }
   }
 
   imageTensor.copyWithin(channelSize, 0, channelSize);
