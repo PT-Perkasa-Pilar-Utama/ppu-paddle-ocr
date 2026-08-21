@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sections now lead with the command; the notes moved into collapsible
   sections. The CLI flag table is split into "Models and engine" and
   "Behavior and output".
+- **Docs:** the README "Batch Recognition" section now opens with the basic
+  call and a "you want / use" lookup table, with each variant behind a short
+  labelled lead-in. The `"auto"` concurrency default on CPU is documented as
+  `4` instead of "a small default".
 
 ## [6.4.0] - 2026-08-10
 
