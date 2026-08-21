@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   call and a "you want / use" lookup table, with each variant behind a short
   labelled lead-in. The `"auto"` concurrency default on CPU is documented as
   `4` instead of "a small default".
+- **Docs:** README "Main-Thread Usage" now documents `mainThreadYieldMs` as a
+  value table, and states the yield cost per batched inference rather than per
+  detected line (it is one pause per `recBatchSize` crops). "Multithreaded
+  WASM" and "React Native" lead with the requirement; the JSR exclusion
+  rationale moved into a collapsible note. The `wasmPaths` note is no longer a
+  blockquote and shows the self-host assignment.
 
 ## [6.4.0] - 2026-08-10
 
