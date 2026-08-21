@@ -40,7 +40,7 @@ Recognition flags (recognize / batch / stream):
   --no-cache                     bypass the in-memory result cache
 
 Model overrides:
-  --model <preset>               catalogue preset, e.g. v6-small (default), v6-tiny,
+  --model <preset>               catalogue preset, e.g. v6-tiny (default), v6-small,
                                  v5-en-mobile, v5-thai-mobile (see 'models --json')
   --model-detection <path|url>   override the preset's detection model
   --model-recognition <path|url> override the preset's recognition model
