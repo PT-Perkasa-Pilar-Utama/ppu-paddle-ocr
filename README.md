@@ -369,20 +369,37 @@ Run `bunx ppu-paddle-ocr help` for the full reference. The CLI uses the default 
 
 ## Batch Recognition
 
-`batchRecognize()` runs `recognize()` over many images with **bounded concurrency**, so memory stays in check: at most `concurrency` images are decoded and in flight at once. Results are returned **index-aligned** to the inputs regardless of completion order.
+`batchRecognize()` runs `recognize()` over many images with **bounded concurrency**: at most `concurrency` images are decoded and in flight at once, so memory stays in check. Results come back **index-aligned** to the inputs, whatever order they finish in.
 
 ```ts
 const results = await service.batchRecognize([buf1, buf2, buf3]);
 results.forEach((r, i) => console.log(i, r.text));
 ```
 
-Concurrency defaults to `"auto"`, `1` when an accelerator provider (CUDA, WebGPU) is configured (a shared session serializes device work anyway, and parallel runs would stack VRAM), and a small CPU default otherwise to overlap JS preprocessing with native inference. Override it explicitly when you know your hardware:
+| You want                            | Use                                   |
+| :---------------------------------- | :------------------------------------ |
+| More or fewer images in flight      | `{ concurrency: 8 }`                  |
+| One bad image not to kill the batch | `{ settle: true }`                    |
+| Progress or cancellation            | `{ onProgress, signal }`              |
+| Results as they finish              | `batchRecognizeStream()`              |
+| An input list too big for memory    | pass an `Iterable` or `AsyncIterable` |
+
+All `RecognizeOptions` (`flatten`, `strategy`, `dictionary`, `noCache`) are accepted too and apply to every image. Full surface: [`BatchRecognizeOptions`](#batchrecognizeoptions).
+
+**Concurrency.** Defaults to `"auto"`: `1` on an accelerator provider (CUDA, WebGPU), `4` on CPU. Set it when you know your hardware:
 
 ```ts
 await service.batchRecognize(images, { concurrency: 8, flatten: true });
 ```
 
-Use `settle: true` to keep going when an image fails, each slot becomes `{ status, value | reason }` instead of the call rejecting:
+<details>
+<summary>Why auto picks 1 on an accelerator</summary>
+
+A shared ONNX session serializes device work anyway, so parallel runs buy nothing and stack VRAM. On CPU the default overlaps JS preprocessing with native inference, which does help.
+
+</details>
+
+**Failures.** With `settle: true` the call never rejects; each slot becomes `{ status, value | reason }`:
 
 ```ts
 const results = await service.batchRecognize(images, { settle: true });
@@ -392,7 +409,7 @@ for (const r of results) {
 }
 ```
 
-Track progress and cancel with the usual primitives:
+**Progress and cancellation** use the usual primitives:
 
 ```ts
 const ac = new AbortController();
@@ -402,7 +419,7 @@ await service.batchRecognize(images, {
 });
 ```
 
-To consume results as they finish (and avoid buffering the whole batch), stream them, each item carries its input `index` for reordering:
+**Streaming.** `batchRecognizeStream()` yields each result as it finishes, so the whole batch is never buffered. Each item carries its input `index` for reordering:
 
 ```ts
 for await (const item of service.batchRecognizeStream(images)) {
@@ -410,7 +427,7 @@ for await (const item of service.batchRecognizeStream(images)) {
 }
 ```
 
-`batchRecognize` / `batchRecognizeStream` also accept any `Iterable` or `AsyncIterable` of inputs, so a directory walk or queue never has to be materialized in memory at once. All `RecognizeOptions` (`flatten`, `strategy`, `dictionary`, `noCache`) are accepted and applied to every image. See [`BatchRecognizeOptions`](#batchrecognizeoptions) for the full surface.
+Both methods accept any `Iterable` or `AsyncIterable` of inputs, so a directory walk or a queue never has to be materialized in memory at once.
 
 ## Recognition Strategies
 
@@ -933,7 +950,7 @@ Extends `RecognizeOptions` (applied to every image) for `batchRecognize()` / `ba
 
 | Property      |           Type           | Default  | Description                                                                              |
 | :------------ | :----------------------: | :------: | :--------------------------------------------------------------------------------------- |
-| `concurrency` |    `number \| "auto"`    | `"auto"` | Max images in flight. `"auto"` = `1` on an accelerator provider, small default on CPU.   |
+| `concurrency` |    `number \| "auto"`    | `"auto"` | Max images in flight. `"auto"` = `1` on an accelerator provider, `4` on CPU.             |
 | `settle`      |        `boolean`         | `false`  | When `true`, a failed image yields `{ status: "rejected", reason }` instead of throwing. |
 | `signal`      |      `AbortSignal`       |  `null`  | Cancels the batch; pending images are not scheduled and the call rejects.                |
 | `onProgress`  | `(done, total?) => void` |  `null`  | Called after each image settles, with the running count and total (if known).            |
