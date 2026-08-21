@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **CLI:** `help` listed `v6-small` as the default preset; the default is
+  `v6-tiny` (`DEFAULT_MODEL` in the model catalogue).
 - **Docs:** removed leftover rebase conflict remnants that duplicated the CLI
   flag table and the `RecognitionOptions` table (README and the
   `skill-ppu-paddle-ocr` configuration reference), which broke their rendering
@@ -30,6 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   WASM" and "React Native" lead with the requirement; the JSR exclusion
   rationale moved into a collapsible note. The `wasmPaths` note is no longer a
   blockquote and shows the self-host assignment.
+- **Docs:** README "Fine-Tuning on Your Data" splits the one-paragraph wall
+  into what the starter kit covers, and points at Image Preprocessing first.
+  Unwrapped the hard-wrapped PP-OCRv6 intro paragraph.
 
 ## [6.4.0] - 2026-08-10
 

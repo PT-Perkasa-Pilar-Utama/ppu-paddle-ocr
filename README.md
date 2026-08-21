@@ -365,7 +365,7 @@ Every `PaddleOptions` / `RecognizeOptions` field maps to a flag:
 
 Recognized text goes to **stdout**; progress and logs go to **stderr**, so output pipes cleanly. Exit codes: `0` success, `1` runtime error, `2` usage error.
 
-Run `bunx ppu-paddle-ocr help` for the full reference. The CLI uses the default v6 small models unless you select a `--model` preset or override the `--model-*` flags.
+Run `bunx ppu-paddle-ocr help` for the full reference. The CLI uses the default v6 tiny models unless you select a `--model` preset or override the `--model-*` flags.
 
 ## Batch Recognition
 
@@ -739,11 +739,7 @@ A runnable Expo example lives in a separate repo: [ppu-paddle-ocr-mobile-react-n
 
 ### PP-OCRv6 Models
 
-PP-OCRv6 ships a **single unified model family** covering 50+ languages
-(Simplified/Traditional Chinese, English, Japanese, 46+ Latin-script
-languages, Arabic, Indic, ...), no per-language model files needed. The
-package default is the **tiny** tier; which tier fits which workload is
-covered in [Choosing a Model and Configuration](#choosing-a-model-and-configuration).
+PP-OCRv6 ships a **single unified model family** covering 50+ languages (Simplified/Traditional Chinese, English, Japanese, 46+ Latin-script languages, Arabic, Indic, ...), no per-language model files needed. The package default is the **tiny** tier; which tier fits which workload is covered in [Choosing a Model and Configuration](#choosing-a-model-and-configuration).
 
 | Tier     | Det + rec params | Notes                                                         |
 | :------- | :--------------- | :------------------------------------------------------------ |
@@ -920,7 +916,13 @@ See the [ONNX conversion guide](./examples/convert-onnx.ipynb).
 
 ### Fine-Tuning on Your Data
 
-When stock accuracy on your documents is limited by domain quirks (dropped inter-word spaces, unusual fonts, ID-card hatching) rather than image quality, fine-tune the recognition model on your own labeled word crops. The [fine-tuning starter kit](./examples/fine-tune/README.md) has per-tier training configs (the tiny/small/medium YAMLs differ in neck, head, and dictionary, they are not interchangeable), a dataset preparation script that builds train/val/test splits from images with line-level ground truth, and the full train -> export -> ONNX -> `model.recognition` walkthrough.
+Fine-tune the recognition model when stock accuracy is limited by domain quirks - dropped inter-word spaces, unusual fonts, ID-card hatching - rather than by image quality. If the inputs are blurry, skewed, or warped, fix that first: see [Image Preprocessing](#image-preprocessing).
+
+The [fine-tuning starter kit](./examples/fine-tune/README.md) walks the whole path, from picking a tier to loading the result:
+
+- **Per-tier training configs.** The tiny, small, and medium YAMLs differ in neck, head, and dictionary. They are not interchangeable.
+- **A dataset preparation script** that builds train/val/test splits from images with line-level ground truth.
+- **The train -> export -> ONNX -> `model.recognition` walkthrough**, end to end.
 
 ## Configuration Reference
 
