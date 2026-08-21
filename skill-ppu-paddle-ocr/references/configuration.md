@@ -65,14 +65,10 @@ Controls the recognition stage's preprocessing and batching strategy.
 | `minimumConfidence`       | `number`                                  | `0.5`        | Drop items below this confidence (0 disables); symbol-only items need +0.3.                                                                                    |
 | `charactersDictionary`    | `string[]`                                | `[]`         | Loaded dict for decoding. Set automatically by `initialize()`; don't override.                                                                                 |
 | `maxCropSourceSideLength` | `number`                                  | `2000`       | Longest side (px) for the canvas recognition crops are cut from. Independent of `detection.maxSideLength` (that only resizes the detector's own input tensor). |
-| <<<<<<< ours              |
 | `mainThreadYieldMs`       | `number`                                  | `0`          | Pause (ms) before each recognition inference. The web entry defaults it to `10` on the main thread (not in workers) so the page keeps painting; `0` disables.  |
-| =======                   |
 | `recBatchSize`            | `number`                                  | `6`          | Crops per batched inference (~35% faster, equal-or-better accuracy). `1` = sequential; auto-clamped on fixed-batch models.                                     |
 | `rotateVerticalCrops`     | `boolean`                                 | `true`       | Rotate tall crops (h/w >= 1.5) 90deg CCW before recognition - vertical lines, no model cost.                                                                   |
 | `spaceRecovery`           | `boolean`                                 | `false`      | Emit word spaces the CTC decode drops when the space class is a strong runner-up.                                                                              |
-
-> > > > > > > theirs
 
 **When to tune:**
 

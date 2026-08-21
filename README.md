@@ -105,18 +105,22 @@ Omit `onnxruntime-node` or `onnxruntime-web` depending on your target environmen
 
 ### CLI (global install)
 
-To use the [command line](#command-line) without `bunx`/`npx`, install globally, this puts a `ppu-paddle-ocr` command on your `PATH`:
-
 ```bash
 npm install -g ppu-paddle-ocr onnxruntime-node      # or: bun add -g ppu-paddle-ocr onnxruntime-node
 ppu-paddle-ocr recognize receipt.jpg
 ```
 
-`onnxruntime-node` (~258MB of native binaries) is an optional peer dependency, install it alongside - the CLI needs it. Notes:
+This puts a `ppu-paddle-ocr` command on your `PATH`. See [Command Line](#command-line) for all commands.
 
+<details>
+<summary>Notes on the global install</summary>
+
+- **`onnxruntime-node` is required.** It is an optional peer dependency (~258MB of native binaries), so install it alongside the CLI.
 - **bun**: ensure `~/.bun/bin` is on your `PATH` (npm's global bin usually already is).
-- **Updates are manual**, re-run the install with `@latest` to upgrade. (`bunx`/`npx` always fetch the latest but can serve a stale cache; a global install pins the version and you own upgrades.)
-- It's still the Node/Bun build, a global install gives you a global command, not a standalone binary, so Node or Bun must be present. For a true standalone binary, see [Standalone Binaries](#standalone-binaries) below.
+- **Updates are manual.** Re-run the install with `@latest` to upgrade. (`bunx`/`npx` always fetch the latest but can serve a stale cache; a global install pins the version and you own upgrades.)
+- **Node or Bun must be present.** This is the Node/Bun build, not a standalone binary. For that, see [Standalone Binaries](#standalone-binaries) below.
+
+</details>
 
 ### Standalone Binaries
 
@@ -134,14 +138,22 @@ curl -L https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/releases/latest
 | `ppu-paddle-ocr-darwin-arm64.tar.gz` | macOS on Apple Silicon                                         |
 | `ppu-paddle-ocr-windows-x64.zip`     | Windows x86-64 (contains the `.exe`)                           |
 
-Notes:
+Intel Macs and Alpine (musl) are not covered, onnxruntime ships no darwin-x64 or musl builds; use `npx`/`bunx` there.
+
+<details>
+<summary>Size, slim variant, and OS warnings</summary>
 
 - **Size and first run.** ~50 MB download, ~140-200 MB extracted (the executable embeds the Bun runtime, ONNX Runtime, and the canvas engine; `tar` preserves the executable bit). Models (~6 MB) still download to `~/.cache/ppu-paddle-ocr` on first run, exactly like the npm CLI.
 - **Slim variant.** Each target also ships a `-slim` archive (e.g. `ppu-paddle-ocr-linux-x64-slim.tar.gz`) that excludes the OpenCV engine: ~28 MB smaller extracted, though only ~5 MB smaller to download (the OpenCV payload compresses well). It always uses the `canvas-native` engine and rejects `--engine opencv`; accuracy on the reference receipt is near-identical (see [Benchmark](#benchmark)). Pick slim for disk and memory footprint; pick full if you want the opencv engine.
 - **macOS Gatekeeper.** The binaries are ad-hoc signed but not Apple-notarized. If macOS blocks a downloaded binary, clear the quarantine flag: `xattr -d com.apple.quarantine ./ppu-paddle-ocr-darwin-arm64` (or right-click, Open, once).
 - **Windows SmartScreen.** Unrecognized-app warning on first run: "More info", then "Run anyway".
-- **Intel Macs and Alpine (musl) are not covered**, onnxruntime ships no darwin-x64 or musl builds; use `npx`/`bunx` there.
-- **Verify a download** (checks run against the archive, before extraction; both are attached per release):
+
+</details>
+
+<details>
+<summary>Verify a download (Sigstore + SLSA)</summary>
+
+Both checks run against the archive, before extraction; both artifacts are attached per release.
 
 ```bash
 # Sigstore signature (bundle is attached next to each archive)
@@ -153,6 +165,8 @@ cosign verify-blob ppu-paddle-ocr-linux-x64.tar.gz \
 # GitHub build provenance (SLSA)
 gh attestation verify ppu-paddle-ocr-linux-x64.tar.gz --repo PT-Perkasa-Pilar-Utama/ppu-paddle-ocr
 ```
+
+</details>
 
 ## Core Usage
 
@@ -327,31 +341,31 @@ bunx ppu-paddle-ocr models --json
 
 Every `PaddleOptions` / `RecognizeOptions` field maps to a flag:
 
-| Flags                                                                                                                                                                                | Applies to         | Purpose                                                                               |
-| :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------- | :------------------------------------------------------------------------------------ |
-| `--model <preset>`                                                                                                                                                                   | all commands       | Catalogue preset (`v6-tiny`, `v6-small`, `v5-en-mobile`, ...); list: `models --json`  |
-| `--model-detection`, `--model-recognition`, `--model-dict`                                                                                                                           | all commands       | Raw paths/URLs; each overrides that part of the preset                                |
-| `--strategy`, `--flatten`, `--no-cache`, `--image-height`, `--min-confidence`, `--max-crop-source-side-length`, `--main-thread-yield-ms`                                             | recognition        | Recognition behavior (strategy, flat output, confidence filter, crop-source cap, ...) |
-| `--engine`, `--execution-providers`                                                                                                                                                  | all commands       | `opencv` \| `canvas-native`; ONNX providers (e.g. `cuda,cpu`)                         |
-| `--max-side-length`, `--padding-vertical`, `--padding-horizontal`, `--min-area`, `--mean`, `--std`                                                                                   | all incl. `detect` | Detection tuning (`--max-side-length` accepts `auto`)                                 |
-| `--save-crops <dir>`                                                                                                                                                                 | `detect` only      | Write one PNG per detected box                                                        |
-| `--concurrency`                                                                                                                                                                      | `batch`, `stream`  | Images processed in parallel                                                          |
-| `--json`, `--pretty`, `-o`/`--output`, `-q`/`--quiet`, `--verbose`                                                                                                                   | all commands       | Output format and destination                                                         |
-| =======                                                                                                                                                                              |
-| Flags                                                                                                                                                                                | Applies to         | Purpose                                                                               |
-| :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------- | :------------------------------------------------------------------------------------ |
-| `--model <preset>`                                                                                                                                                                   | all commands       | Catalogue preset (`v6-tiny`, `v6-small`, `v5-en-mobile`, ...); list: `models --json`  |
-| `--model-detection`, `--model-recognition`, `--model-dict`                                                                                                                           | all commands       | Raw paths/URLs; each overrides that part of the preset                                |
-| `--strategy`, `--flatten`, `--no-cache`, `--image-height`, `--min-confidence`, `--max-crop-source-side-length`, `--rec-batch-size`, `--no-rotate-vertical-crops`, `--space-recovery` | recognition        | Recognition behavior (strategy, flat output, confidence filter, crop-source cap, ...) |
-| `--engine`, `--execution-providers`                                                                                                                                                  | all commands       | `opencv` \| `canvas-native`; ONNX providers (e.g. `cuda,cpu`)                         |
-| `--max-side-length`, `--padding-vertical`, `--padding-horizontal`, `--min-area`, `--mean`, `--std`                                                                                   | all incl. `detect` | Detection tuning (`--max-side-length` accepts `auto`)                                 |
-| `--save-crops <dir>`                                                                                                                                                                 | `detect` only      | Write one PNG per detected box                                                        |
-| `--concurrency`                                                                                                                                                                      | `batch`, `stream`  | Images processed in parallel                                                          |
-| `--json`, `--pretty`, `-o`/`--output`, `-q`/`--quiet`, `--verbose`                                                                                                                   | all commands       | Output format and destination                                                         |
+**Models and engine** (all commands):
+
+| Flags                                                                                              | Purpose                                                                              |
+| :------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------- |
+| `--model <preset>`                                                                                 | Catalogue preset (`v6-tiny`, `v6-small`, `v5-en-mobile`, ...); list: `models --json` |
+| `--model-detection`, `--model-recognition`, `--model-dict`                                         | Raw paths/URLs; each overrides that part of the preset                               |
+| `--engine`, `--execution-providers`                                                                | `opencv` \| `canvas-native`; ONNX providers (e.g. `cuda,cpu`)                        |
+| `--max-side-length`, `--padding-vertical`, `--padding-horizontal`, `--min-area`, `--mean`, `--std` | Detection tuning (`--max-side-length` accepts `auto`)                                |
+
+**Behavior and output**:
+
+| Flags                                                                 | Applies to        | Purpose                                                      |
+| :-------------------------------------------------------------------- | :---------------- | :----------------------------------------------------------- |
+| `--strategy`, `--cross-line-width-factor`, `--flatten`, `--no-cache`  | recognition       | Grouping strategy, flat output, result cache                 |
+| `--image-height`, `--min-confidence`, `--max-crop-source-side-length` | recognition       | Input height, confidence filter, crop-source cap             |
+| `--rec-batch-size`, `--no-rotate-vertical-crops`, `--space-recovery`  | recognition       | Batch size, vertical-crop rotation, space recovery           |
+| `--main-thread-yield-ms`                                              | recognition       | Pause before each inference (browser only, no-op in the CLI) |
+| `--save-crops <dir>`                                                  | `detect` only     | Write one PNG per detected box                               |
+| `--concurrency`, `--settle`                                           | `batch`, `stream` | Images in flight, keep going past a failed image             |
+| `--json`, `--pretty`, `-o`/`--output`, `-q`/`--quiet`, `--verbose`    | all commands      | Output format and destination                                |
+| `--debug`, `--debug-folder <dir>`                                     | all commands      | Dump intermediate frames to disk                             |
 
 Recognized text goes to **stdout**; progress and logs go to **stderr**, so output pipes cleanly. Exit codes: `0` success, `1` runtime error, `2` usage error.
 
-Run `bunx ppu-paddle-ocr help` for the full reference. The CLI uses the default v6 tiny models unless you select a `--model` preset or override the `--model-*` flags.
+Run `bunx ppu-paddle-ocr help` for the full reference. The CLI uses the default v6 small models unless you select a `--model` preset or override the `--model-*` flags.
 
 ## Batch Recognition
 
@@ -556,7 +570,9 @@ self.onmessage = async (event: MessageEvent<ArrayBuffer>) => {
 
 ```ts
 // main.ts
-const worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
+const worker = new Worker(new URL("./worker.ts", import.meta.url), {
+  type: "module",
+});
 worker.onmessage = (event) => console.log(event.data.text);
 
 const bytes = await file.arrayBuffer();
@@ -590,7 +606,9 @@ Tune or disable it via `recognition.mainThreadYieldMs`:
 
 ```ts
 // Longer pauses, smoother page (heavier UI around the OCR call)
-const service = new PaddleOcrService({ recognition: { mainThreadYieldMs: 32 } });
+const service = new PaddleOcrService({
+  recognition: { mainThreadYieldMs: 32 },
+});
 
 // Disable: fastest total time, page frozen while recognizing
 const service = new PaddleOcrService({ recognition: { mainThreadYieldMs: 0 } });
@@ -956,15 +974,6 @@ Controls recognition preprocessing and strategy.
 | `charactersDictionary`    |                `string[]`                 |            `[]`             | Loaded character dictionary for result decoding.                                                                                                                                             |
 | `maxCropSourceSideLength` |                 `number`                  |           `2000`            | Longest side (px) the recognition crop source is capped at; independent of `detection.maxSideLength`. Lower for speed on large sources, raise for full-resolution crops.                     |
 | `mainThreadYieldMs`       |                 `number`                  | `0` (web main thread: `10`) | Pause (ms) before each recognition inference so a browser page keeps painting; `0` disables. See [Main-Thread Usage](#main-thread-usage-no-worker).                                          |
-| =======                   |
-| Property                  |                   Type                    |           Default           | Description                                                                                                                                                                                  |
-| :------------------------ | :---------------------------------------: |        :----------:         | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `imageHeight`             |                 `number`                  |            `48`             | Fixed height for resized text line images (px).                                                                                                                                              |
-| `strategy`                | `"per-box" \| "per-line" \| "cross-line"` |        `"per-line"`         | Recognition strategy (see above).                                                                                                                                                            |
-| `crossLineWidthFactor`    |                 `number`                  |            `1.0`            | Batch width multiplier for `cross-line` strategy.                                                                                                                                            |
-| `minimumConfidence`       |                 `number`                  |            `0.5`            | Drop items below this confidence (0 disables). Mirrors upstream `drop_score`; noise reads at 0.2-0.45, real text at 0.65+.                                                                   |
-| `charactersDictionary`    |                `string[]`                 |            `[]`             | Loaded character dictionary for result decoding.                                                                                                                                             |
-| `maxCropSourceSideLength` |                 `number`                  |           `2000`            | Longest side (px) the recognition crop source is capped at; independent of `detection.maxSideLength`. Lower for speed on large sources, raise for full-resolution crops.                     |
 | `recBatchSize`            |                 `number`                  |             `6`             | Crops per batched recognition inference (width-bucketed, one tensor per chunk, ~35% faster at equal-or-better accuracy). `1` restores sequential; auto-forced to `1` for fixed-batch models. |
 | `rotateVerticalCrops`     |                 `boolean`                 |           `true`            | Rotate crops with height/width >= 1.5 by 90 degrees CCW before recognition, so vertical text lines read correctly without an orientation model.                                              |
 | `spaceRecovery`           |                 `boolean`                 |           `false`           | Emit inter-word spaces the greedy CTC decode drops when the space class is a strong runner-up. Helps Latin text; may add spurious spaces in dense symbol runs.                               |
