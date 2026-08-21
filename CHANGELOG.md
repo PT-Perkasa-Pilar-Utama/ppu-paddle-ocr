@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Docs:** removed leftover rebase conflict remnants that duplicated the CLI
+  flag table and the `RecognitionOptions` table (README and the
+  `skill-ppu-paddle-ocr` configuration reference), which broke their rendering
+  on GitHub.
+
+### Changed
+
+- **Docs:** the README "CLI (global install)" and "Standalone Binaries"
+  sections now lead with the command; the notes moved into collapsible
+  sections. The CLI flag table is split into "Models and engine" and
+  "Behavior and output".
+
 ## [6.4.0] - 2026-08-10
 
 ### Added
