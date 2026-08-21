@@ -610,30 +610,25 @@ import { isWebWorker } from "ppu-paddle-ocr/web";
 
 ### Main-Thread Usage (No Worker)
 
-A worker is still the right home for OCR, but if you run `recognize()` directly
-on the page (a plain `<script>` setup, no bundler, no worker), WASM inference
-blocks the main thread and the tab freezes until the whole image is done.
+A worker is still the right home for OCR. Call `recognize()` directly on the page (a plain `<script>` setup, no bundler, no worker) and WASM inference blocks the main thread: the tab freezes until the whole image is done.
 
-To keep the page responsive, the web entry pauses ~10 ms before each
-recognition inference on the main thread. The page paints and handles input
-between inferences instead of locking up for the full run. The trade-off is a
-slightly longer total time (roughly 10 ms per detected line).
+So the web entry pauses ~10 ms before each recognition inference on the main thread. The page paints and handles input between inferences instead of locking up for the full run. The cost is one pause per batched inference, so roughly 10 ms per `recBatchSize` detected lines (6 by default).
 
-Tune or disable it via `recognition.mainThreadYieldMs`:
+Tune it with `recognition.mainThreadYieldMs`:
+
+| Value     | Effect                                                                           |
+| :-------- | :------------------------------------------------------------------------------- |
+| `0`       | No pause: fastest total time, page frozen while recognizing. Default in workers. |
+| `10`      | Default on the main thread.                                                      |
+| `16`-`32` | Longer pauses, smoother page. Use when heavy UI runs around the OCR call.        |
 
 ```ts
-// Longer pauses, smoother page (heavier UI around the OCR call)
 const service = new PaddleOcrService({
   recognition: { mainThreadYieldMs: 32 },
 });
-
-// Disable: fastest total time, page frozen while recognizing
-const service = new PaddleOcrService({ recognition: { mainThreadYieldMs: 0 } });
 ```
 
-Inside a Web Worker this default is off (`0`), there is no UI to yield to.
-Detection's single inference still blocks briefly either way; only the
-per-line recognition loop yields.
+An explicit value always wins, including `0`. Inside a Web Worker the default is `0`, there is no UI to yield to. Detection's single inference still blocks briefly either way; only the recognition loop yields.
 
 ### CDN (No Bundler)
 
@@ -665,15 +660,26 @@ const service = new PaddleOcrService({
 });
 ```
 
-> The WASM binaries are still required even when WebGPU is the primary provider (used for graph optimization and fallback ops). When `ort.env.wasm.wasmPaths` is unset, pages and workers fall back to the jsDelivr copy of the exact `onnxruntime-web` version you loaded, so the binaries and the loader never disagree. Set it yourself before `initialize()` to self-host.
+**The WASM binaries are always required**, even when WebGPU is the primary provider - ONNX Runtime uses them for graph optimization and fallback ops. When `ort.env.wasm.wasmPaths` is unset, pages and workers load the jsDelivr copy of the exact `onnxruntime-web` version you loaded, so the loader and the binaries never disagree. To self-host them, set it before `initialize()`:
+
+```ts
+ort.env.wasm.wasmPaths = "/ort/"; // your copy of the onnxruntime-web dist files
+```
 
 ### Multithreaded WASM (Cross-Origin Isolation)
 
-When the WASM backend is used (no WebGPU, or `executionProviders: ["wasm"]`), ONNX Runtime only runs multithreaded if the page is [cross-origin isolated](https://developer.mozilla.org/en-US/docs/Web/API/Window/crossOriginIsolated), otherwise `numThreads` is pinned to 1. Cross-origin isolation requires the `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` response headers.
+This only matters on the WASM fallback path (no WebGPU, or `executionProviders: ["wasm"]`). WebGPU needs no isolation at all.
 
-**If you can set those headers server-side, do that**, it's the correct fix and needs nothing from this package. WebGPU does not need isolation at all, so this only matters on the WASM fallback path.
+ONNX Runtime runs WASM multithreaded only if the page is [cross-origin isolated](https://developer.mozilla.org/en-US/docs/Web/API/Window/crossOriginIsolated); otherwise `numThreads` is pinned to 1. Isolation needs two response headers:
 
-For static hosts that can't set headers (e.g. GitHub Pages), the package ships an opt-in [coi-serviceworker](https://github.com/gzuidhof/coi-serviceworker) that injects the headers client-side. Copy it to your served root and load it from your page **before** anything else:
+```http
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
+```
+
+**If you can set those headers server-side, do that.** It is the correct fix and needs nothing from this package.
+
+For static hosts that cannot (e.g. GitHub Pages), the package ships an opt-in [coi-serviceworker](https://github.com/gzuidhof/coi-serviceworker) that injects the headers client-side. Copy it to your served root and load it **before** anything else:
 
 ```html
 <script src="/coi-serviceworker.js"></script>
@@ -686,7 +692,7 @@ Resolve the shipped copy from the package, e.g. in a build step:
 const swPath = import.meta.resolve("ppu-paddle-ocr/coi-serviceworker.js");
 ```
 
-> The service worker reloads the page once on first visit to apply the headers and rewrites all fetch responses. Don't use it if you already control your headers or run another service worker that conflicts.
+> The service worker reloads the page once on first visit to apply the headers, and rewrites all fetch responses. Don't use it if you already control your headers or run another service worker that conflicts.
 
 ## React Native (Mobile)
 
@@ -709,13 +715,25 @@ console.log(result.text);
 await service.destroy();
 ```
 
-Notes:
+**Requirements.** RN >= 0.74 / Expo SDK >= 51 (Hermes). Both peer packages ship native code, so you need a dev client or `expo prebuild`. **Expo Go is not supported.**
 
-- **npm only, not JSR.** The mobile entry is published to npm but excluded from the JSR package: `onnxruntime-react-native` and `@shopify/react-native-skia` are native React Native modules that only resolve through npm/Metro, and JSR's Deno-based publish cannot resolve them (React Native itself cannot consume JSR packages). Install via npm/yarn/bun as shown above.
-- **Native modules required.** Both `onnxruntime-react-native` and `@shopify/react-native-skia` ship native code, so you need a dev client or `expo prebuild`, **Expo Go is not supported**. Targets RN >= 0.74 / Expo SDK >= 51 (Hermes).
-- **CPU inference.** Mobile runs on CPU by default; pass `session: { executionProviders: ["nnapi"] }` (Android) or `["coreml"]` (iOS) to opt into hardware acceleration. There is no WebGPU on React Native.
-- **Camera capture is out of scope.** Pass a decoded frame from `react-native-vision-camera` or `expo-camera` as an `ArrayBuffer`.
-- A runnable Expo example lives in a separate repo: [ppu-paddle-ocr-mobile-react-native-demo](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-mobile-react-native-demo).
+**Hardware acceleration is opt-in**, mobile inference runs on CPU by default. There is no WebGPU on React Native:
+
+```ts
+// Android: ["nnapi"]. iOS: ["coreml"].
+new PaddleOcrService({ session: { executionProviders: ["nnapi"] } });
+```
+
+**Camera capture is out of scope.** Pass a decoded frame from `react-native-vision-camera` or `expo-camera` as an `ArrayBuffer`.
+
+A runnable Expo example lives in a separate repo: [ppu-paddle-ocr-mobile-react-native-demo](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-mobile-react-native-demo).
+
+<details>
+<summary>Why the mobile entry is on npm but not JSR</summary>
+
+`onnxruntime-react-native` and `@shopify/react-native-skia` are native React Native modules that only resolve through npm/Metro, and JSR's Deno-based publish cannot resolve them (React Native itself cannot consume JSR packages). So the mobile entry is excluded from the JSR package. Install via npm/yarn/bun as shown above.
+
+</details>
 
 ## Models and Language Support
 
