@@ -34,9 +34,11 @@ export async function preprocessImage(
       // Reading the resized Mat's bytes directly skips the toCanvas()
       // render-plus-readback round trip; the resize output is CV_8UC4
       // (RGBA, straight from matFromImageData), so the red channel is the
-      // same byte createImageTensorFromCanvas would read.
+      // same byte createImageTensorFromCanvas would read. A padded (ROI)
+      // mat cannot take this path: opencv.js sizes `data` as
+      // total() * elemSize(), which truncates the strided span.
       const mat = imgProcessor.toMat();
-      if (mat.channels() === 4 || mat.channels() === 1) {
+      if (mat.isContinuous() && (mat.channels() === 4 || mat.channels() === 1)) {
         const imageTensor = createImageTensorFromMat(mat, resizedWidth, targetHeight);
         return { imageTensor, tensorWidth: resizedWidth, tensorHeight: targetHeight };
       }
@@ -101,38 +103,26 @@ export function createImageTensorFromCanvas(
 }
 
 /**
- * Creates a normalized float tensor directly from an 8-bit OpenCV Mat.
+ * Creates a normalized float tensor directly from a continuous 8-bit OpenCV Mat.
  *
  * Same normalization as {@link createImageTensorFromCanvas} (red channel for
  * RGBA mats), but reads `mat.data` in place instead of routing the pixels
- * through a canvas render and `getImageData` readback. Rows are walked via
- * `step1(0)` so non-contiguous (row-padded) mats are read correctly.
+ * through a canvas render and `getImageData` readback.
+ *
+ * The mat must be continuous: opencv.js sizes the `data` view as
+ * `total() * elemSize()`, so a padded (ROI) mat's last rows fall outside it
+ * and would read back as NaN. Callers send those through the canvas path.
  */
 export function createImageTensorFromMat(mat: cv.Mat, width: number, height: number): Float32Array {
   const channels = mat.channels();
-  const stride = mat.step1(0);
   const data = mat.data;
 
   const channelSize = height * width;
   const imageTensor = new Float32Array(3 * channelSize);
 
   const INV_127_5 = 1 / 127.5;
-  if (channels === 4) {
-    for (let y = 0; y < height; y++) {
-      let src = y * stride;
-      const rowEnd = y * width + width;
-      for (let dst = y * width; dst < rowEnd; dst++, src += 4) {
-        imageTensor[dst] = data[src] * INV_127_5 - 1.0;
-      }
-    }
-  } else {
-    for (let y = 0; y < height; y++) {
-      let src = y * stride;
-      const rowEnd = y * width + width;
-      for (let dst = y * width; dst < rowEnd; dst++, src++) {
-        imageTensor[dst] = data[src] * INV_127_5 - 1.0;
-      }
-    }
+  for (let i = 0, src = 0; i < channelSize; i++, src += channels) {
+    imageTensor[i] = data[src] * INV_127_5 - 1.0;
   }
 
   imageTensor.copyWithin(channelSize, 0, channelSize);
