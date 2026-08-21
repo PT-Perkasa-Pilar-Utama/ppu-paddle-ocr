@@ -269,11 +269,15 @@ export class BaseDetectionService {
     // channels is the identity - so the contours see identical bytes while
     // skipping two canvas copies and a cvtColor. The processor owns (and on
     // destroy() frees) the mat we hand it, so it must not be deleted here.
+    // mat.data is a Uint8Array, which wraps instead of clamping, so an
+    // unbounded probability (a custom detection head with no sigmoid) is
+    // clamped here the way ImageData's Uint8ClampedArray used to.
     const mat = new ip.cv.Mat(height, width, ip.cv.CV_8UC1);
     const matData = mat.data;
     const pixelCount = width * height;
     for (let i = 0; i < pixelCount; i++) {
-      matData[i] = Math.round((detection[i] || 0) * 255);
+      const probability = detection[i] || 0;
+      matData[i] = Math.round(Math.min(Math.max(probability, 0), 1) * 255);
     }
 
     const processor = new ip.ImageProcessor(mat);
