@@ -98,3 +98,60 @@ export {
   DEFAULT_PROCESSING_OPTIONS,
   DEFAULT_RECOGNITION_OPTIONS,
 } from "../constants.js";
+
+import type { CanvasLike } from "ppu-ocv/canvas-mobile";
+import type { DetectOptions, PaddleOptions, RecognizeOptions } from "../interface.js";
+import type {
+  DetectResult,
+  FlattenedPaddleOcrResult,
+  PaddleOcrResult,
+} from "../core/base-paddle-ocr.service.js";
+import { PaddleOcrService } from "./paddle-ocr.service.mobile.js";
+
+let defaultMobileService: PaddleOcrService | null = null;
+
+/**
+ * Convenience function to run text recognition in React Native.
+ */
+export async function ocr(
+  image: ArrayBuffer | CanvasLike | string,
+  options: PaddleOptions & RecognizeOptions & { flatten: true }
+): Promise<FlattenedPaddleOcrResult>;
+export async function ocr(
+  image: ArrayBuffer | CanvasLike | string,
+  options?: PaddleOptions & RecognizeOptions & { flatten?: false }
+): Promise<PaddleOcrResult>;
+export async function ocr(
+  image: ArrayBuffer | CanvasLike | string,
+  options?: PaddleOptions & RecognizeOptions
+): Promise<PaddleOcrResult | FlattenedPaddleOcrResult> {
+  if (!defaultMobileService) {
+    defaultMobileService = new PaddleOcrService(options);
+    await defaultMobileService.initialize();
+  }
+  return (
+    options?.flatten
+      ? defaultMobileService.recognize(
+          image as ArrayBuffer | CanvasLike,
+          options as RecognizeOptions & { flatten: true }
+        )
+      : defaultMobileService.recognize(
+          image as ArrayBuffer | CanvasLike,
+          options as (RecognizeOptions & { flatten?: false }) | undefined
+        )
+  ) as Promise<PaddleOcrResult | FlattenedPaddleOcrResult>;
+}
+
+/**
+ * Convenience function to run text detection in React Native.
+ */
+export async function detect(
+  image: ArrayBuffer | CanvasLike | string,
+  options?: PaddleOptions & DetectOptions
+): Promise<DetectResult> {
+  if (!defaultMobileService) {
+    defaultMobileService = new PaddleOcrService(options);
+    await defaultMobileService.initialize();
+  }
+  return defaultMobileService.detect(image as ArrayBuffer | CanvasLike, options);
+}

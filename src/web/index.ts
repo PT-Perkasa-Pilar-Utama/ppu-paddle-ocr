@@ -94,3 +94,60 @@ export {
   DEFAULT_PROCESSING_OPTIONS,
   DEFAULT_RECOGNITION_OPTIONS,
 } from "../constants.js";
+
+import type { CanvasLike } from "ppu-ocv/web";
+import type { DetectOptions, PaddleOptions, RecognizeOptions } from "../interface.js";
+import type {
+  DetectResult,
+  FlattenedPaddleOcrResult,
+  PaddleOcrResult,
+} from "../core/base-paddle-ocr.service.js";
+import { PaddleOcrService } from "./paddle-ocr.service.web.js";
+
+let defaultWebService: PaddleOcrService | null = null;
+
+/**
+ * Convenience function to run text recognition in the browser.
+ */
+export async function ocr(
+  image: ArrayBuffer | CanvasLike | string,
+  options: PaddleOptions & RecognizeOptions & { flatten: true }
+): Promise<FlattenedPaddleOcrResult>;
+export async function ocr(
+  image: ArrayBuffer | CanvasLike | string,
+  options?: PaddleOptions & RecognizeOptions & { flatten?: false }
+): Promise<PaddleOcrResult>;
+export async function ocr(
+  image: ArrayBuffer | CanvasLike | string,
+  options?: PaddleOptions & RecognizeOptions
+): Promise<PaddleOcrResult | FlattenedPaddleOcrResult> {
+  if (!defaultWebService) {
+    defaultWebService = new PaddleOcrService(options);
+    await defaultWebService.initialize();
+  }
+  return (
+    options?.flatten
+      ? defaultWebService.recognize(
+          image as ArrayBuffer | CanvasLike,
+          options as RecognizeOptions & { flatten: true }
+        )
+      : defaultWebService.recognize(
+          image as ArrayBuffer | CanvasLike,
+          options as (RecognizeOptions & { flatten?: false }) | undefined
+        )
+  ) as Promise<PaddleOcrResult | FlattenedPaddleOcrResult>;
+}
+
+/**
+ * Convenience function to run text detection in the browser.
+ */
+export async function detect(
+  image: ArrayBuffer | CanvasLike | string,
+  options?: PaddleOptions & DetectOptions
+): Promise<DetectResult> {
+  if (!defaultWebService) {
+    defaultWebService = new PaddleOcrService(options);
+    await defaultWebService.initialize();
+  }
+  return defaultWebService.detect(image as ArrayBuffer | CanvasLike, options);
+}

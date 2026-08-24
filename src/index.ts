@@ -94,3 +94,60 @@ export {
   DEFAULT_PROCESSING_OPTIONS,
   DEFAULT_RECOGNITION_OPTIONS,
 } from "./constants.js";
+
+import type { Canvas } from "ppu-ocv";
+import type { DetectOptions, PaddleOptions, RecognizeOptions } from "./interface.js";
+import type {
+  DetectResult,
+  FlattenedPaddleOcrResult,
+  PaddleOcrResult,
+} from "./core/base-paddle-ocr.service.js";
+import { PaddleOcrService } from "./processor/paddle-ocr.service.js";
+
+let defaultService: PaddleOcrService | null = null;
+
+/**
+ * Convenience function to run text recognition on an image.
+ */
+export async function ocr(
+  image: ArrayBuffer | Canvas | string,
+  options: PaddleOptions & RecognizeOptions & { flatten: true }
+): Promise<FlattenedPaddleOcrResult>;
+export async function ocr(
+  image: ArrayBuffer | Canvas | string,
+  options?: PaddleOptions & RecognizeOptions & { flatten?: false }
+): Promise<PaddleOcrResult>;
+export async function ocr(
+  image: ArrayBuffer | Canvas | string,
+  options?: PaddleOptions & RecognizeOptions
+): Promise<PaddleOcrResult | FlattenedPaddleOcrResult> {
+  if (!defaultService) {
+    defaultService = new PaddleOcrService(options);
+    await defaultService.initialize();
+  }
+  return (
+    options?.flatten
+      ? defaultService.recognize(
+          image as ArrayBuffer | Canvas,
+          options as RecognizeOptions & { flatten: true }
+        )
+      : defaultService.recognize(
+          image as ArrayBuffer | Canvas,
+          options as (RecognizeOptions & { flatten?: false }) | undefined
+        )
+  ) as Promise<PaddleOcrResult | FlattenedPaddleOcrResult>;
+}
+
+/**
+ * Convenience function to run text detection on an image.
+ */
+export async function detect(
+  image: ArrayBuffer | Canvas | string,
+  options?: PaddleOptions & DetectOptions
+): Promise<DetectResult> {
+  if (!defaultService) {
+    defaultService = new PaddleOcrService(options);
+    await defaultService.initialize();
+  }
+  return defaultService.detect(image as ArrayBuffer | Canvas, options);
+}

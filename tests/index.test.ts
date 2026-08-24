@@ -241,3 +241,19 @@ describe("OCR accuracy (Levenshtein distance)", () => {
     await service.destroy();
   });
 });
+
+describe("Top-level ocr() and detect() convenience functions", () => {
+  test("ocr() runs full OCR without manual initialization", async () => {
+    const { ocr } = await import("../src/index.js");
+    const result = await ocr(imageBuffer, { noCache: true });
+    expect(result.text).not.toBeEmpty();
+    expect(result.confidence).toBeGreaterThan(0.8);
+  });
+
+  test("detect() runs text detection without manual initialization", async () => {
+    const { detect } = await import("../src/index.js");
+    const result = await detect(imageBuffer);
+    expect(result.boxes.length).toBeGreaterThan(0);
+    expect(result.boxes[0]?.width).toBeGreaterThan(0);
+  });
+});
