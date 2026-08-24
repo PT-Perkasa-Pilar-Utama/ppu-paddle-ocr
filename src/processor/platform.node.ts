@@ -56,11 +56,11 @@ export class NodePlatformProvider implements PlatformProvider<CoreCanvas> {
     outputDir: string
   ): Promise<void> {
     await fs.mkdir(outputDir, { recursive: true });
-    await CanvasToolkit.getInstance().saveImage({
-      canvas: canvas as Canvas,
-      filename,
-      path: outputDir,
-    });
+    const targetFile = filename.endsWith(".png") ? filename : `${filename}.png`;
+    const fullPath = path.isAbsolute(outputDir)
+      ? path.join(outputDir, targetFile)
+      : path.join(process.cwd(), outputDir, targetFile);
+    await fs.writeFile(fullPath, (canvas as Canvas).toBuffer("image/png"));
   }
 
   public async saveImage(canvas: CoreCanvas, filePath: string): Promise<void> {

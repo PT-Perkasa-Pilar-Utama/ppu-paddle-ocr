@@ -103,8 +103,14 @@ export class BaseDetectionService {
       const detectedBoxes = this.postprocessDetection(detection, input);
 
       if (this.debugging.debug && this.debugging.debugFolder && this.lastDetectionCanvas) {
-        await this.debugDetectionCanvas(this.lastDetectionCanvas, input.width, input.height);
-        await this.debugDetectedBoxes(canvasToProcess, detectedBoxes);
+        try {
+          await this.debugDetectionCanvas(this.lastDetectionCanvas, input.width, input.height);
+          await this.debugDetectedBoxes(canvasToProcess, detectedBoxes);
+        } catch (debugError) {
+          this.log(
+            `Debug dump failed: ${debugError instanceof Error ? debugError.message : String(debugError)}`
+          );
+        }
       }
 
       this.log(`Detected ${detectedBoxes.length} text boxes in image`);
@@ -363,11 +369,13 @@ export class BaseDetectionService {
    * Debug the bounding boxes by drawing a rectangle onto the original image
    */
   private async debugDetectedBoxes(image: ArrayBuffer | CoreCanvas, boxes: Box[]): Promise<void> {
-    const canvas = this.platform.isCanvas(image)
+    const sourceCanvas = this.platform.isCanvas(image)
       ? image
       : await this.platform.canvas.prepareCanvas(image);
 
-    const ctx = canvas.getContext("2d");
+    const debugCanvas = this.platform.createCanvas(sourceCanvas.width, sourceCanvas.height);
+    const ctx = debugCanvas.getContext("2d");
+    ctx.drawImage(sourceCanvas, 0, 0);
 
     for (const box of boxes) {
       const { x, y, width, height } = box;
@@ -381,7 +389,7 @@ export class BaseDetectionService {
     }
 
     const dir = this.debugging.debugFolder ?? "";
-    await this.platform.saveDebugImage(canvas, "boxes-debug", dir);
+    await this.platform.saveDebugImage(debugCanvas, "boxes-debug", dir);
 
     this.log(`Boxes visualized and saved to: ${dir}`);
   }
