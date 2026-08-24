@@ -381,4 +381,23 @@ export abstract class BasePaddleOcrService {
 
     return usesAccelerator ? 1 : 4;
   }
+
+  /**
+   * Returns true once both detection and recognition sessions are loaded.
+   */
+  public isInitialized(): boolean {
+    return this.detectionSession !== null && this.recognitionSession !== null;
+  }
+
+  /**
+   * Release all ONNX sessions and free resources.
+   */
+  public async destroy(): Promise<void> {
+    await this.detectionSession?.release();
+    await this.recognitionSession?.release();
+    this.detectionSession = null;
+    this.recognitionSession = null;
+    this.detector = null;
+    this.recognitor = null;
+  }
 }

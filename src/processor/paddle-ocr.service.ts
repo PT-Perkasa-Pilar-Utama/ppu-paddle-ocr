@@ -6,16 +6,14 @@ import * as ort from "onnxruntime-node";
 import * as path from "path";
 import type { Canvas } from "ppu-ocv";
 import { ImageProcessor } from "ppu-ocv";
-import { CanvasProcessor } from "ppu-ocv/canvas";
 
 import { BasePaddleOcrService } from "../core/base-paddle-ocr.service.js";
-import { globalImageCache, ImageCache } from "../core/image-cache.js";
-import { groupRecognitionResultsByLine } from "../core/recognition/result-grouping.js";
+import type { FlattenedPaddleOcrResult, PaddleOcrResult } from "../core/base-paddle-ocr.service.js";
+import type { CoreCanvas } from "../core/platform.js";
 import { createSessionWithFallback } from "../core/session-factory.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
 import { DEFAULT_MODEL_URLS } from "../model-catalogue.js";
 import { parseDictionary } from "../utils.js";
-import type { FlattenedPaddleOcrResult, PaddleOcrResult } from "../web/paddle-ocr.service.web.js";
 import { DetectionService } from "./detection.service.js";
 import { CACHE_DIR, fetchAndCacheResource } from "./model-cache.js";
 import { NodePlatformProvider } from "./platform.node.js";
@@ -165,13 +163,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
   }
 
   /**
-   * Checks if the service has been initialized with models loaded.
-   */
-  public isInitialized(): boolean {
-    return this.detectionSession !== null && this.recognitionSession !== null;
-  }
-
-  /**
    * Changes the detection model for the current instance.
    * @param model - The new detection model as a path, URL, or ArrayBuffer.
    */
@@ -276,90 +267,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
     image: ArrayBuffer | Canvas,
     options?: RecognizeOptions
   ): Promise<PaddleOcrResult | FlattenedPaddleOcrResult> {
-    if (!this.isInitialized()) {
-      throw new Error("PaddleOcrService is not initialized. Call initialize() first.");
-    }
-
-    let imageBuffer: ArrayBuffer;
-
-    if (image instanceof ArrayBuffer) {
-      imageBuffer = image;
-    } else {
-      if (typeof image.toBuffer === "function") {
-        const buffer = image.toBuffer("image/png");
-        imageBuffer = buffer.buffer.slice(
-          buffer.byteOffset,
-          buffer.byteOffset + buffer.byteLength
-        ) as ArrayBuffer;
-      } else {
-        const ctx = image.getContext("2d");
-        const imageData = ctx.getImageData(0, 0, image.width, image.height);
-        const data = imageData.data;
-        imageBuffer = data.buffer.slice(
-          data.byteOffset,
-          data.byteOffset + data.byteLength
-        ) as ArrayBuffer;
-      }
-    }
-
-    const cacheKey = ImageCache.generateKey(imageBuffer);
-
-    const cacheResult = (
-      !options?.noCache && !options?.dictionary ? globalImageCache.get(cacheKey) : undefined
-    ) as (PaddleOcrResult & Partial<FlattenedPaddleOcrResult>) | undefined;
-    if (cacheResult) {
-      this.log("Using cached OCR result");
-
-      if (options?.flatten) {
-        return {
-          text: cacheResult.text,
-          results: cacheResult.lines ? cacheResult.lines.flat() : (cacheResult.results ?? []),
-          confidence: cacheResult.confidence,
-        };
-      }
-
-      return cacheResult as PaddleOcrResult;
-    }
-
-    let charactersDictionary: string[] | undefined;
-    if (options?.dictionary) {
-      const dictBuffer = await this._loadResource(options.dictionary, "");
-      charactersDictionary = parseDictionary(dictBuffer);
-
-      if (charactersDictionary.length === 0) {
-        throw new Error("Custom character dictionary is empty or could not be loaded.");
-      }
-    }
-
-    const sourceCanvas =
-      image instanceof ArrayBuffer ? await CanvasProcessor.prepareCanvas(image) : image;
-
-    const strategy = options?.strategy ?? this.options.recognition?.strategy ?? "per-line";
-    const detector = this.detector as NonNullable<BasePaddleOcrService["detector"]>;
-    const recognitor = this.recognitor as NonNullable<BasePaddleOcrService["recognitor"]>;
-    const detection = await detector.run(sourceCanvas);
-    const recognition = await recognitor.run(
-      sourceCanvas,
-      detection,
-      charactersDictionary,
-      strategy
-    );
-
-    const processed = groupRecognitionResultsByLine(recognition);
-
-    const result = options?.flatten
-      ? {
-          text: processed.text,
-          results: recognition,
-          confidence: processed.confidence,
-        }
-      : processed;
-
-    if (!options?.noCache && !options?.dictionary) {
-      globalImageCache.set(cacheKey, result);
-    }
-
-    return result as PaddleOcrResult | FlattenedPaddleOcrResult;
+    return super.recognize(image as ArrayBuffer | CoreCanvas, options);
   }
 
   /**
@@ -391,18 +299,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
     } else {
       this.log("Cache directory does not exist, nothing to clear.");
     }
-  }
-
-  /**
-   * Release all ONNX sessions and free resources.
-   */
-  public async destroy(): Promise<void> {
-    await this.detectionSession?.release();
-    await this.recognitionSession?.release();
-    this.detectionSession = null;
-    this.recognitionSession = null;
-    this.detector = null;
-    this.recognitor = null;
   }
 }
 

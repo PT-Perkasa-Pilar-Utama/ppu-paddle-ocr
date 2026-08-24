@@ -169,13 +169,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
   }
 
   /**
-   * Returns `true` once both detection and recognition sessions are loaded.
-   */
-  public isInitialized(): boolean {
-    return this.detectionSession !== null && this.recognitionSession !== null;
-  }
-
-  /**
    * Swaps the detection model at runtime, releasing the previous session.
    * @param model - ONNX detection model as a buffer, file path, or URL.
    */
@@ -267,18 +260,6 @@ export class PaddleOcrService extends BasePaddleOcrService {
     options?: RecognizeOptions
   ): Promise<PaddleOcrResult | FlattenedPaddleOcrResult> {
     return super.recognize(image as ArrayBuffer | CoreCanvas, options);
-  }
-
-  /**
-   * Release all ONNX sessions and free resources.
-   */
-  public async destroy(): Promise<void> {
-    await this.detectionSession?.release();
-    await this.recognitionSession?.release();
-    this.detectionSession = null;
-    this.recognitionSession = null;
-    this.detector = null;
-    this.recognitor = null;
   }
 }
 
