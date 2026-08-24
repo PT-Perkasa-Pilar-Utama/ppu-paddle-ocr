@@ -237,5 +237,6 @@ export function buildBatchOptions(values: CliValues): BatchRecognizeOptions {
   return {
     ...buildRecognizeOptions(values),
     ...(concurrency !== undefined ? { concurrency } : {}),
+    ...(values.settle ? { settle: true } : {}),
   };
 }

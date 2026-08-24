@@ -146,10 +146,12 @@ describe("option builders", () => {
     expect(opts.model).toEqual({ ...V6_SMALL_MODEL, detection: "/custom-det.onnx" });
   });
 
-  test("buildBatchOptions parses concurrency", () => {
+  test("buildBatchOptions parses concurrency and settle", () => {
     expect(buildBatchOptions({ concurrency: "auto" }).concurrency).toBe("auto");
     expect(buildBatchOptions({ concurrency: "4" }).concurrency).toBe(4);
+    expect(buildBatchOptions({ settle: true }).settle).toBe(true);
     expect(buildBatchOptions({}).concurrency).toBeUndefined();
+    expect(buildBatchOptions({}).settle).toBeUndefined();
   });
 
   test("invalid flag values throw a usage error (exit code 2)", () => {
