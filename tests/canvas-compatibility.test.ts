@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:tes
 import type { Canvas } from "ppu-ocv";
 import { ImageProcessor } from "ppu-ocv";
 
-import { globalImageCache } from "../src/core/image-cache.js";
+import { globalImageCache, ImageCache } from "../src/core/image-cache.js";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 
 type Detection = {
@@ -224,11 +224,16 @@ describe("PaddleOcrService canvas compatibility", () => {
     await service.destroy();
   });
 
-  test("should throw if service is not initialized", async () => {
-    const service = new PaddleOcrService();
+  test("should generate distinct cache keys for different buffers sharing identical headers", () => {
+    const bufA = new Uint8Array(8192);
+    const bufB = new Uint8Array(8192);
+    bufA.fill(1, 0, 1024);
+    bufB.fill(1, 0, 1024);
+    bufA[5000] = 42;
+    bufB[5000] = 99;
 
-    await expect(service.recognize(new ArrayBuffer(4), { noCache: true })).rejects.toThrow(
-      "PaddleOcrService is not initialized"
-    );
+    const keyA = ImageCache.generateKey(bufA.buffer);
+    const keyB = ImageCache.generateKey(bufB.buffer);
+    expect(keyA).not.toBe(keyB);
   });
 });

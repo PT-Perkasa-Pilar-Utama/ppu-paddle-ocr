@@ -53,15 +53,25 @@ export class ImageCache {
    * Generate cache key from image data
    */
   static generateKey(imageBuffer: ArrayBuffer): string {
-    // Simple hash based on first few bytes and length
     const view = new Uint8Array(imageBuffer);
-    const len = Math.min(view.length, 1024);
+    const length = view.length;
     let hash = 0;
-    for (let i = 0; i < len; i++) {
-      hash = (hash << 5) - hash + view[i];
-      hash = hash & hash; // Convert to 32-bit integer
+
+    const maxSamples = 4096;
+    if (length <= maxSamples) {
+      for (let i = 0; i < length; i++) {
+        hash = (hash << 5) - hash + (view[i] ?? 0);
+        hash = hash & hash;
+      }
+    } else {
+      const step = Math.max(1, Math.floor(length / maxSamples));
+      for (let i = 0; i < length; i += step) {
+        hash = (hash << 5) - hash + (view[i] ?? 0);
+        hash = hash & hash;
+      }
     }
-    return `${hash}_${view.length}`;
+
+    return `${hash}_${length}`;
   }
 }
 
