@@ -86,6 +86,20 @@ describe("detection and recognition option overrides", () => {
     const result = await service.recognize(imageBuffer, { noCache: true });
     expect(result.text.length).toBeGreaterThan(0);
   }, 30000);
+
+  test("per-call recognition tuning overrides service defaults", async () => {
+    service = new PaddleOcrService();
+    await service.initialize();
+
+    const highConfResult = await service.recognize(imageBuffer, {
+      noCache: true,
+      minimumConfidence: 0.999,
+    });
+    // Setting threshold extremely high drops items
+    expect(highConfResult.lines.length).toBeLessThanOrEqual(
+      (await service.recognize(imageBuffer, { noCache: true, minimumConfidence: 0.1 })).lines.length
+    );
+  }, 30000);
 });
 
 describe("debugging options", () => {

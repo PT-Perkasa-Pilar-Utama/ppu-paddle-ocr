@@ -9,6 +9,7 @@ import type {
   ProcessingEngine,
   RecognitionOptions,
   RecognitionStrategy,
+  RecognizeOptions,
 } from "../interface.js";
 import { calculateResizeDimensions } from "./detection/box-geometry.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
@@ -89,7 +90,8 @@ export class BaseRecognitionService {
     image: ArrayBuffer | CoreCanvas,
     detection: Box[],
     charactersDictionary?: string[],
-    strategy: RecognitionStrategy = "per-line"
+    strategy: RecognitionStrategy = "per-line",
+    perCallOptions?: RecognizeOptions
   ): Promise<RecognitionResult[]> {
     this.log("Starting text recognition process");
 
@@ -109,22 +111,13 @@ export class BaseRecognitionService {
         return [];
       }
 
-      // Crops are cut straight from the source canvas, once per (merged)
-      // line - on a full-resolution scan (e.g. a 4961x7016 photo) that means
-      // dozens of full-res crop ops per image, unrelated to how detection
-      // sized its own input. `options.maxCropSourceSideLength` caps the crop
-      // source so far-oversized images don't pay for it by default, while
-      // still letting callers trade it away for full-resolution crops (or
-      // tighten it further) as their own speed/accuracy call; boxes are
-      // scaled down to match for cropping, then results are scaled back up
-      // so callers keep seeing original-image coordinates.
       const { canvas: cropCanvas, ratio: cropRatio } = this.buildCropCanvas(sourceCanvasForCrop);
       const cropBoxes =
         cropRatio === 1
           ? validBoxes
           : validBoxes.map((v) => ({ ...v, box: scaleBox(v.box, cropRatio) }));
 
-      const ctx = this.buildContext();
+      const ctx = this.buildContext(perCallOptions);
 
       let results: RecognitionResult[];
       switch (strategy) {
@@ -150,13 +143,8 @@ export class BaseRecognitionService {
         results = results.map((r) => ({ ...r, box: scaleBox(r.box, 1 / cropRatio) }));
       }
 
-      // Drop hallucinated noise regions (hatch patterns, logos, barcodes read
-      // as text at 0.2-0.45 confidence) the way upstream PaddleOCR's
-      // drop_score does; real text measures >= 0.65 on our regression set.
-      // Symbol-only items (no letter or digit) carry no language evidence -
-      // ruled separator lines read as "+-" at ~0.69 - so they must clear a
-      // higher bar.
-      const minimumConfidence = this.options.minimumConfidence ?? 0.5;
+      const minimumConfidence =
+        perCallOptions?.minimumConfidence ?? this.options.minimumConfidence ?? 0.5;
       return minimumConfidence > 0
         ? results.filter((r) => {
             const bar = /[\p{L}\p{N}]/u.test(r.text)
@@ -177,14 +165,27 @@ export class BaseRecognitionService {
   /**
    * Builds the strategy context from this service's state.
    */
-  private buildContext(): RecognitionContext {
+  private buildContext(perCallOptions?: RecognizeOptions): RecognitionContext {
+    const effectiveOptions: RecognitionOptions = {
+      ...this.options,
+      ...(perCallOptions?.spaceRecovery !== undefined
+        ? { spaceRecovery: perCallOptions.spaceRecovery }
+        : {}),
+      ...(perCallOptions?.rotateVerticalCrops !== undefined
+        ? { rotateVerticalCrops: perCallOptions.rotateVerticalCrops }
+        : {}),
+      ...(perCallOptions?.recBatchSize !== undefined
+        ? { recBatchSize: perCallOptions.recBatchSize }
+        : {}),
+    };
+
     return {
       platform: this.platform,
       // Fixed-batch model exports cannot take stacked tensors; clamp to the
       // sequential path rather than failing at session.run.
       options: supportsDynamicBatch(this.session)
-        ? this.options
-        : { ...this.options, recBatchSize: 1 },
+        ? effectiveOptions
+        : { ...effectiveOptions, recBatchSize: 1 },
       debugging: this.debugging,
       engine: this.engine,
       runInference: (t) => this.runInference(t),
