@@ -108,7 +108,6 @@ export async function runBatch(patterns: string[], values: CliValues): Promise<v
     };
     const settled = await service.batchRecognize(inputs(), {
       ...buildBatchOptions(values),
-      settle: true,
       onProgress: (done) => logStderr(`  ${done}/${files.length}`, Boolean(values.quiet)),
     });
 
@@ -152,10 +151,7 @@ export async function runStream(patterns: string[], values: CliValues): Promise<
     const inputs = async function* (): AsyncGenerator<ArrayBuffer> {
       for (const file of files) yield loadImageInput(file);
     };
-    for await (const item of service.batchRecognizeStream(inputs(), {
-      ...buildBatchOptions(values),
-      settle: true,
-    })) {
+    for await (const item of service.batchRecognizeStream(inputs(), buildBatchOptions(values))) {
       const file = files[item.index] ?? "?";
       if (item.status === "fulfilled") {
         const entry: BatchEntry = { file, status: "fulfilled", result: item.value };

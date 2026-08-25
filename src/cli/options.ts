@@ -238,8 +238,11 @@ export function buildRecognizeOptions(values: CliValues): RecognizeOptions {
   };
 }
 
-/** Batch options: recognize options plus concurrency/settle. */
-export function buildBatchOptions(values: CliValues): BatchRecognizeOptions {
+/**
+ * Batch options: recognize options plus concurrency. `settle` is part of the
+ * return type, not a choice, so the batch commands select the settled overload.
+ */
+export function buildBatchOptions(values: CliValues): BatchRecognizeOptions & { settle: true } {
   const raw = str(values, "concurrency");
   let concurrency: number | "auto" | undefined;
   if (raw !== undefined) {
@@ -254,5 +257,10 @@ export function buildBatchOptions(values: CliValues): BatchRecognizeOptions {
   return {
     ...buildRecognizeOptions(values),
     ...(concurrency !== undefined ? { concurrency } : {}),
+    // Batch and stream always settle: one unreadable file must not throw away
+    // the results of every other image, and the command still exits non-zero
+    // by counting the rejected entries afterwards. `--settle` is accepted for
+    // compatibility and names this default rather than switching it.
+    settle: true,
   };
 }
