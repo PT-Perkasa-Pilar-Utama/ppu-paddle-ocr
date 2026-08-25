@@ -65,6 +65,15 @@ export type CliValues = Record<string, string | boolean | undefined>;
 const STRATEGIES: RecognitionStrategy[] = ["per-box", "per-line", "cross-line"];
 const ENGINES: ProcessingEngine[] = ["opencv", "canvas-native"];
 
+/**
+ * Reads a string-valued flag. Boolean flags are declared separately in the
+ * parser's option table, so a value here is either absent or a string.
+ */
+export function str(values: CliValues, key: string): string | undefined {
+  const raw = values[key];
+  return typeof raw === "string" ? raw : undefined;
+}
+
 function num(values: CliValues, key: string): number | undefined {
   const raw = values[key];
   if (raw === undefined) return undefined;
@@ -82,24 +91,30 @@ function triple(values: CliValues, key: string): [number, number, number] | unde
   if (parts.length !== 3 || parts.some(Number.isNaN)) {
     usageError(`--${key} must be three comma-separated numbers, e.g. 0.485,0.456,0.406`);
   }
+  // SAFETY: the length check above establishes the tuple's arity.
   return parts as [number, number, number];
 }
 
 function strategy(values: CliValues): RecognitionStrategy | undefined {
   const raw = values.strategy;
   if (raw === undefined) return undefined;
+  // SAFETY: `includes` needs the element type to compare; the cast is the
+  // question being asked, and the failure path exits with a usage error.
   if (!STRATEGIES.includes(raw as RecognitionStrategy)) {
     usageError(`--strategy must be one of ${STRATEGIES.join(" | ")}`);
   }
+  // SAFETY: membership in STRATEGIES was just checked.
   return raw as RecognitionStrategy;
 }
 
 function engine(values: CliValues): ProcessingEngine | undefined {
   const raw = values.engine;
   if (raw === undefined) return undefined;
+  // SAFETY: as with the strategy above, the cast poses the membership question.
   if (!ENGINES.includes(raw as ProcessingEngine)) {
     usageError(`--engine must be one of ${ENGINES.join(" | ")}`);
   }
+  // SAFETY: membership in ENGINES was just checked.
   return raw as ProcessingEngine;
 }
 
@@ -107,6 +122,8 @@ function engine(values: CliValues): ProcessingEngine | undefined {
 function modelPreset(values: CliValues): ModelUrls | undefined {
   const raw = values.model;
   if (raw === undefined) return undefined;
+  // SAFETY: MODEL_PRESETS is keyed by a closed union; the flag is free text, so
+  // it is looked up as an open dictionary and the miss is handled below.
   const preset = (MODEL_PRESETS as Record<string, ModelUrls>)[String(raw)];
   if (!preset) {
     usageError(`--model must be one of: ${Object.keys(MODEL_PRESETS).join(", ")}`);
@@ -121,9 +138,9 @@ export function buildPaddleOptions(values: CliValues): PaddleOptions {
   // `--model <preset>` selects a catalogue bundle; the granular `--model-*`
   // flags override individual parts on top of it.
   const preset = modelPreset(values);
-  const detection = values["model-detection"] as string | undefined;
-  const recognition = values["model-recognition"] as string | undefined;
-  const dict = values["model-dict"] as string | undefined;
+  const detection = str(values, "model-detection");
+  const recognition = str(values, "model-recognition");
+  const dict = str(values, "model-dict");
   if (preset || detection || recognition || dict) {
     options.model = {
       ...preset,
@@ -194,7 +211,7 @@ export function buildPaddleOptions(values: CliValues): PaddleOptions {
     options.processing = { engine: eng };
   }
 
-  const providers = values["execution-providers"] as string | undefined;
+  const providers = str(values, "execution-providers");
   if (providers) {
     options.session = {
       executionProviders: providers.split(",").map((p) => p.trim()),
@@ -205,7 +222,7 @@ export function buildPaddleOptions(values: CliValues): PaddleOptions {
     options.debugging = {
       ...(values.verbose ? { verbose: true } : {}),
       ...(values.debug ? { debug: true } : {}),
-      ...(values["debug-folder"] ? { debugFolder: values["debug-folder"] as string } : {}),
+      ...(str(values, "debug-folder") ? { debugFolder: str(values, "debug-folder") } : {}),
     };
   }
 
@@ -223,7 +240,7 @@ export function buildRecognizeOptions(values: CliValues): RecognizeOptions {
 
 /** Batch options: recognize options plus concurrency/settle. */
 export function buildBatchOptions(values: CliValues): BatchRecognizeOptions {
-  const raw = values.concurrency as string | undefined;
+  const raw = str(values, "concurrency");
   let concurrency: number | "auto" | undefined;
   if (raw !== undefined) {
     if (raw === "auto") {

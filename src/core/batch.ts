@@ -26,7 +26,7 @@ export type RunPoolOptions = {
   total?: number;
 };
 
-function toAbortError(signal: AbortSignal): unknown {
+function toAbortError(signal: AbortSignal): Error {
   return signal.reason instanceof Error
     ? signal.reason
     : new DOMException("The batch operation was aborted.", "AbortError");
@@ -35,8 +35,11 @@ function toAbortError(signal: AbortSignal): unknown {
 /** Wrap a sync or async iterable in a uniform async iterator. */
 function toAsyncIterator<I>(inputs: Iterable<I> | AsyncIterable<I>): AsyncIterator<I> {
   if (Symbol.asyncIterator in inputs) {
+    // SAFETY: the `in` check is the discriminant between the two arms of the
+    // parameter's union.
     return (inputs as AsyncIterable<I>)[Symbol.asyncIterator]();
   }
+  // SAFETY: the async arm returned above, so only the sync arm remains.
   const sync = (inputs as Iterable<I>)[Symbol.iterator]();
   return {
     next: () => Promise.resolve(sync.next()),
@@ -76,6 +79,8 @@ export async function runPool<I, O>(
   // Fast path: a plain array needs no async iterator - workers claim slots
   // through a shared synchronous cursor, avoiding two promise allocations
   // per item (the serialization lock + `iterator.next()`).
+  // SAFETY: guarded by Array.isArray, which TypeScript widens to any[] for a
+  // union parameter; the element type is the caller's I either way.
   const array = Array.isArray(inputs) ? (inputs as I[]) : null;
   const iterator = array ? null : toAsyncIterator(inputs);
 
@@ -90,6 +95,8 @@ export async function runPool<I, O>(
     });
     await previous;
     try {
+      // SAFETY: `iterator` is non-null exactly when `array` is null, and this
+      // branch is only reached in that case.
       return await (iterator as AsyncIterator<I>).next();
     } finally {
       release();
@@ -109,6 +116,7 @@ export async function runPool<I, O>(
       if (array) {
         if (nextIndex >= array.length) return;
         index = nextIndex++;
+        // SAFETY: index came from nextIndex++ under the length check above.
         item = array[index] as I;
       } else {
         const next = await nextItem();
@@ -148,17 +156,20 @@ export async function runPool<I, O>(
   if (failed) throw failure;
 }
 
+/** Producer handle plus the consumer's drain, for {@link createAsyncQueue}. */
+export type AsyncQueue<T> = {
+  push: (item: T) => void;
+  close: () => void;
+  fail: (error: unknown) => void;
+  drain: () => AsyncGenerator<T>;
+};
+
 /**
  * A minimal single-consumer async queue: producers `push` settled items, the
  * consumer drains them as an async iterable. Bridges {@link runPool}'s callback
  * model to `batchRecognizeStream`'s generator.
  */
-export function createAsyncQueue<T>(): {
-  push: (item: T) => void;
-  close: () => void;
-  fail: (error: unknown) => void;
-  drain: () => AsyncGenerator<T>;
-} {
+export function createAsyncQueue<T>(): AsyncQueue<T> {
   const items: T[] = [];
   let wake: (() => void) | null = null;
   let closed = false;
@@ -187,6 +198,7 @@ export function createAsyncQueue<T>(): {
     async *drain(): AsyncGenerator<T> {
       while (true) {
         while (items.length > 0) {
+          // SAFETY: guarded by the length check on the line above.
           yield items.shift() as T;
         }
         if (failure) throw failure.error;

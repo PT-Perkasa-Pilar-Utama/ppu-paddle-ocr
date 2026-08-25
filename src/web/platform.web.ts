@@ -37,6 +37,8 @@ type GetContext2D = (contextId: "2d", options?: { willReadFrequently?: boolean }
  * why probing for `window` alone reads a worker as a server runtime.
  */
 export function isWebWorker(): boolean {
+  // SAFETY: probing globalThis for a global that may not exist; the annotation
+  // only says the property is optional, which is exactly what is being tested.
   return typeof (globalThis as { WorkerGlobalScope?: unknown }).WorkerGlobalScope === "function";
 }
 
@@ -58,6 +60,8 @@ applyDefaultWasmPaths();
 /** True when `navigator.gpu` is present and at least one adapter is available. */
 export async function isWebGpuAvailable(): Promise<boolean> {
   if (typeof navigator === "undefined") return false;
+  // SAFETY: `gpu` is absent from the DOM lib in some TS targets; the
+  // intersection declares it optional and the next line tests for it.
   const nav = navigator as Navigator & { gpu?: { requestAdapter: () => Promise<unknown | null> } };
   if (!nav.gpu || typeof nav.gpu.requestAdapter !== "function") return false;
   try {
@@ -80,6 +84,9 @@ export async function getDefaultWebExecutionProviders(): Promise<
 
 export class WebPlatformProvider implements PlatformProvider<CoreCanvas> {
   public readonly pathSeparator = "/";
+  // SAFETY: onnxruntime-web ships its own copy of the ORT types;
+  // PlatformProvider["ort"] is the onnxruntime-common shape the core codes
+  // against, and both describe the same runtime API.
   public readonly ort = ort as unknown as PlatformProvider["ort"];
 
   public createCanvas(width: number, height: number): CoreCanvas {
@@ -94,6 +101,8 @@ export class WebPlatformProvider implements PlatformProvider<CoreCanvas> {
     const getContext: GetContext2D = canvas.getContext.bind(canvas);
     getContext("2d", { willReadFrequently: true });
 
+    // SAFETY: CoreCanvas is the structural subset this package uses, and both
+    // HTMLCanvasElement and OffscreenCanvas implement it.
     return canvas as unknown as CoreCanvas;
   }
 
@@ -102,6 +111,8 @@ export class WebPlatformProvider implements PlatformProvider<CoreCanvas> {
     // Worker, so an instanceof probe throws a ReferenceError there instead of
     // returning false. Every canvas this build accepts - HTMLCanvasElement,
     // OffscreenCanvas, or a host-supplied equivalent - exposes getContext.
+    // SAFETY: this is the probe itself - the value is unknown by definition and
+    // the cast only makes the property read expressible.
     return !!image && typeof (image as Record<string, unknown>).getContext === "function";
   }
 
@@ -133,10 +144,17 @@ export class WebPlatformProvider implements PlatformProvider<CoreCanvas> {
   }
 
   public readonly canvas: CanvasOps<CoreCanvas> = {
+    // SAFETY: prepareCanvas decodes any supported source; the ArrayBuffer cast
+    // satisfies ppu-ocv's declared parameter, and its canvas is a structural
+    // CoreCanvas.
     prepareCanvas: (image: unknown): Promise<CoreCanvas> =>
       CanvasProcessor.prepareCanvas(image as ArrayBuffer) as unknown as Promise<CoreCanvas>,
+    // SAFETY: canvases here came from createCanvas above, so they are the
+    // browser type CanvasProcessor expects; the return is re-labelled to the
+    // core's structural view of the same object.
     createProcessor: (canvas: CoreCanvas): CanvasProcessorType =>
       new CanvasProcessor(canvas as never) as unknown as CanvasProcessorType,
+    // SAFETY: the toolkit singleton is ppu-ocv's, re-labelled to the core's view.
     getToolkit: (): CanvasToolkitType =>
       CanvasToolkit.getInstance() as unknown as CanvasToolkitType,
   };

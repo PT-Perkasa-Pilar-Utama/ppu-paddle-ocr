@@ -49,6 +49,8 @@ export async function cropDetectedBoxes(
  * (e.g. the React Native Skia canvas).
  */
 async function canvasToPngBuffer(canvas: CoreCanvas): Promise<ArrayBuffer> {
+  // SAFETY: the two canvas encoders are probed, not assumed - both members are
+  // optional here and tested before use.
   const c = canvas as unknown as {
     toBuffer?: (format: string) => Buffer;
     convertToBlob?: (options?: { type?: string }) => Promise<Blob>;
@@ -57,6 +59,8 @@ async function canvasToPngBuffer(canvas: CoreCanvas): Promise<ArrayBuffer> {
 
   if (typeof c.toBuffer === "function") {
     const buffer = c.toBuffer("image/png");
+    // SAFETY: slice() on a Buffer's backing store returns an ArrayBuffer, never
+    // the SharedArrayBuffer arm of the union.
     return buffer.buffer.slice(
       buffer.byteOffset,
       buffer.byteOffset + buffer.byteLength

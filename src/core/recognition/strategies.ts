@@ -113,6 +113,7 @@ export async function runPerBoxStrategy(
   if (ctx.debugging.debug && cropsDebugPath) {
     const toolkit = ctx.platform.canvas.getToolkit();
     if ("clearOutput" in toolkit && typeof toolkit.clearOutput === "function") {
+      // SAFETY: guarded by the `in` check and the typeof probe on the line above.
       (toolkit as { clearOutput: (p: string) => void }).clearOutput(cropsDebugPath);
     }
   }

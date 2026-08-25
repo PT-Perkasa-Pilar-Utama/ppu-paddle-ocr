@@ -44,6 +44,9 @@ function decodeDataUri(uri: string): ArrayBuffer {
     ? Buffer.from(payload, "base64")
     : Buffer.from(decodeURIComponent(payload), "utf-8");
   if (bytes.byteLength > config.maxUploadBytes) throw tooBig();
+  // SAFETY: slice() on a typed array's backing store returns an ArrayBuffer;
+  // the cast drops the SharedArrayBuffer arm, which the upload path never
+  // produces.
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 

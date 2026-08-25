@@ -18,10 +18,10 @@ import { CACHE_DIR, cachePathFor, fetchAndCacheResource } from "../src/processor
 // the same model name under different directories.
 const FIRST = "detection/model.onnx";
 const SECOND = "recognition/model.onnx";
-const BODIES: Record<string, string> = {
+const BODIES = {
   [`/${FIRST}`]: "first-resource-bytes",
   [`/${SECOND}`]: "second-resource-bytes",
-};
+} satisfies Record<string, string>;
 
 let server: ReturnType<typeof Bun.serve>;
 let requests = 0;
@@ -30,7 +30,9 @@ beforeAll(() => {
   server = Bun.serve({
     port: 0,
     fetch(request) {
-      const body = BODIES[new URL(request.url).pathname];
+      const body: string | undefined = Object.entries(BODIES).find(
+        ([path]) => path === new URL(request.url).pathname
+      )?.[1];
       if (body === undefined) return new Response("not found", { status: 404 });
       requests += 1;
       return new Response(body);

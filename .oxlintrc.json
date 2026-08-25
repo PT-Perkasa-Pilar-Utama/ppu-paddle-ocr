@@ -1,6 +1,12 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc", "import", "promise"],
+
+  // Vendored from https://github.com/dmmulroy/anti-slop (MIT). Rules that
+  // reject low-evidence TypeScript: fabricated type assertions, `unknown`
+  // leaking into contracts, dictionaries typed as `any`. See
+  // tools/oxlint/anti-slop/README.md.
+  "jsPlugins": ["./tools/oxlint/anti-slop/index.ts"],
   "categories": {
     "correctness": "error"
   },
@@ -66,9 +72,40 @@
     "object-shorthand": "error",
 
     // General - Use template literals over string concatenation.
-    "prefer-template": "error"
+    "prefer-template": "error",
+
+    // anti-slop (vendored, MIT) - evidence over assertion. Rules that reject
+    // patterns which look type-safe but carry no proof. Upstream's own advice
+    // is to adapt them to the project; the five turned off below each fight a
+    // constraint this codebase cannot drop, and say which.
+    "anti-slop/no-chained-type-assertions": "off", // `as unknown as T` at the ORT and OpenCV.js seams, where the vendor types and the runtime shape genuinely disagree
+    "anti-slop/no-conditional-empty-object-spread": "off", // `...(x ? { k: v } : {})` is how optional fields are built under exactOptionalPropertyTypes
+    "anti-slop/no-known-value-widening": "error",
+    "anti-slop/no-module-mocking": "error",
+    "anti-slop/no-object-parameters": "error",
+    "anti-slop/no-reflect-apply": "error",
+    "anti-slop/no-reflect-get": "error",
+    "anti-slop/no-runtime-typeof": "off", // `typeof window !== "undefined"` probes the runtime; a library spanning Node, Bun, browsers, and React Native has no I/O boundary to parse instead
+    "anti-slop/no-shape-in-symbol-names": "off", // `shape` is ONNX Runtime's own term for tensor dimensions (`tensor.shape`); renaming would diverge from the API being wrapped
+    "anti-slop/no-unknown-parameters": "off", // `prepareCanvas(image: unknown)` is public API, and §2.2 above requires `unknown` over `any` at boundaries
+    "anti-slop/no-unknown-returns": "off", // vendor and runtime seams (`getContext("2d")`, `navigator.gpu.requestAdapter()`, shell output) hand back values this package does not own and cannot parse into a domain type
+    "anti-slop/no-unknown-type-aliases": "error",
+    "anti-slop/no-unsafe-dictionary-type": "off", // `deepMerge`/`isObject` walk arbitrary option trees whose values include canvases and AbortSignals, so `Record<string, unknown>` is the honest contract
+    "anti-slop/no-widen-then-assert": "error",
+
+    // Shipped code documents its assertions; test, bench, and script files are
+    // exempted in the overrides below.
+    "anti-slop/require-safety-comment-for-type-assertion": "error"
   },
   "overrides": [
+    {
+      // Assertions in code that is not shipped: a failed cast surfaces as a
+      // failing test or a broken local script, not as a user's runtime error.
+      "files": ["tests/**", "bench/**", "scripts/**", "examples/**", "playground/**"],
+      "rules": {
+        "anti-slop/require-safety-comment-for-type-assertion": "off"
+      }
+    },
     {
       // §file-size - Cap TypeScript files at 300 lines of code (blanks and
       // comments excluded). Split into focused modules when a file crosses it.
@@ -92,6 +129,7 @@
     "private-tests",
     "lib",
     "out",
+    "tools/oxlint/anti-slop",
     "coi-serviceworker.js"
   ]
 }

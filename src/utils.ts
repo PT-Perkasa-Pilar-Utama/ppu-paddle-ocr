@@ -28,10 +28,17 @@ export function deepMerge<T extends Record<string, unknown>>(
 
         if (isObject(sourceValue)) {
           if (!targetValue || !isObject(targetValue)) {
+            // SAFETY: seeding the branch before recursing. The source value is a
+            // plain object (checked above), so T[key] is an object type and the
+            // recursive call fills it from the source.
             target[key] = {} as T[Extract<keyof T, string>];
           }
+          // SAFETY: both sides were checked with isObject on the lines above;
+          // deepMerge walks arbitrary option trees, hence the open record.
           deepMerge(target[key] as Record<string, unknown>, sourceValue as Record<string, unknown>);
         } else if (sourceValue !== undefined) {
+          // SAFETY: `sources` is Partial<T>, so a defined value at `key` has
+          // T's type for that key.
           target[key] = sourceValue as T[Extract<keyof T, string>];
         }
       }

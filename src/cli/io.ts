@@ -40,6 +40,8 @@ export async function loadImageInput(arg: string): Promise<ArrayBuffer> {
   }
   if (!existsSync(arg)) throw new CliError(`No such file: ${arg}`);
   const buf = readFileSync(arg);
+  // SAFETY: slice() on a Buffer's backing store returns an ArrayBuffer; the
+  // cast drops the SharedArrayBuffer arm, which readFileSync never returns.
   return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
 }
 
@@ -79,6 +81,8 @@ export function readVersion(): string {
     const pkgPath = join(dir, "package.json");
     if (existsSync(pkgPath)) {
       try {
+        // SAFETY: JSON.parse returns any; both fields are declared optional and
+        // checked before use, so a package.json without them falls through.
         const pkg = JSON.parse(readFileSync(pkgPath, "utf-8")) as {
           name?: string;
           version?: string;

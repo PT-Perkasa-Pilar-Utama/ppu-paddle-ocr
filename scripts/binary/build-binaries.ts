@@ -49,7 +49,13 @@ export type BinaryTarget = {
   exeSuffix: string;
 };
 
-export const TARGETS: Record<string, BinaryTarget> = {
+/** Platform keys the release builds cover. */
+export type TargetKey = "darwin-arm64" | "linux-x64" | "linux-arm64" | "windows-x64";
+
+// `satisfies` is the rule's preferred form, but isolatedDeclarations cannot
+// infer an exported literal built from other bindings, so the annotation stays.
+// oxlint-disable-next-line anti-slop/no-known-value-widening
+export const TARGETS: Record<TargetKey, BinaryTarget> = {
   "darwin-arm64": {
     key: "darwin-arm64",
     bunTarget: "bun-darwin-arm64",
@@ -97,9 +103,14 @@ export const TARGETS: Record<string, BinaryTarget> = {
 };
 
 /** Target key for the machine this script runs on, or null if unsupported. */
-export function currentTargetKey(): string | null {
+export function currentTargetKey(): TargetKey | null {
   const key = `${process.platform === "win32" ? "windows" : process.platform}-${process.arch}`;
-  return key in TARGETS ? key : null;
+  return isTargetKey(key) ? key : null;
+}
+
+/** Narrows a platform-arch string to a key TARGETS actually carries. */
+function isTargetKey(key: string): key is TargetKey {
+  return key in TARGETS;
 }
 
 /**

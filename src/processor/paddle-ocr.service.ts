@@ -287,6 +287,9 @@ export class PaddleOcrService extends BasePaddleOcrService {
     } else {
       if (typeof image.toBuffer === "function") {
         const buffer = image.toBuffer("image/png");
+        // SAFETY: slice() on a Buffer's backing store returns an ArrayBuffer;
+        // the cast drops the SharedArrayBuffer arm, which node-canvas never
+        // produces.
         imageBuffer = buffer.buffer.slice(
           buffer.byteOffset,
           buffer.byteOffset + buffer.byteLength
@@ -295,6 +298,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
         const ctx = image.getContext("2d");
         const imageData = ctx.getImageData(0, 0, image.width, image.height);
         const data = imageData.data;
+        // SAFETY: as above, ImageData is always backed by an ArrayBuffer.
         imageBuffer = data.buffer.slice(
           data.byteOffset,
           data.byteOffset + data.byteLength
@@ -304,6 +308,9 @@ export class PaddleOcrService extends BasePaddleOcrService {
 
     const cacheKey = ImageCache.generateKey(imageBuffer);
 
+    // SAFETY: the cache is keyed by this method's own cacheKey and only written
+    // here, so an entry under that key is a result this method stored; the
+    // Partial arm covers the flattened variant.
     const cacheResult = (
       !options?.noCache && !options?.dictionary ? globalImageCache.get(cacheKey) : undefined
     ) as (PaddleOcrResult & Partial<FlattenedPaddleOcrResult>) | undefined;
@@ -318,6 +325,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
         };
       }
 
+      // SAFETY: narrowed above to the non-flattened arm.
       return cacheResult as PaddleOcrResult;
     }
 
@@ -335,7 +343,10 @@ export class PaddleOcrService extends BasePaddleOcrService {
       image instanceof ArrayBuffer ? await CanvasProcessor.prepareCanvas(image) : image;
 
     const strategy = options?.strategy ?? this.options.recognition?.strategy ?? "per-line";
+    // SAFETY: both are constructed by initialize(), and this method returns
+    // early unless the service reports itself initialized.
     const detector = this.detector as NonNullable<BasePaddleOcrService["detector"]>;
+    // SAFETY: as with the detector above.
     const recognitor = this.recognitor as NonNullable<BasePaddleOcrService["recognitor"]>;
     const detection = await detector.run(sourceCanvas);
     const recognition = await recognitor.run(
@@ -359,6 +370,8 @@ export class PaddleOcrService extends BasePaddleOcrService {
       globalImageCache.set(cacheKey, result);
     }
 
+    // SAFETY: `result` is built in this method from one of the two branches
+    // below, and the union restates exactly those two shapes.
     return result as PaddleOcrResult | FlattenedPaddleOcrResult;
   }
 

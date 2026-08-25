@@ -23,7 +23,7 @@ import {
   writeOutput,
 } from "./io.js";
 import type { CliValues } from "./options.js";
-import { buildBatchOptions, buildPaddleOptions, buildRecognizeOptions } from "./options.js";
+import { buildBatchOptions, buildPaddleOptions, buildRecognizeOptions, str } from "./options.js";
 
 type BatchEntry = {
   file: string;
@@ -63,9 +63,9 @@ export async function runRecognize(images: string[], values: CliValues): Promise
       ? await service.recognize(input, { ...opts, flatten: true })
       : await service.recognize(input, { ...opts, flatten: false });
     if (values.json) {
-      writeOutput(stringify(result, values), values.output as string | undefined);
+      writeOutput(stringify(result, values), str(values, "output"));
     } else {
-      writeOutput(result.text, values.output as string | undefined);
+      writeOutput(result.text, str(values, "output"));
     }
   } finally {
     await service.destroy();
@@ -82,12 +82,12 @@ export async function runDetect(images: string[], values: CliValues): Promise<vo
     logStderr("Loading models...", Boolean(values.quiet));
     await service.initialize();
     const input = await loadImageInput(image);
-    const saveCropsTo = values["save-crops"] as string | undefined;
+    const saveCropsTo = str(values, "save-crops");
     const { boxes } = await service.detect(input, saveCropsTo ? { saveCropsTo } : undefined);
     if (saveCropsTo) {
       logStderr(`Saved ${boxes.length} crop(s) to ${saveCropsTo}`, Boolean(values.quiet));
     }
-    writeOutput(stringify(boxes, values), values.output as string | undefined);
+    writeOutput(stringify(boxes, values), str(values, "output"));
   } finally {
     await service.destroy();
   }
@@ -120,12 +120,12 @@ export async function runBatch(patterns: string[], values: CliValues): Promise<v
     });
 
     if (values.json) {
-      writeOutput(stringify(entries, values), values.output as string | undefined);
+      writeOutput(stringify(entries, values), str(values, "output"));
     } else {
       const blocks = entries.map((e) =>
         e.result ? `==> ${e.file} <==\n${e.result.text}` : `==> ${e.file} <==\nERROR: ${e.error}`
       );
-      writeOutput(blocks.join("\n\n"), values.output as string | undefined);
+      writeOutput(blocks.join("\n\n"), str(values, "output"));
     }
 
     if (entries.some((e) => e.status === "rejected")) {
@@ -199,5 +199,5 @@ export function runModels(values: CliValues): void {
     executionProviders: built.session?.executionProviders ?? ["cpu"],
     presets: Object.keys(MODEL_PRESETS),
   };
-  writeOutput(stringify(info, values), values.output as string | undefined);
+  writeOutput(stringify(info, values), str(values, "output"));
 }

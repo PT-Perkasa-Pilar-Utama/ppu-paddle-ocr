@@ -30,6 +30,8 @@ export const handler: RouteHandler<typeof route, Env> = (c) => {
     return c.json(failure(task.error ?? `Task ${task.status}`, requestId), 409);
   }
   if (task.status !== "done") return c.json(failure(`Task is ${task.status}`, requestId), 409);
+  // SAFETY: the status check above establishes the task completed, and the
+  // batch worker is the only writer of `result`.
   const result = task.result as { results: unknown[] };
   return c.json(success(c, { results: result.results }), 200);
 };

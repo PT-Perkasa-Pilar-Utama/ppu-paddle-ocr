@@ -4,6 +4,9 @@
 import type { Contours, cv } from "ppu-ocv";
 import type { Box } from "../../interface.js";
 
+/** New pixel dimensions plus the scale ratio that produced them. */
+export type ResizeDimensions = { width: number; height: number; ratio: number };
+
 /**
  * Resolves the effective detection size cap for an input image.
  *
@@ -27,7 +30,7 @@ export function calculateResizeDimensions(
   originalWidth: number,
   originalHeight: number,
   maxSideLength: number
-): { width: number; height: number; ratio: number } {
+): ResizeDimensions {
   let resizeW = originalWidth;
   let resizeH = originalHeight;
   let ratio = 1.0;
@@ -45,12 +48,12 @@ export function calculateResizeDimensions(
  * Expands a bounding rect by padding derived from its height, clamped to canvas bounds.
  */
 export function applyPaddingToRect(
-  rect: { x: number; y: number; width: number; height: number },
+  rect: Box,
   maxWidth: number,
   maxHeight: number,
   paddingVertical: number,
   paddingHorizontal: number
-): { x: number; y: number; width: number; height: number } {
+): Box {
   const verticalPadding = Math.round(rect.height * paddingVertical);
   const horizontalPadding = Math.round(rect.height * paddingHorizontal);
 
@@ -72,7 +75,7 @@ export function applyPaddingToRect(
  * Maps a rect from the resized/padded tensor space back to original image coordinates.
  */
 export function convertToOriginalCoordinates(
-  rect: { x: number; y: number; width: number; height: number },
+  rect: Box,
   resizeRatio: number,
   originalWidth: number,
   originalHeight: number

@@ -60,6 +60,8 @@ export async function main(argv: string[]): Promise<number> {
     return 2;
   }
 
+  // SAFETY: parseArgs types its result from the option table; CliValues is that
+  // same shape stated once for the builders in options.ts to consume.
   const values = parsed.values as CliValues;
   const [command, ...rest] = parsed.positionals;
 

@@ -13,9 +13,9 @@ export function recordRequest(route: string, status: number, seconds: number): v
   requestsTotal.set(key, (requestsTotal.get(key) ?? 0) + 1);
 
   const buckets = bucketCounts.get(route) ?? DURATION_BUCKETS.map(() => 0);
-  for (let i = 0; i < DURATION_BUCKETS.length; i++) {
-    if (seconds <= (DURATION_BUCKETS[i] as number)) buckets[i] = (buckets[i] as number) + 1;
-  }
+  DURATION_BUCKETS.forEach((bound, i) => {
+    if (seconds <= bound) buckets[i] = (buckets[i] ?? 0) + 1;
+  });
   bucketCounts.set(route, buckets);
   durationSum.set(route, (durationSum.get(route) ?? 0) + seconds);
   durationCount.set(route, (durationCount.get(route) ?? 0) + 1);

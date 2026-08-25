@@ -23,6 +23,9 @@ import {
 /**
  * A single recognized text item with its bounding box and confidence.
  */
+/** A crop source canvas and the scale applied to reach it. */
+export type CropSource = { canvas: CoreCanvas; ratio: number };
+
 export type RecognitionResult = {
   /** The recognized text string. */
   text: string;
@@ -212,7 +215,7 @@ export class BaseRecognitionService {
    * trade accuracy for speed. Returns the source unchanged (ratio 1) when
    * it's already within the cap.
    */
-  private buildCropCanvas(source: CoreCanvas): { canvas: CoreCanvas; ratio: number } {
+  private buildCropCanvas(source: CoreCanvas): CropSource {
     const { width, height } = source;
     const maxCropSourceSideLength = this.options.maxCropSourceSideLength ?? 2000;
     const {

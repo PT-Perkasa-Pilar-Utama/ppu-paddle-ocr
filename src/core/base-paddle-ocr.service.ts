@@ -70,6 +70,17 @@ export type BatchRecognizeInput = ArrayBuffer | CoreCanvas | string;
  * Concrete implementations (`PaddleOcrService` for Node, Web, etc.)
  * extend this class and provide a {@link PlatformProvider}.
  */
+/**
+ * Reads the detector after an initialize() guard has already run.
+ *
+ * SAFETY: initialize() constructs the detector, and every caller checks
+ * `isInitialized` before reaching here, so the field is set.
+ */
+function initializedDetector(detector: BaseDetectionService | null): BaseDetectionService {
+  // SAFETY: see the contract above; callers guard on isInitialized first.
+  return detector as BaseDetectionService;
+}
+
 export abstract class BasePaddleOcrService {
   protected options: PaddleOptions = DEFAULT_PADDLE_OPTIONS;
 
@@ -82,6 +93,9 @@ export abstract class BasePaddleOcrService {
 
   public constructor(platform: PlatformProvider, options?: PaddleOptions) {
     this.platform = platform;
+    // SAFETY: deepMerge walks an arbitrary option tree, so it is typed over
+    // Record<string, unknown>. Both inputs are PaddleOptions and the merge only
+    // copies keys, so the result carries the same shape back out.
     this.options = deepMerge(
       {},
       DEFAULT_PADDLE_OPTIONS as unknown as Record<string, unknown>,
@@ -126,14 +140,23 @@ export abstract class BasePaddleOcrService {
       } else if (image instanceof ArrayBuffer) {
         imageBuffer = image;
       } else {
+        // SAFETY: this branch is the fall-through for values that are neither a
+        // path nor an ArrayBuffer, so `image` is a canvas from one of the
+        // supported runtimes. The typeof probe below is what establishes which.
         if (typeof (image as unknown as Record<string, unknown>).toBuffer === "function") {
+          // SAFETY: guarded by the toBuffer probe above (the node-canvas shape).
           const canvasWithBuffer = image as { toBuffer: (format: string) => Buffer };
           const buffer = canvasWithBuffer.toBuffer("image/png");
+          // SAFETY: slice() on a Buffer's ArrayBuffer returns an ArrayBuffer;
+          // the cast only discards the SharedArrayBuffer arm of the union,
+          // which node-canvas never produces.
           imageBuffer = buffer.buffer.slice(
             buffer.byteOffset,
             buffer.byteOffset + buffer.byteLength
           ) as ArrayBuffer;
         } else {
+          // SAFETY: the remaining canvas shape, reached only when toBuffer is
+          // absent; getContext("2d") below throws if the value is not a canvas.
           const canvasWithCtx = image as {
             getContext: (type: string, opts?: unknown) => CanvasRenderingContext2D;
             width: number;
@@ -144,6 +167,7 @@ export abstract class BasePaddleOcrService {
           });
           const imageData = ctx.getImageData(0, 0, canvasWithCtx.width, canvasWithCtx.height);
           const data = imageData.data;
+          // SAFETY: as above, ImageData is always backed by an ArrayBuffer.
           imageBuffer = data.buffer.slice(
             data.byteOffset,
             data.byteOffset + data.byteLength
@@ -154,6 +178,9 @@ export abstract class BasePaddleOcrService {
       const cacheKey = ImageCache.generateKey(imageBuffer);
 
       if (!options?.noCache && !options?.dictionary) {
+        // SAFETY: the cache is keyed by this method's own cacheKey, and only
+        // this method writes it, so an entry under that key is a result it
+        // stored - flattened or not, which the Partial arm covers.
         const cacheResult = globalImageCache.get(cacheKey) as
           | (PaddleOcrResult & Partial<FlattenedPaddleOcrResult>)
           | undefined;
@@ -166,6 +193,7 @@ export abstract class BasePaddleOcrService {
               confidence: cacheResult.confidence,
             };
           }
+          // SAFETY: narrowed above to the non-flattened arm.
           return cacheResult as PaddleOcrResult;
         }
       }
@@ -175,6 +203,8 @@ export abstract class BasePaddleOcrService {
         typeof image === "string" || image instanceof ArrayBuffer
           ? await this.platform.canvas.prepareCanvas(imageBuffer)
           : image;
+      // SAFETY: initialize() constructs the detector before any recognize call,
+      // and the guard at the top of this method rejects an uninitialized service.
       boxes = await (this.detector as BaseDetectionService).run(canvas);
 
       if (boxes.length === 0) {
@@ -202,6 +232,8 @@ export abstract class BasePaddleOcrService {
       }
 
       const strategy = options?.strategy ?? this.options.recognition?.strategy ?? "per-line";
+      // SAFETY: as with the detector, initialize() sets this and the guard at
+      // the top of the method rejects an uninitialized service.
       const results = await (this.recognitor as BaseRecognitionService).run(
         canvas,
         boxes,
@@ -246,12 +278,13 @@ export abstract class BasePaddleOcrService {
       Object.keys(tuning).length > 0
         ? new BaseDetectionService(
             this.platform,
+            // SAFETY: guarded by the same initialize() check as the detector.
             this.detectionSession as InferenceSession,
             { ...this.options.detection, ...tuning },
             this.options.debugging,
             this.options.processing?.engine ?? DEFAULT_PROCESSING_ENGINE
           )
-        : (this.detector as BaseDetectionService);
+        : initializedDetector(this.detector);
 
     let canvas: CoreCanvas;
     if (typeof image === "string") {
@@ -323,6 +356,8 @@ export abstract class BasePaddleOcrService {
     );
 
     if (settle) return collected;
+    // SAFETY: unreachable. Without `settle`, runPool rethrows the first
+    // rejection, so a rejected entry cannot reach this map.
     return collected.map((item) =>
       item.status === "fulfilled" ? item.value : (undefined as never)
     );
