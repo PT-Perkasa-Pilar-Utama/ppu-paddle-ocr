@@ -15,6 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bandwidth budget behind it. Paths are identical on both hosts. The
   library's own defaults still resolve from GitHub.
 
+### Fixed
+
+- **Model cache collisions.** The Node/Bun cache keyed entries on the file name
+  alone, so two resources sharing a name (a custom model and a preset, or the
+  same path on two hosts) served each other's bytes. Entries now sit under a
+  digest of the full URL. Existing caches are not migrated: the first run after
+  upgrading re-downloads, and the old flat files can be removed with
+  `service.clearModelCache()`.
+
 ## [6.4.1] - 2026-08-21
 
 ### Changed

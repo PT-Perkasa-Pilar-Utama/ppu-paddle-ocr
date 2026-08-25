@@ -791,6 +791,8 @@ Models are cached under `~/.cache/ppu-paddle-ocr`:
 | Linux   | `~/.cache/ppu-paddle-ocr`                   |
 | Windows | `C:\Users\<username>\.cache\ppu-paddle-ocr` |
 
+Each file lands in a subdirectory named after a digest of its source URL, so two models that share a file name never collide. Point a model at a different host and it downloads again rather than reading the old host's copy.
+
 ```ts
 // Warm the cache (e.g. in CI or Docker builds)
 PaddleOcrService.downloadModels();

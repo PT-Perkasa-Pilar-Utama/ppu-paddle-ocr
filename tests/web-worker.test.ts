@@ -10,8 +10,6 @@
  * globals, so any web-path code that reaches for the DOM fails here.
  */
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
-import { homedir } from "node:os";
-import { join } from "node:path";
 import * as ort from "onnxruntime-web";
 import { getPlatform, setPlatform } from "ppu-ocv";
 
@@ -21,6 +19,7 @@ import type { Box } from "../src/interface.js";
 import type { PaddleOcrService } from "../src/web/paddle-ocr.service.web.js";
 import type { WebPlatformProvider } from "../src/web/platform.web.js";
 import { DEFAULT_MODEL } from "../src/model-catalogue.js";
+import { cachePathFor } from "../src/processor/model-cache.js";
 import { PaddleOcrService as NodePaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 import { installWebCanvas, uninstallWebCanvas } from "./web-canvas-polyfill.js";
 
@@ -40,13 +39,11 @@ let detModel: ArrayBuffer;
 let recModel: ArrayBuffer;
 let dictionary: ArrayBuffer;
 
-const CACHE = join(homedir(), ".cache", "ppu-paddle-ocr");
 const imageBuffer = await Bun.file(`${import.meta.dir}/../assets/tilted.png`).arrayBuffer();
 
 beforeAll(async () => {
   await NodePaddleOcrService.downloadModels();
-  const cached = (url: string) =>
-    Bun.file(join(CACHE, url.slice(url.lastIndexOf("/") + 1))).arrayBuffer();
+  const cached = (url: string) => Bun.file(cachePathFor(url)).arrayBuffer();
   [detModel, recModel, dictionary] = await Promise.all([
     cached(DEFAULT_MODEL.detection),
     cached(DEFAULT_MODEL.recognition),
