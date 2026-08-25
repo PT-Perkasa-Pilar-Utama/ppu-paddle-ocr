@@ -96,6 +96,45 @@ describe("debugging options", () => {
     if (existsSync(debugFolder)) rmSync(debugFolder, { recursive: true, force: true });
   });
 
+  test("debug dumps do not change recognition output", async () => {
+    // The box overlay used to be stroked onto the canvas the recognition stage
+    // then read, so turning on debug silently changed the text: outlines land
+    // in the gaps between words and swallow the spaces.
+    const logSpy = spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const plain = new PaddleOcrService();
+      await plain.initialize();
+      const withoutDebug = await plain.recognize(imageBuffer, { noCache: true, flatten: true });
+      await plain.destroy();
+
+      const debugged = new PaddleOcrService({ debugging: { debug: true, debugFolder } });
+      await debugged.initialize();
+      const withDebug = await debugged.recognize(imageBuffer, { noCache: true, flatten: true });
+      await debugged.destroy();
+
+      expect(withDebug.text).toBe(withoutDebug.text);
+    } finally {
+      logSpy.mockRestore();
+    }
+  }, 60000);
+
+  test("debug dumps land in an absolute debugFolder", async () => {
+    const logSpy = spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const service = new PaddleOcrService({ debugging: { debug: true, debugFolder } });
+      await service.initialize();
+      await service.recognize(imageBuffer, { noCache: true });
+      await service.destroy();
+
+      // Not under a path rebuilt from the working directory, which is where an
+      // absolute folder used to end up.
+      expect(existsSync(join(debugFolder, "boxes-debug.png"))).toBe(true);
+      expect(existsSync(join(process.cwd(), debugFolder))).toBe(false);
+    } finally {
+      logSpy.mockRestore();
+    }
+  }, 30000);
+
   test("verbose + debug exercise the logging and dump paths", async () => {
     // Run the verbose/debug code paths for coverage, but silence the console so
     // the suite output stays clean (the calls still execute, just to a no-op).

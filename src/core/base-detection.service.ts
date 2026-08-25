@@ -103,8 +103,14 @@ export class BaseDetectionService {
       const detectedBoxes = this.postprocessDetection(detection, input);
 
       if (this.debugging.debug && this.debugging.debugFolder && this.lastDetectionCanvas) {
-        await this.debugDetectionCanvas(this.lastDetectionCanvas, input.width, input.height);
-        await this.debugDetectedBoxes(canvasToProcess, detectedBoxes);
+        // A debug dump is an observation, not a step: a read-only filesystem or
+        // a full disk must not turn a successful detection into zero boxes.
+        try {
+          await this.debugDetectionCanvas(this.lastDetectionCanvas, input.width, input.height);
+          await this.debugDetectedBoxes(canvasToProcess, detectedBoxes);
+        } catch (error) {
+          this.log(`Debug dump failed: ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
 
       this.log(`Detected ${detectedBoxes.length} text boxes in image`);
@@ -368,11 +374,16 @@ export class BaseDetectionService {
    * Debug the bounding boxes by drawing a rectangle onto the original image
    */
   private async debugDetectedBoxes(image: ArrayBuffer | CoreCanvas, boxes: Box[]): Promise<void> {
-    const canvas = this.platform.isCanvas(image)
+    const source = this.platform.isCanvas(image)
       ? image
       : await this.platform.canvas.prepareCanvas(image);
 
+    // Draw on a copy. The caller's canvas goes on to the recognition stage, and
+    // box outlines land in the gaps between words: stroking the source turns
+    // debug mode into a different image than the one production reads.
+    const canvas = this.platform.createCanvas(source.width, source.height);
     const ctx = canvas.getContext("2d");
+    ctx.drawImage(source, 0, 0);
 
     for (const box of boxes) {
       const { x, y, width, height } = box;
