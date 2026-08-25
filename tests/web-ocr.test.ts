@@ -2,13 +2,12 @@
 // Copyright (c) 2026 PT Perkasa Pilar Utama
 
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
-import { homedir } from "node:os";
-import { join } from "node:path";
 import { getPlatform, setPlatform } from "ppu-ocv";
 
 import type { PaddleOcrService } from "../src/web/paddle-ocr.service.web.js";
 import { PaddleOcrService as NodePaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 import { DEFAULT_MODEL } from "../src/model-catalogue.js";
+import { cachePathFor } from "../src/processor/model-cache.js";
 import { installWebCanvas, uninstallWebCanvas } from "./web-canvas-polyfill.js";
 
 // The web entry is imported dynamically inside beforeAll - NOT at module load -
@@ -24,8 +23,6 @@ let savedPlatform: ReturnType<typeof getPlatform>;
 let v6Det: ArrayBuffer;
 let v6Rec: ArrayBuffer;
 let v6Dict: ArrayBuffer;
-
-const CACHE = join(homedir(), ".cache", "ppu-paddle-ocr");
 
 const imgFile = Bun.file(`${import.meta.dir}/../assets/receipt.jpg`);
 const imageBuffer = await imgFile.arrayBuffer();
@@ -48,8 +45,7 @@ describe("web OCR service (onnxruntime-web under the polyfilled runtime)", () =>
     // significantly. Warm the cache first so a wiped cache (the model-cache
     // test clears it) or a changed default model can't ENOENT here.
     await NodePaddleOcrService.downloadModels();
-    const cached = (url: string) =>
-      Bun.file(join(CACHE, url.slice(url.lastIndexOf("/") + 1))).arrayBuffer();
+    const cached = (url: string) => Bun.file(cachePathFor(url)).arrayBuffer();
     [v6Det, v6Rec, v6Dict] = await Promise.all([
       cached(DEFAULT_MODEL.detection),
       cached(DEFAULT_MODEL.recognition),

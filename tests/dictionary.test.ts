@@ -1,13 +1,12 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
 import { V5_EN_MOBILE_MODEL } from "../src/model-catalogue.js";
+import { cachePathFor } from "../src/processor/model-cache.js";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 import { levenshteinDistance, parseDictionary } from "../src/utils.js";
 
 // The v5 EN dict lives in the model cache (downloaded by the top-level warmup below).
-const CACHED_V5_DICT_PATH = join(homedir(), ".cache", "ppu-paddle-ocr", "ppocrv5_en_dict.txt");
+const CACHED_V5_DICT_PATH = cachePathFor(V5_EN_MOBILE_MODEL.charactersDictionary);
 const imageBuffer = await Bun.file(`${import.meta.dir}/../assets/receipt.jpg`).arrayBuffer();
 const groundTruth = (
   await Bun.file(`${import.meta.dir}/../assets/receipt-ground-truth.txt`).text()

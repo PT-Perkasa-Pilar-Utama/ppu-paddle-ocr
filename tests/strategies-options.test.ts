@@ -7,6 +7,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { DEFAULT_MODEL_URLS } from "../src/model-catalogue.js";
+import { cachePathFor } from "../src/processor/model-cache.js";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 
 const imgFile = Bun.file(`${import.meta.dir}/../assets/receipt.jpg`);
@@ -307,7 +308,7 @@ describe("model cache download path", () => {
       await PaddleOcrService.downloadModels({ verbose: true });
 
       for (const url of Object.values(DEFAULT_MODEL_URLS)) {
-        const file = join(cacheDir, url.slice(url.lastIndexOf("/") + 1));
+        const file = cachePathFor(url);
         expect(existsSync(file)).toBe(true);
         expect((await Bun.file(file).arrayBuffer()).byteLength).toBe(fakeBytes.byteLength);
       }
