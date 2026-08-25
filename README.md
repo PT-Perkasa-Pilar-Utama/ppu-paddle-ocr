@@ -803,7 +803,7 @@ service.clearModelCache();
 
 ### Multilingual Support
 
-PP-OCRv5 supports 40+ languages across different script systems. Pre-converted ONNX models are available at [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models):
+PP-OCRv5 supports 40+ languages across different script systems. Pre-converted ONNX models are published on [Hugging Face](https://huggingface.co/snowfluke/ppu-paddle-ocr-models) and mirrored in [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models):
 
 - **Latin**: English, French, German, Italian, Spanish, Portuguese, and 40+ others
 - **Cyrillic**: Russian, Ukrainian, Bulgarian, Kazakh, Serbian, and 30+ related
@@ -826,23 +826,28 @@ const service = new PaddleOcrService({ model: V5_THAI_MOBILE_MODEL });
 const service = new PaddleOcrService({ model: V5_ARABIC_MOBILE_MODEL });
 ```
 
-**Manual URLs** (advanced):
+**Manual URLs** (advanced). Prefer the Hugging Face mirror: it serves models and dictionaries from one CDN-backed base, with no Git LFS bandwidth budget behind it.
 
 ```ts
-const MODEL_BASE =
-  "https://media.githubusercontent.com/media/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/refs/heads/main";
-const DICT_BASE =
-  "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/refs/heads/main";
+const BASE = "https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main";
 
 // Thai
 const service = new PaddleOcrService({
   model: {
-    detection: `${MODEL_BASE}/detection/PP-OCRv5_mobile_det_infer.onnx`,
-    recognition: `${MODEL_BASE}/recognition/multi/th/v5/th_PP-OCRv5_mobile_rec_infer.onnx`,
-    charactersDictionary: `${DICT_BASE}/recognition/multi/th/v5/ppocrv5_th_dict.txt`,
+    detection: `${BASE}/detection/PP-OCRv5_mobile_det_infer.onnx`,
+    recognition: `${BASE}/recognition/multi/th/v5/th_PP-OCRv5_mobile_rec_infer.onnx`,
+    charactersDictionary: `${BASE}/recognition/multi/th/v5/ppocrv5_th_dict.txt`,
   },
 });
 ```
+
+Paths are identical on both hosts, so the base is the only part that changes:
+
+| Host                  | Base URL                                                                                      | Notes                                            |
+| :-------------------- | :-------------------------------------------------------------------------------------------- | :----------------------------------------------- |
+| Hugging Face          | `https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main`                         | Preferred. One base for models and dictionaries. |
+| GitHub (models)       | `https://media.githubusercontent.com/media/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main` | Git LFS, subject to a bandwidth budget.          |
+| GitHub (dictionaries) | `https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main`         | Plain files, not LFS.                            |
 
 ### Server Models (Higher Accuracy)
 
