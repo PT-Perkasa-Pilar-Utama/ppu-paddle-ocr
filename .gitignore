@@ -16,7 +16,6 @@ private
 coverage/
 # stray test debug output
 out-test-debug/
-/Users/
 
 # Cloudflare deploy output
 playground/dist

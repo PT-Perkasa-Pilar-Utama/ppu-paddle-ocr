@@ -60,14 +60,16 @@ export class NodePlatformProvider implements PlatformProvider<CoreCanvas> {
     filename: string,
     outputDir: string
   ): Promise<void> {
-    await fs.mkdir(outputDir, { recursive: true });
-    await CanvasToolkit.getInstance().saveImage({
-      // SAFETY: this provider only ever hands out node-canvas instances from
-      // createCanvas above, so a CoreCanvas here is one of them.
-      canvas: canvas as Canvas,
-      filename,
-      path: outputDir,
-    });
+    // CanvasToolkit.saveImage joins the output path onto process.cwd()
+    // unconditionally, so an absolute debugFolder lands under the working
+    // directory instead. Resolve it here and write the buffer directly, which
+    // also drops the toolkit's incrementing "0. " filename prefix.
+    const dir = path.resolve(outputDir);
+    const file = filename.endsWith(".png") ? filename : `${filename}.png`;
+    await fs.mkdir(dir, { recursive: true });
+    // SAFETY: this provider only ever hands out node-canvas instances from
+    // createCanvas above, so a CoreCanvas here is one of them.
+    await fs.writeFile(path.join(dir, file), (canvas as Canvas).toBuffer("image/png"));
   }
 
   public async saveImage(canvas: CoreCanvas, filePath: string): Promise<void> {
