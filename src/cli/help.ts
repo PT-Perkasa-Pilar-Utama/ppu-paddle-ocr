@@ -60,7 +60,7 @@ Session:
 
 Batch / stream:
   --concurrency <n|auto>         images in flight at once (default auto)
-  --settle                       keep going past a failed image (default on for batch/stream)
+  --settle                       keep going past a failed image (always on for batch/stream)
 
 Output:
   -o, --output <file>            write to a file instead of stdout

@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Debug mode changed OCR output.** The detected-box overlay was stroked onto
+  the same canvas the recognition stage then read, so enabling
+  `debugging.debug` altered the recognized text: box outlines fall in the gaps
+  between words and swallowed the spaces. On the receipt sample the text went
+  from 382 to 377 characters. The overlay is now drawn on a copy. Reported by
+  @xirf in #101.
+- **Debug dumps ignored an absolute `debugFolder`.** `CanvasToolkit.saveImage`
+  joins its path onto `process.cwd()` unconditionally, so an absolute folder
+  was created empty while the images were written to a path rebuilt under the
+  working directory. Node now resolves the folder and writes the PNG itself,
+  which also drops the toolkit's incrementing `0. ` filename prefix and the
+  doubled `.png` on crop dumps. Reported by @xirf in #101.
+- **A failed debug dump aborted detection.** Writing debug images is wrapped so
+  a read-only filesystem returns boxes instead of an empty result. Reported by
+  @xirf in #101.
+- **Image cache keys collided on same-sized images.** `ImageCache.generateKey`
+  hashed only the first 1024 bytes plus the length, so two images sharing a
+  length and an opening run of uniform pixels got one key and the second call
+  returned the first one's text. Canvas input reaches the cache as raw RGBA,
+  where both conditions are ordinary. The key now samples across the whole
+  buffer, endpoints included. Reported by @xirf in #102.
+- **`buildBatchOptions` omitted `settle`.** The batch and stream commands set
+  it themselves, so behavior is unchanged, but the exported builder now returns
+  what the commands actually run with. Reported by @xirf in #103.
+
 ### Changed
 
 - **Models now download from Hugging Face.** `MODEL_BASE_URL` and
