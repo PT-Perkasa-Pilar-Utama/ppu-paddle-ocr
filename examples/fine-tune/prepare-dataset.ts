@@ -74,7 +74,9 @@ function matchGroundTruth(pred: string, gtLines: string[]): { label: string; sco
   return best;
 }
 
-function pngSize(buf: ArrayBuffer): { width: number; height: number } {
+type PngSize = { width: number; height: number };
+
+function pngSize(buf: ArrayBuffer): PngSize {
   const view = new DataView(buf);
   return { width: view.getUint32(16), height: view.getUint32(20) };
 }
@@ -96,19 +98,30 @@ const detection = await service.detect(image, { crop: true });
 console.log(`${detection.boxes.length} boxes detected in ${imagePath}`);
 
 // the service's own recognition pass, run per pre-cropped box (no re-detection)
+type Split = "train" | "val" | "test";
+
+type WithRecognitor = { recognitor: Recognitor };
+
+type RecognizedLine = { text: string; confidence: number };
+
 type Recognitor = {
   run(
     image: ArrayBuffer,
     boxes: { x: number; y: number; width: number; height: number }[],
     dictionary: string[] | undefined,
     strategy: "per-box"
-  ): Promise<{ text: string; confidence: number }[]>;
+  ): Promise<RecognizedLine[]>;
 };
-const recognitor = (service as unknown as { recognitor: Recognitor }).recognitor;
+// The recognitor is internal; the example reaches past the public API on
+// purpose to score crops the same way the library does.
+const recognitor = (service as unknown as WithRecognitor).recognitor;
 
 for (const split of ["train", "val", "test"])
   mkdirSync(resolve(outDir, split), { recursive: true });
-const lists: Record<string, string[]> = { train: [], val: [], test: [] };
+// `satisfies` would infer never[] from the empty literals and reject the
+// pushes below, so the annotation stays.
+// oxlint-disable-next-line anti-slop/no-known-value-widening
+const lists: Record<Split, string[]> = { train: [], val: [], test: [] };
 let kept = 0;
 let skipped = 0;
 

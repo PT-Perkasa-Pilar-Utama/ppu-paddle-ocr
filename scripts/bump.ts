@@ -167,7 +167,10 @@ export function promoteChangelog(text: string, version: string, date: string): s
 }
 
 /** Rewrite every version this pattern matches, reporting the first one it found. */
-function swapVersion(text: string, pattern: RegExp, to: string): { text: string; from: string } {
+/** Rewritten file text plus the version it carried before. */
+type RewriteResult = { text: string; from: string };
+
+function swapVersion(text: string, pattern: RegExp, to: string): RewriteResult {
   let from = "";
   const rewritten = text.replace(pattern, (match: string, current: string) => {
     from ||= current;

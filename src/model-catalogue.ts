@@ -235,6 +235,9 @@ export type ModelPreset =
  * selection (e.g. the CLI `--model` flag). Mirrors the exported `*_MODEL`
  * constants one-to-one.
  */
+// `satisfies` is the rule's preferred form, but isolatedDeclarations (required
+// for the d.ts emit) cannot infer this literal's type, so the annotation stays.
+// oxlint-disable-next-line anti-slop/no-known-value-widening
 export const MODEL_PRESETS: Readonly<Record<ModelPreset, ModelUrls>> = {
   "v6-small": V6_SMALL_MODEL,
   "v6-medium": V6_MEDIUM_MODEL,

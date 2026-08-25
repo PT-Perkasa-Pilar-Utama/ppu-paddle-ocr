@@ -33,5 +33,5 @@
     "isolatedDeclarations": true,
     "rootDir": "."
   },
-  "exclude": ["apps", "lib", "node_modules", ".bin-build"]
+  "exclude": ["apps", "lib", "node_modules", ".bin-build", "tools"]
 }

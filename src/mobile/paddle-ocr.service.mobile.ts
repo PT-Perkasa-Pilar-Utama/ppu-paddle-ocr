@@ -92,6 +92,9 @@ export class PaddleOcrService extends BasePaddleOcrService {
 
   /** Create an ORT session, silently falling back to CPU if the preferred providers fail. */
   private async _createSession(modelData: Uint8Array): Promise<ort.InferenceSession> {
+    // SAFETY: createSessionWithFallback is written against the ORT namespace
+    // shape (onnxruntime-react-native ships its own copy of these types); this
+    // narrows to the one member it uses.
     return createSessionWithFallback(
       ort as unknown as { InferenceSession: typeof ort.InferenceSession },
       modelData,
@@ -150,11 +153,15 @@ export class PaddleOcrService extends BasePaddleOcrService {
       this.log(`Character dictionary loaded with ${charactersDictionary.length} entries.`);
 
       this.detector = new DetectionService(
+        // SAFETY: the session came from this class's own createSession above,
+        // so it is the runtime type DetectionService expects; only the two
+        // packages' declarations of it differ.
         detectionSession as unknown as ort.InferenceSession,
         this.options.detection,
         this.options.debugging
       );
       this.recognitor = new RecognitionService(
+        // SAFETY: as with the detection session above.
         recognitionSession as unknown as ort.InferenceSession,
         this.options.recognition,
         this.options.debugging
@@ -187,6 +194,8 @@ export class PaddleOcrService extends BasePaddleOcrService {
     this.detectionSession = await this._createSession(new Uint8Array(modelBuffer));
     // Rebuild the detector against the new session; the old one is now released.
     this.detector = new DetectionService(
+      // SAFETY: assigned by initialize() from createSession; same declaration
+      // mismatch as above.
       this.detectionSession as unknown as ort.InferenceSession,
       this.options.detection,
       this.options.debugging
@@ -207,6 +216,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
     this.recognitionSession = await this._createSession(new Uint8Array(modelBuffer));
     // Rebuild the recognitor against the new session; the old one is now released.
     this.recognitor = new RecognitionService(
+      // SAFETY: as with the detection session above.
       this.recognitionSession as unknown as ort.InferenceSession,
       this.options.recognition,
       this.options.debugging
@@ -266,6 +276,8 @@ export class PaddleOcrService extends BasePaddleOcrService {
     image: ArrayBuffer | CanvasLike,
     options?: RecognizeOptions
   ): Promise<PaddleOcrResult | FlattenedPaddleOcrResult> {
+    // SAFETY: this override widens the public parameter for callers; the base
+    // implementation probes the value before touching it.
     return super.recognize(image as ArrayBuffer | CoreCanvas, options);
   }
 

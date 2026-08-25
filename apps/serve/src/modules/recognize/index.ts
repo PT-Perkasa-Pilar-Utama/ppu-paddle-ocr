@@ -42,6 +42,8 @@ export const handler = async (c: Context<Env>): Promise<Response> => {
   return c.json(
     success(c, result, {
       speed: meta.ms / 1000,
+      // SAFETY: runOcr returns the flattened shape for this route, which
+      // always carries a confidence.
       confidence: (result as { confidence: number }).confidence,
       engine: meta.engine,
       strategy: meta.strategy,

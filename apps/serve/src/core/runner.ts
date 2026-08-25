@@ -12,6 +12,8 @@ const round1 = (n: number): number => Math.round(n * 10) / 10;
 
 /** Recognize one image through the bounded inference queue. */
 export async function runOcr(image: ArrayBuffer, opts: OcrOptions): Promise<OcrResponse> {
+  // SAFETY: the request schema restricts `engine` to the same union, and the
+  // config default is validated at startup.
   const engine = (opts.engine ?? config.defaultEngine) as ProcessingEngine;
   const strategy = opts.strategy ?? config.defaultStrategy;
   const svc = await getService(engine);
@@ -30,6 +32,7 @@ export type DetectResponse = {
 
 /** Detect text boxes only (no recognition) through the bounded inference queue. */
 export async function runDetect(image: ArrayBuffer, opts: OcrOptions): Promise<DetectResponse> {
+  // SAFETY: as in runOcr above.
   const engine = (opts.engine ?? config.defaultEngine) as ProcessingEngine;
   const svc = await getService(engine);
 
@@ -48,6 +51,7 @@ export async function resolveBatch(sources: string[]): Promise<ArrayBuffer[]> {
 
 function batchOptions(body: BatchOcrBody) {
   return {
+    // SAFETY: as in runOcr above.
     engine: (body.engine ?? config.defaultEngine) as ProcessingEngine,
     strategy: body.strategy ?? config.defaultStrategy,
     concurrency: body.concurrency ?? config.concurrency,

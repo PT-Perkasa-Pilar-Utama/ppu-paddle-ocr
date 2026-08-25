@@ -87,6 +87,8 @@ export async function recognizeCropsBatched(
       ]);
       const output = await ctx.runInference(inputTensor);
       const [, seqLen, numClasses] = output.dims;
+      // SAFETY: the recognition head is declared float32, so ORT's output
+      // buffer is a Float32Array; another precision fails session creation.
       const data = output.data as Float32Array;
       const rowSize = (seqLen ?? 0) * (numClasses ?? 0);
       chunk.forEach((cropIndex, row) => {
@@ -117,6 +119,9 @@ export async function recognizeCropsBatched(
  * Fixed-batch models (some custom exports) must stay on the per-crop path.
  */
 export function supportsDynamicBatch(session: { inputMetadata?: unknown }): boolean {
+  // SAFETY: inputMetadata is `unknown` on the session type this package
+  // defines; the shape below is ORT's documented one, and every read past
+  // this point is optional-chained, so a mismatch yields undefined.
   const meta = session.inputMetadata as
     | ReadonlyArray<{ shape?: ReadonlyArray<number | string> }>
     | undefined;

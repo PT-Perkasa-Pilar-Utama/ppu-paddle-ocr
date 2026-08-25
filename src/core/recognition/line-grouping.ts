@@ -141,12 +141,15 @@ const MAX_MERGED_WIDTH = 16384;
  * box's share of the stitched width (its crop plus the trailing gap) for
  * mapping recognized text back to its source box.
  */
+/** One line stitched into a single canvas, with each box's share of its width. */
+export type MergedLineCrop = { mergedCanvas: CoreCanvas; mergedBox: Box; cropWidths: number[] };
+
 export function mergeLineCrop(
   sourceCanvas: CoreCanvas,
   lineBoxes: Array<{ box: Box; index: number }>,
   createCanvas: (width: number, height: number) => CoreCanvas,
   canvasOps: CanvasOps
-): { mergedCanvas: CoreCanvas; mergedBox: Box; cropWidths: number[] } {
+): MergedLineCrop {
   const minX = Math.min(...lineBoxes.map((b) => b.box.x));
   const minY = Math.min(...lineBoxes.map((b) => b.box.y));
   const maxRight = Math.max(...lineBoxes.map((b) => b.box.x + b.box.width));

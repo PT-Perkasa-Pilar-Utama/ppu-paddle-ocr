@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Lint:** adopted the [anti-slop](https://github.com/dmmulroy/anti-slop)
+  Oxlint rules, vendored under `tools/oxlint/anti-slop`. Ten rules are enforced;
+  five are turned off with the conflict named in `.oxlintrc.json` (ONNX tensor
+  `shape` naming, runtime environment probes, `unknown` at public boundaries,
+  the option-tree dictionary contract, and conditional-spread optional fields).
+  Type assertions in shipped code now carry a `SAFETY:` comment stating the
+  invariant that makes them sound; test, bench, script, and example files are
+  exempted. Anonymous object return types were replaced by named contracts
+  (`ResizeDimensions`, `DecodedText`, `CropSource`, `MergedLineCrop`,
+  `AsyncQueue`, and the serve envelopes), and a `str()` flag reader replaced
+  twelve `as string | undefined` casts in the CLI. No behavior change: OCR
+  output on the regression corpus is byte-identical.
 - **Docs:** the README now points manual model URLs at the Hugging Face
   mirror (`https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main`),
   which serves models and dictionaries from one base with no Git LFS

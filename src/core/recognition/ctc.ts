@@ -127,13 +127,16 @@ export function refineDecodedChars(chars: string[], positions: number[]): void {
  * locates each character in the crop for position-based text splitting.
  * Wide gaps between characters become spaces (see {@link injectGapSpaces}).
  */
+/** Text decoded from a recognition tensor, with its per-character offsets. */
+export type DecodedText = { text: string; confidence: number; positions: number[] };
+
 export function ctcGreedyDecode(
   logits: Float32Array,
   sequenceLength: number,
   numClasses: number,
   charDict: string[],
   spaceRecovery = false
-): { text: string; confidence: number; positions: number[] } {
+): DecodedText {
   const dictLen = charDict.length;
   const lastDictIndex = dictLen - 1;
 
@@ -221,7 +224,9 @@ export function decodeResults(
   numClassesFromShape: number,
   verbose = false,
   spaceRecovery = false
-): { text: string; confidence: number; positions: number[] } {
+): DecodedText {
+  // SAFETY: the recognition head is declared float32, so ORT's output buffer is
+  // a Float32Array; a model at another precision fails session creation first.
   const outputData = outputTensor.data as Float32Array;
   const outputShape = outputTensor.dims;
 
@@ -254,7 +259,7 @@ export function decodeLogitsRow(
   numClasses: number,
   charactersDictionary: string[],
   spaceRecovery = false
-): { text: string; confidence: number; positions: number[] } {
+): DecodedText {
   let dict = charactersDictionary;
   if (charactersDictionary.length === numClasses - 1) {
     dict = ["", ...charactersDictionary];

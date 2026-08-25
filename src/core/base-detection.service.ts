@@ -183,6 +183,9 @@ export class BaseDetectionService {
         return null;
       }
 
+      // SAFETY: the detection head is declared float32, so ORT hands back a
+      // Float32Array; a model exported at another precision would fail session
+      // creation before reaching here.
       return outputTensor.data as Float32Array;
     } catch (error) {
       console.error(
@@ -262,6 +265,8 @@ export class BaseDetectionService {
     paddingVertical: number,
     paddingHorizontal: number
   ): Box[] {
+    // SAFETY: this method only runs on the opencv branch of
+    // postprocessDetection, which tests platform.imageProcessor first.
     const ip = this.platform.imageProcessor as NonNullable<typeof this.platform.imageProcessor>;
     // Build the single-channel mat straight from the probability map: the
     // previous path (probability map -> RGBA canvas -> grayscale) produced
