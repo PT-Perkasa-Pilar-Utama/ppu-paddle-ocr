@@ -76,10 +76,8 @@ export default app;
 Keep the detection session warm, swap just the recognition model and dictionary.
 
 ```ts
-const MODEL =
-  "https://media.githubusercontent.com/media/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/refs/heads/main";
-const DICT =
-  "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/refs/heads/main";
+const MODEL = "https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main";
+const DICT = MODEL;
 
 const service = new PaddleOcrService();
 await service.initialize();

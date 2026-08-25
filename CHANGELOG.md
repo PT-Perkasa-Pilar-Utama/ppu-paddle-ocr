@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Models now download from Hugging Face.** `MODEL_BASE_URL` and
+  `DICT_BASE_URL` point at
+  `https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main`, a
+  mirror of the models repo that serves from a CDN. The GitHub copies are
+  behind a Git LFS bandwidth budget which, once exhausted, cuts off downloads
+  for every published version at once; the LFS batch API on that repo is
+  already refused. Paths are identical on both hosts, so a custom URL built
+  from either base keeps working, and the GitHub copies stay in place for
+  versions that reference them. Output is unchanged: the tiny preset fetched
+  from each host produces byte-identical OCR results and the model files match
+  by sha256.
+
+### Changed
+
 - **Lint:** adopted the [anti-slop](https://github.com/dmmulroy/anti-slop)
   Oxlint rules, vendored under `tools/oxlint/anti-slop`. Ten rules are enforced;
   five are turned off with the conflict named in `.oxlintrc.json` (ONNX tensor
