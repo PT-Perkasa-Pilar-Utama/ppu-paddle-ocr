@@ -114,7 +114,7 @@ const service = new PaddleOcrService({
     recognition: "./models/my_finetuned_rec.onnx",
     // same dict your tier trained with — tiny shown:
     charactersDictionary:
-      "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main/recognition/ppocrv6_tiny_dict.txt",
+      "https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main/recognition/ppocrv6_tiny_dict.txt",
   },
 });
 ```

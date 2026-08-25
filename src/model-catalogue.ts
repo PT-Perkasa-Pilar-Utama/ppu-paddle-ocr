@@ -8,12 +8,24 @@ export type ModelUrls = Readonly<{
   charactersDictionary: string;
 }>;
 
-/** Base URL for model files on GitHub. */
-export const MODEL_BASE_URL =
-  "https://media.githubusercontent.com/media/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main";
-/** Base URL for dictionary files on GitHub. */
-export const DICT_BASE_URL =
-  "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main";
+/**
+ * Base URL for model files.
+ *
+ * The Hugging Face mirror of
+ * https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models. It serves
+ * from a CDN with no Git LFS bandwidth budget behind it, which the GitHub
+ * copies have and can exhaust, cutting off downloads for every version at
+ * once. Paths are identical on both hosts, so only the base differs.
+ */
+export const MODEL_BASE_URL = "https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main";
+/**
+ * Base URL for dictionary files.
+ *
+ * Same host as {@link MODEL_BASE_URL}; kept separate because it is a public
+ * export and callers build URLs from it. On GitHub the two differed, since
+ * models came from the LFS media host and dictionaries from raw.
+ */
+export const DICT_BASE_URL = "https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main";
 
 // ─── PP-OCRv6 Models ──────────────────────────────────────────────────────────
 

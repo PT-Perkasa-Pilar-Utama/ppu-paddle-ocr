@@ -154,7 +154,7 @@ The `/web` entry point always uses `canvas-native` regardless of this flag - Ope
 
 ## Default models, the cache, and how to warm it
 
-By default, `initialize()` fetches three files from `media.githubusercontent.com` and caches them under `~/.cache/ppu-paddle-ocr` (Node/Bun only):
+By default, `initialize()` fetches three files from `huggingface.co/snowfluke/ppu-paddle-ocr-models` and caches them under `~/.cache/ppu-paddle-ocr` (Node/Bun only):
 
 | Component   | File                     | Purpose                         |
 | :---------- | :----------------------- | :------------------------------ |
@@ -202,10 +202,8 @@ const english = new PaddleOcrService({ model: V5_EN_MOBILE_MODEL }); // English-
 The catalogue covers PP-OCRv6 (`V6_SMALL_MODEL` default, `V6_MEDIUM_MODEL`, `V6_TINY_MODEL`), PP-OCRv5 (English/server/INT8 + per-script: `V5_THAI_MOBILE_MODEL`, `V5_ARABIC_MOBILE_MODEL`, `V5_CYRILLIC_MOBILE_MODEL`, ...), PP-OCRv4, and PP-OCRv3. `DEFAULT_MODEL` aliases the current default. The pre-converted ONNX/`.ort` files behind every preset live in [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models). To use a script-specific v5 model (or any custom export), point all three model paths at the files:
 
 ```ts
-const MODEL_BASE =
-  "https://media.githubusercontent.com/media/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/refs/heads/main";
-const DICT_BASE =
-  "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/refs/heads/main";
+const MODEL_BASE = "https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main";
+const DICT_BASE = MODEL_BASE;
 
 // Thai
 const service = new PaddleOcrService({

@@ -828,7 +828,7 @@ const service = new PaddleOcrService({ model: V5_THAI_MOBILE_MODEL });
 const service = new PaddleOcrService({ model: V5_ARABIC_MOBILE_MODEL });
 ```
 
-**Manual URLs** (advanced). Prefer the Hugging Face mirror: it serves models and dictionaries from one CDN-backed base, with no Git LFS bandwidth budget behind it.
+**Manual URLs** (advanced). The library's own defaults resolve from the Hugging Face mirror, which serves models and dictionaries from one CDN-backed base with no Git LFS bandwidth budget behind it. Build custom URLs from the same base.
 
 ```ts
 const BASE = "https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main";
@@ -845,11 +845,11 @@ const service = new PaddleOcrService({
 
 Paths are identical on both hosts, so the base is the only part that changes:
 
-| Host                  | Base URL                                                                                      | Notes                                            |
-| :-------------------- | :-------------------------------------------------------------------------------------------- | :----------------------------------------------- |
-| Hugging Face          | `https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main`                         | Preferred. One base for models and dictionaries. |
-| GitHub (models)       | `https://media.githubusercontent.com/media/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main` | Git LFS, subject to a bandwidth budget.          |
-| GitHub (dictionaries) | `https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main`         | Plain files, not LFS.                            |
+| Host                  | Base URL                                                                                      | Notes                                                                                   |
+| :-------------------- | :-------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------- |
+| Hugging Face          | `https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main`                         | Preferred. One base for models and dictionaries.                                        |
+| GitHub (models)       | `https://media.githubusercontent.com/media/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main` | Source of truth for the files. Git LFS, subject to a bandwidth budget that can run out. |
+| GitHub (dictionaries) | `https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main`         | Plain files, not LFS.                                                                   |
 
 ### Server Models (Higher Accuracy)
 
