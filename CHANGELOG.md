@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Docs:** the README now points manual model URLs at the Hugging Face
+  mirror (`https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main`),
+  which serves models and dictionaries from one base with no Git LFS
+  bandwidth budget behind it. Paths are identical on both hosts. The
+  library's own defaults still resolve from GitHub.
+
 ## [6.4.1] - 2026-08-21
 
 ### Changed
