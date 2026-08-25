@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Models now download from Hugging Face.** `MODEL_BASE_URL` and
+  `DICT_BASE_URL` point at
+  `https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main`, a
+  mirror of the models repo that serves from a CDN. The GitHub copies are
+  behind a Git LFS bandwidth budget which, once exhausted, cuts off downloads
+  for every published version at once; the LFS batch API on that repo is
+  already refused. Paths are identical on both hosts, so a custom URL built
+  from either base keeps working, and the GitHub copies stay in place for
+  versions that reference them. Output is unchanged: the tiny preset fetched
+  from each host produces byte-identical OCR results and the model files match
+  by sha256.
+- **Lint:** adopted the [anti-slop](https://github.com/dmmulroy/anti-slop)
+  Oxlint rules, vendored under `tools/oxlint/anti-slop`. Ten rules are enforced;
+  five are turned off with the conflict named in `.oxlintrc.json` (ONNX tensor
+  `shape` naming, runtime environment probes, `unknown` at public boundaries,
+  the option-tree dictionary contract, and conditional-spread optional fields).
+  Type assertions in shipped code now carry a `SAFETY:` comment stating the
+  invariant that makes them sound; test, bench, script, and example files are
+  exempted. Anonymous object return types were replaced by named contracts
+  (`ResizeDimensions`, `DecodedText`, `CropSource`, `MergedLineCrop`,
+  `AsyncQueue`, and the serve envelopes), and a `str()` flag reader replaced
+  twelve `as string | undefined` casts in the CLI. No behavior change: OCR
+  output on the regression corpus is byte-identical.
+- **Docs:** the README now points manual model URLs at the Hugging Face
+  mirror (`https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main`),
+  which serves models and dictionaries from one base with no Git LFS
+  bandwidth budget behind it. Paths are identical on both hosts. The
+  library's own defaults still resolve from GitHub.
+
 ### Fixed
 
 - **Debug mode changed OCR output.** The detected-box overlay was stroked onto
@@ -33,43 +64,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`buildBatchOptions` omitted `settle`.** The batch and stream commands set
   it themselves, so behavior is unchanged, but the exported builder now returns
   what the commands actually run with. Reported by @xirf in #103.
-
-### Changed
-
-- **Models now download from Hugging Face.** `MODEL_BASE_URL` and
-  `DICT_BASE_URL` point at
-  `https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main`, a
-  mirror of the models repo that serves from a CDN. The GitHub copies are
-  behind a Git LFS bandwidth budget which, once exhausted, cuts off downloads
-  for every published version at once; the LFS batch API on that repo is
-  already refused. Paths are identical on both hosts, so a custom URL built
-  from either base keeps working, and the GitHub copies stay in place for
-  versions that reference them. Output is unchanged: the tiny preset fetched
-  from each host produces byte-identical OCR results and the model files match
-  by sha256.
-
-### Changed
-
-- **Lint:** adopted the [anti-slop](https://github.com/dmmulroy/anti-slop)
-  Oxlint rules, vendored under `tools/oxlint/anti-slop`. Ten rules are enforced;
-  five are turned off with the conflict named in `.oxlintrc.json` (ONNX tensor
-  `shape` naming, runtime environment probes, `unknown` at public boundaries,
-  the option-tree dictionary contract, and conditional-spread optional fields).
-  Type assertions in shipped code now carry a `SAFETY:` comment stating the
-  invariant that makes them sound; test, bench, script, and example files are
-  exempted. Anonymous object return types were replaced by named contracts
-  (`ResizeDimensions`, `DecodedText`, `CropSource`, `MergedLineCrop`,
-  `AsyncQueue`, and the serve envelopes), and a `str()` flag reader replaced
-  twelve `as string | undefined` casts in the CLI. No behavior change: OCR
-  output on the regression corpus is byte-identical.
-- **Docs:** the README now points manual model URLs at the Hugging Face
-  mirror (`https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main`),
-  which serves models and dictionaries from one base with no Git LFS
-  bandwidth budget behind it. Paths are identical on both hosts. The
-  library's own defaults still resolve from GitHub.
-
-### Fixed
-
 - **Model cache collisions.** The Node/Bun cache keyed entries on the file name
   alone, so two resources sharing a name (a custom model and a preset, or the
   same path on two hosts) served each other's bytes. Entries now sit under a
