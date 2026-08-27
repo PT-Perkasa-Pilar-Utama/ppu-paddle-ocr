@@ -279,6 +279,26 @@ export type RecognizeOptions = {
    * @default false
    */
   noCache?: boolean;
+
+  /**
+   * Override the minimum confidence threshold for dropping low-confidence predictions.
+   */
+  minimumConfidence?: number;
+
+  /**
+   * Override inter-word space recovery for this call.
+   */
+  spaceRecovery?: boolean;
+
+  /**
+   * Override vertical crop 90-degree counter-clockwise rotation for this call.
+   */
+  rotateVerticalCrops?: boolean;
+
+  /**
+   * Override recognition batch size for this call.
+   */
+  recBatchSize?: number;
 };
 
 /**

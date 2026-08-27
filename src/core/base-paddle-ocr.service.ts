@@ -238,7 +238,8 @@ export abstract class BasePaddleOcrService {
         canvas,
         boxes,
         dict,
-        strategy
+        strategy,
+        options
       );
       const groupedResult = groupResultsByLine(results);
 
