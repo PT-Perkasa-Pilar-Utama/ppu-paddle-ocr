@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Web demo: the sample images are a collapsible dock.** They sit in the
+  bottom-left of the canvas panel and fold to a single chip once an image is
+  loaded, so they stay reachable without covering the image.
+
 ### Fixed
 
 - **Model downloads no longer send a referer.** Some hosts blocklist the origin
