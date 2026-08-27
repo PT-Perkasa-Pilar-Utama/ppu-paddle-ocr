@@ -677,21 +677,48 @@
       }
       /* Sample image chips in the empty state */
       /* Pinned to the panel rather than sitting in the placeholder, so the
-         samples stay reachable once an image is on the canvas. */
-      .sample-row {
+         samples stay reachable once an image is on the canvas. Collapsed to a
+         single chip while an image is loaded, so it does not cover the thing
+         the user came to look at. */
+      .sample-dock {
         position: absolute;
         z-index: 11;
-        left: 50%;
+        left: 0.6rem;
         bottom: 0.6rem;
-        transform: translateX(-50%);
+        max-width: calc(100% - 1.2rem);
+      }
+      .sample-dock > summary {
+        display: inline-block;
+        padding: 0.25rem 0.6rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--bg-card);
+        color: var(--text-secondary);
+        font-size: 0.62rem;
+        font-family: "JetBrains Mono", monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        cursor: pointer;
+        list-style: none;
+        user-select: none;
+      }
+      .sample-dock > summary::-webkit-details-marker {
+        display: none;
+      }
+      .sample-dock > summary:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .sample-dock[open] > summary {
+        margin-bottom: 0.4rem;
+      }
+      .sample-row {
         display: flex;
         flex-wrap: wrap;
         gap: 0.4rem;
-        justify-content: center;
-        max-width: calc(100% - 1.2rem);
-        padding: 0.4rem 0.55rem;
+        padding: 0.45rem 0.5rem;
         border: 1px solid var(--border);
-        border-radius: 999px;
+        border-radius: var(--radius-xs);
         background: var(--bg-card);
       }
       .sample-chip {
@@ -2086,57 +2113,62 @@
             </div>
             <!-- Outside #result-placeholder on purpose: the placeholder is
                  hidden once an image loads, and these chips used to go with it,
-                 so switching samples needed a page reload. -->
-            <div class="sample-row" id="sample-row">
-              <button
-                type="button"
-                class="sample-chip"
-                data-sample="receipt.jpg"
-                data-label="receipt"
-              >
-                Receipt photo
-              </button>
-              <button
-                type="button"
-                class="sample-chip"
-                data-sample="tilted.png"
-                data-label="tilted"
-              >
-                Tilted text
-              </button>
-              <button
-                type="button"
-                class="sample-chip"
-                data-sample="config-matrix/dark-dense-portrait.png"
-                data-label="dark app UI"
-              >
-                Dark app UI
-              </button>
-              <button
-                type="button"
-                class="sample-chip"
-                data-sample="config-matrix/light-sparse-portrait.png"
-                data-label="form"
-              >
-                Form
-              </button>
-              <button
-                type="button"
-                class="sample-chip"
-                data-sample="config-matrix/light-dense-landscape.png"
-                data-label="document"
-              >
-                Document page
-              </button>
-              <button
-                type="button"
-                class="sample-chip"
-                data-sample="config-matrix/low-contrast-photo-landscape.png"
-                data-label="low contrast"
-              >
-                Low contrast
-              </button>
-            </div>
+                 so switching samples needed a page reload. A disclosure rather
+                 than a bare row so the samples do not sit over the image once
+                 there is one to look at. -->
+            <details class="sample-dock" id="sample-dock" open>
+              <summary>Sample images</summary>
+              <div class="sample-row" id="sample-row">
+                <button
+                  type="button"
+                  class="sample-chip"
+                  data-sample="receipt.jpg"
+                  data-label="receipt"
+                >
+                  Receipt photo
+                </button>
+                <button
+                  type="button"
+                  class="sample-chip"
+                  data-sample="tilted.png"
+                  data-label="tilted"
+                >
+                  Tilted text
+                </button>
+                <button
+                  type="button"
+                  class="sample-chip"
+                  data-sample="config-matrix/dark-dense-portrait.png"
+                  data-label="dark app UI"
+                >
+                  Dark app UI
+                </button>
+                <button
+                  type="button"
+                  class="sample-chip"
+                  data-sample="config-matrix/light-sparse-portrait.png"
+                  data-label="form"
+                >
+                  Form
+                </button>
+                <button
+                  type="button"
+                  class="sample-chip"
+                  data-sample="config-matrix/light-dense-landscape.png"
+                  data-label="document"
+                >
+                  Document page
+                </button>
+                <button
+                  type="button"
+                  class="sample-chip"
+                  data-sample="config-matrix/low-contrast-photo-landscape.png"
+                  data-label="low contrast"
+                >
+                  Low contrast
+                </button>
+              </div>
+            </details>
             <div class="model-error" id="model-error" role="alert" hidden>
               <strong>OCR models unavailable</strong>
               <p id="model-error-message">
@@ -2405,6 +2437,7 @@
       const bootBarFill = document.getElementById("boot-bar-fill");
       const bootStage = document.getElementById("boot-stage");
       const sampleChips = [...document.querySelectorAll(".sample-chip")];
+      const sampleDock = document.getElementById("sample-dock");
       const cfgLibVersion = document.getElementById("cfg-lib-version");
       const jsonResult = document.getElementById("json-result");
       const modelError = document.getElementById("model-error");
@@ -3228,6 +3261,8 @@
 
           canvasContainer.style.display = "flex";
           resultPlaceholder.style.display = "none";
+          // An image is worth more screen than the sample list is.
+          if (sampleDock) sampleDock.open = false;
           URL.revokeObjectURL(url);
           btnProcess.disabled = !serviceReady;
           if (serviceReady) {
