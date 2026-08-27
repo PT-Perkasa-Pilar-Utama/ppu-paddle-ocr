@@ -127,7 +127,8 @@ export class WebPlatformProvider implements PlatformProvider<CoreCanvas> {
     const sourceToLoad = typeof source === "string" ? source : defaultUrl;
 
     // In browser, all string sources are treated as URLs
-    const response = await fetch(sourceToLoad);
+    // No referer, for the same reason as the model fetches in utils.ts.
+    const response = await fetch(sourceToLoad, { referrerPolicy: "no-referrer" });
     if (!response.ok) {
       throw new Error(`Failed to fetch resource from ${sourceToLoad}`);
     }

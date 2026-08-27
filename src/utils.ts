@@ -94,7 +94,15 @@ export async function fetchArrayBufferWithRetry(
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(timeoutMs),
+        // A model download has no use for a referer, and sending one can cost
+        // the download outright: hosts that blocklist an embedding page's
+        // origin answer with a status carrying no CORS headers, which the
+        // browser then reports as a CORS error rather than as the block it is.
+        // Ignored outside browsers, where there is no referer to send.
+        referrerPolicy: "no-referrer",
+      });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status} ${response.statusText}`);
       }
