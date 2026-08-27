@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [6.4.3] - 2026-08-27
 
+### Changed
+
+- **Lint toolchain pinned to oxlint 1.79.0.** `oxlint` and `@oxlint/plugins`
+  now carry the same exact version rather than a caret range and a pin, which
+  had already drifted apart (1.77.0 against 1.74.0). The JS plugin API the
+  vendored anti-slop rules load through is alpha and explicitly not covered by
+  semver, so the two have to move together.
+
 ### Added
 
 - **The web demo caches models in the browser.** They are stored by URL in
