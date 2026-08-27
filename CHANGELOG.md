@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Model downloads no longer send a referer.** Some hosts blocklist the origin
+  of the page doing the embedding and answer with a status that carries no CORS
+  headers, which the browser then reports as "No 'Access-Control-Allow-Origin'
+  header is present" rather than as the block it is. A model download has no use
+  for a referer, so the web fetches ask for `no-referrer`. This is what the demo
+  needed a page header for; embedders now get it without knowing to set one.
+  Node and Bun have no referer to send and are unaffected.
+
 ### Added
 
 - **The web demo caches models in the browser.** They are stored by URL in
