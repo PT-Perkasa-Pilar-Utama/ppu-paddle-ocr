@@ -7,8 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The web demo caches models in the browser.** They are stored by URL in
+  IndexedDB after the first download and reused on later loads, so a reload no
+  longer re-fetches tens of megabytes. A "Clear cached models" button in the
+  configuration panel drops them. IndexedDB rather than the Cache API because
+  Hugging Face redirects model requests to its CDN, and `Cache.put()` refuses a
+  redirected response.
+
 ### Fixed
 
+- **Web demo: switching sample images needed a page reload.** The sample chips
+  were inside the placeholder element that gets hidden once an image loads, so
+  choosing one sample hid the row offering the others.
+- **Web demo: model load failures reported nothing useful.** A cross-origin
+  failure surfaces as a bare `TypeError`, so the demo now re-asks in `no-cors`
+  mode to tell "the server answered and the browser withheld it" from "the host
+  was never reached", and keeps the prefetch's diagnosis instead of discarding
+  it. It also drops the per-file `HEAD` probe, which was a second request and a
+  second way to fail for a size each `GET` already reports, and retries a
+  refused file against the GitHub original.
 - **Web demo could not load models.** Hugging Face returns `404` for requests
   carrying a `*.workers.dev` referer, and a 404 response has no CORS headers,
   so the browser reported it as "No 'Access-Control-Allow-Origin' header is
