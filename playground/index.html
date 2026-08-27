@@ -676,12 +676,23 @@
         }
       }
       /* Sample image chips in the empty state */
+      /* Pinned to the panel rather than sitting in the placeholder, so the
+         samples stay reachable once an image is on the canvas. */
       .sample-row {
+        position: absolute;
+        z-index: 11;
+        left: 50%;
+        bottom: 0.6rem;
+        transform: translateX(-50%);
         display: flex;
         flex-wrap: wrap;
         gap: 0.4rem;
         justify-content: center;
-        margin-top: 0.75rem;
+        max-width: calc(100% - 1.2rem);
+        padding: 0.4rem 0.55rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--bg-card);
       }
       .sample-chip {
         padding: 0.25rem 0.6rem;
@@ -1787,6 +1798,15 @@
                     inputmode="url"
                   />
                 </div>
+                <div class="input-group">
+                  <button type="button" class="btn-reset" id="btn-clear-model-cache">
+                    Clear cached models
+                  </button>
+                  <p class="field-help" id="model-cache-hint">
+                    Models stay in this browser after the first download, so a reload does not fetch
+                    them again.
+                  </p>
+                </div>
               </div>
             </details>
 
@@ -2063,56 +2083,59 @@
                 <polyline points="21 15 16 10 5 21" />
               </svg>
               <p>Upload an image to begin</p>
-              <div class="sample-row" id="sample-row">
-                <button
-                  type="button"
-                  class="sample-chip"
-                  data-sample="receipt.jpg"
-                  data-label="receipt"
-                >
-                  Receipt photo
-                </button>
-                <button
-                  type="button"
-                  class="sample-chip"
-                  data-sample="tilted.png"
-                  data-label="tilted"
-                >
-                  Tilted text
-                </button>
-                <button
-                  type="button"
-                  class="sample-chip"
-                  data-sample="config-matrix/dark-dense-portrait.png"
-                  data-label="dark app UI"
-                >
-                  Dark app UI
-                </button>
-                <button
-                  type="button"
-                  class="sample-chip"
-                  data-sample="config-matrix/light-sparse-portrait.png"
-                  data-label="form"
-                >
-                  Form
-                </button>
-                <button
-                  type="button"
-                  class="sample-chip"
-                  data-sample="config-matrix/light-dense-landscape.png"
-                  data-label="document"
-                >
-                  Document page
-                </button>
-                <button
-                  type="button"
-                  class="sample-chip"
-                  data-sample="config-matrix/low-contrast-photo-landscape.png"
-                  data-label="low contrast"
-                >
-                  Low contrast
-                </button>
-              </div>
+            </div>
+            <!-- Outside #result-placeholder on purpose: the placeholder is
+                 hidden once an image loads, and these chips used to go with it,
+                 so switching samples needed a page reload. -->
+            <div class="sample-row" id="sample-row">
+              <button
+                type="button"
+                class="sample-chip"
+                data-sample="receipt.jpg"
+                data-label="receipt"
+              >
+                Receipt photo
+              </button>
+              <button
+                type="button"
+                class="sample-chip"
+                data-sample="tilted.png"
+                data-label="tilted"
+              >
+                Tilted text
+              </button>
+              <button
+                type="button"
+                class="sample-chip"
+                data-sample="config-matrix/dark-dense-portrait.png"
+                data-label="dark app UI"
+              >
+                Dark app UI
+              </button>
+              <button
+                type="button"
+                class="sample-chip"
+                data-sample="config-matrix/light-sparse-portrait.png"
+                data-label="form"
+              >
+                Form
+              </button>
+              <button
+                type="button"
+                class="sample-chip"
+                data-sample="config-matrix/light-dense-landscape.png"
+                data-label="document"
+              >
+                Document page
+              </button>
+              <button
+                type="button"
+                class="sample-chip"
+                data-sample="config-matrix/low-contrast-photo-landscape.png"
+                data-label="low contrast"
+              >
+                Low contrast
+              </button>
             </div>
             <div class="model-error" id="model-error" role="alert" hidden>
               <strong>OCR models unavailable</strong>
@@ -2697,7 +2720,10 @@
           serviceReady = true;
           btnProcess.disabled = !loadedImage;
           setSamplesEnabled(true);
-          setStatus("ready", "Ready");
+          setStatus("ready", servedFromCache > 0 ? "Ready (cached models)" : "Ready");
+          if (usedFallbackHost && modelCacheHint) {
+            modelCacheHint.textContent = "The mirror refused a file, so GitHub served it instead.";
+          }
           console.log("✅ Service initialized successfully");
           return true;
         } catch (err) {
@@ -2705,7 +2731,11 @@
           btnProcess.disabled = true;
           resultPlaceholder.style.display = "none";
           const message = err instanceof Error ? err.message : String(err);
-          modelErrorMessage.textContent = `${message} Check your connection or model URLs, then retry.`;
+          const detail =
+            lastPrefetchError && !message.includes(lastPrefetchError)
+              ? ` ${lastPrefetchError}.`
+              : "";
+          modelErrorMessage.textContent = `${message}.${detail} Check your connection or model URLs, then retry.`;
           modelError.hidden = false;
           setStatus("error", "Models failed to load");
           console.error("❌ Service failed to initialize:", message);
@@ -2725,6 +2755,21 @@
           return false;
         }
       }
+
+      const btnClearModelCache = document.getElementById("btn-clear-model-cache");
+      const modelCacheHint = document.getElementById("model-cache-hint");
+      btnClearModelCache?.addEventListener("click", async () => {
+        btnClearModelCache.disabled = true;
+        const previous = btnClearModelCache.textContent;
+        btnClearModelCache.textContent = "Clearing...";
+        await clearModelCache();
+        btnClearModelCache.textContent = "Cleared";
+        modelCacheHint.textContent = "Cache cleared. The next load downloads the models again.";
+        setTimeout(() => {
+          btnClearModelCache.textContent = previous;
+          btnClearModelCache.disabled = false;
+        }, 1500);
+      });
 
       btnRetryModels.addEventListener("click", async () => {
         btnRetryModels.disabled = true;
@@ -2787,10 +2832,55 @@
         bootStage.textContent = stageText;
       }
 
+      // The mirror the library defaults to, and the GitHub originals behind it.
+      // Models and dictionaries live under one base on Hugging Face but two on
+      // GitHub: weights come from the LFS media host, text files from raw.
+      const HF_BASE = "https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main";
+      /** Set when a model came from GitHub instead, so the UI can say so. */
+      let usedFallbackHost = false;
+      /** Diagnosis from the prefetch, shown if the plain init then fails too. */
+      let lastPrefetchError = "";
+      /** How many of this run's model files came from IndexedDB. */
+      let servedFromCache = 0;
+      const GH_MODEL_BASE =
+        "https://media.githubusercontent.com/media/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main";
+      const GH_DICT_BASE =
+        "https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main";
+
+      /** GitHub URL for a Hugging Face one, or null if it is not a mirror URL. */
+      function githubMirrorOf(url) {
+        if (!url.startsWith(`${HF_BASE}/`)) return null;
+        const path = url.slice(HF_BASE.length + 1);
+        return `${path.endsWith(".txt") ? GH_DICT_BASE : GH_MODEL_BASE}/${path}`;
+      }
+
+      /**
+       * Why a fetch() rejected. A cross-origin failure gives the page a bare
+       * TypeError whatever the cause, so ask again in no-cors mode: an opaque
+       * response means the server answered and the browser withheld it (a
+       * status with no CORS headers, e.g. hotlink protection), while another
+       * rejection means the request never got an answer at all.
+       */
+      async function describeFetchFailure(url, error) {
+        if (error instanceof Error && /^HTTP \d/.test(error.message)) return error.message;
+        try {
+          await fetch(url, { method: "GET", mode: "no-cors", cache: "no-store" });
+          return `${new URL(url).host} answered but the response was withheld from this page (no CORS headers, typically a blocked or errored status)`;
+        } catch {
+          return `${new URL(url).host} could not be reached (offline, DNS, or TLS)`;
+        }
+      }
+
       async function fetchModelWithProgress(url, onBytes) {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+        let res;
+        try {
+          res = await fetch(url);
+        } catch (error) {
+          throw new Error(await describeFetchFailure(url, error));
+        }
+        if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText} for ${url}`);
         const total = Number(res.headers.get("content-length")) || 0;
+        onBytes(0, total);
         if (!res.body || !total) {
           const buf = await res.arrayBuffer();
           onBytes(buf.byteLength, total || buf.byteLength);
@@ -2813,6 +2903,95 @@
           offset += c.byteLength;
         }
         return buf.buffer;
+      }
+
+      // -- Model byte cache (IndexedDB) --
+      //
+      // Models are tens of megabytes and never change for a given URL, so they
+      // are stored by URL and reused across reloads. IndexedDB rather than the
+      // Cache API on purpose: Hugging Face redirects model requests to its CDN,
+      // and Cache.put() refuses a redirected response, so the obvious tool does
+      // not work here. Storing the ArrayBuffer we already hold sidesteps it.
+      const MODEL_DB = "ppu-paddle-ocr-demo";
+      const MODEL_STORE = "models";
+
+      function openModelDb() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(MODEL_DB, 1);
+          request.onupgradeneeded = () => {
+            if (!request.result.objectStoreNames.contains(MODEL_STORE)) {
+              request.result.createObjectStore(MODEL_STORE);
+            }
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      /** Run one transaction, resolving with its request. Never throws. */
+      async function modelStore(mode, run) {
+        let db;
+        try {
+          db = await openModelDb();
+        } catch {
+          return null; // private mode, disabled storage: fall back to network
+        }
+        try {
+          return await new Promise((resolve, reject) => {
+            const tx = db.transaction(MODEL_STORE, mode);
+            const request = run(tx.objectStore(MODEL_STORE));
+            request.onsuccess = () => resolve(request.result ?? null);
+            request.onerror = () => reject(request.error);
+          });
+        } catch (error) {
+          console.warn("Model cache unavailable:", error);
+          return null;
+        } finally {
+          db.close();
+        }
+      }
+
+      const cachedModel = (url) => modelStore("readonly", (store) => store.get(url));
+
+      async function putCachedModel(url, bytes) {
+        // A quota rejection is not a failure worth surfacing: the models are in
+        // memory already and the page works, it just re-downloads next time.
+        await modelStore("readwrite", (store) => store.put(bytes, url));
+      }
+
+      async function clearModelCache() {
+        await modelStore("readwrite", (store) => store.clear());
+      }
+
+      /** Bytes for one model URL, from the cache when it is there. */
+      async function loadModel(url, onBytes) {
+        const hit = await cachedModel(url);
+        if (hit instanceof ArrayBuffer && hit.byteLength > 0) {
+          onBytes(hit.byteLength, hit.byteLength);
+          servedFromCache += 1;
+          return hit;
+        }
+        const bytes = await fetchModelWithFallback(url, onBytes);
+        await putCachedModel(url, bytes);
+        return bytes;
+      }
+
+      /**
+       * Fetch a model file, falling back to the GitHub original if the mirror
+       * refuses. Best effort only: the GitHub copies sit behind a Git LFS
+       * bandwidth budget that can be exhausted, so this is a second chance,
+       * not a guarantee.
+       */
+      async function fetchModelWithFallback(url, onBytes) {
+        try {
+          return await fetchModelWithProgress(url, onBytes);
+        } catch (error) {
+          const fallback = githubMirrorOf(url);
+          if (!fallback) throw error;
+          console.warn(`Mirror failed for ${url} (${error.message}); trying ${fallback}`);
+          usedFallbackHost = true;
+          return await fetchModelWithProgress(fallback, onBytes);
+        }
       }
 
       // Full-screen progress for ANY (re)initialization: first boot, Apply
@@ -2845,15 +3024,19 @@
           try {
             bootStage.textContent = "Downloading models...";
             const files = [urlSet.detection, urlSet.recognition, urlSet.charactersDictionary];
+            // Each GET reports its own Content-Length as it starts, so the bar
+            // fills from the downloads themselves. A HEAD probe first would
+            // only add a second request and a second way to fail.
             let received = 0;
             let totalKnown = 0;
-            const heads = await Promise.all(
-              files.map((u) => fetch(u, { method: "HEAD" }).catch(() => null))
-            );
-            for (const h of heads) {
-              totalKnown += (h && Number(h.headers.get("content-length"))) || 0;
-            }
-            const onBytes = (n) => {
+            servedFromCache = 0;
+            bootIndeterminate("Preparing models...");
+            const onBytes = (n, total) => {
+              if (total) {
+                totalKnown += total;
+                bootStage.textContent =
+                  servedFromCache > 0 ? "Loading cached models..." : "Downloading models...";
+              }
               received += n;
               if (totalKnown > 0) {
                 const pct = Math.min(100, Math.round((received / totalKnown) * 100));
@@ -2861,15 +3044,15 @@
                 bootBarFill.style.width = `${pct}%`;
               }
             };
-            if (!totalKnown) bootIndeterminate("Downloading models...");
-            const [det, rec, dict] = await Promise.all(
-              files.map((u) => fetchModelWithProgress(u, onBytes))
-            );
+            const [det, rec, dict] = await Promise.all(files.map((u) => loadModel(u, onBytes)));
             opts.model = { detection: det, recognition: rec, charactersDictionary: dict };
             bootPercent.textContent = "100%";
             bootBarFill.style.width = "100%";
           } catch (err) {
             // Progress prefetch is UX only; the service can fetch by itself.
+            // Keep the reason: the library's own failure message is generic,
+            // and this one says which host answered how.
+            lastPrefetchError = err instanceof Error ? err.message : String(err);
             console.warn("Model prefetch failed, falling back to plain init:", err);
             bootIndeterminate("Downloading models...");
           }
