@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Web demo could not load models.** Hugging Face returns `404` for requests
+  carrying a `*.workers.dev` referer, and a 404 response has no CORS headers,
+  so the browser reported it as "No 'Access-Control-Allow-Origin' header is
+  present" rather than as the 404 it was. The demo is hosted on workers.dev, so
+  every model fetch failed after the 6.4.2 move to the mirror. The page now
+  sends `Referrer-Policy: no-referrer`, which nothing there needs. Only pages
+  whose origin Hugging Face blocklists are affected; `pages.dev`, `vercel.app`,
+  `netlify.app`, and localhost all serve normally, as do Node and Bun, which
+  send no referer at all.
+
 ## [6.4.2] - 2026-08-25
 
 ### Changed
