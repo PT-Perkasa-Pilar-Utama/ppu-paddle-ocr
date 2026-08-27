@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The web demo caches models in the browser.** They are stored by URL in
+  IndexedDB after the first download and reused on later loads, so a reload no
+  longer re-fetches tens of megabytes. A "Clear cached models" button in the
+  configuration panel drops them. IndexedDB rather than the Cache API because
+  Hugging Face redirects model requests to its CDN, and `Cache.put()` refuses a
+  redirected response.
+
 ### Changed
 
 - **Web demo: the sample images are a collapsible dock.** They sit in the
@@ -22,18 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for a referer, so the web fetches ask for `no-referrer`. This is what the demo
   needed a page header for; embedders now get it without knowing to set one.
   Node and Bun have no referer to send and are unaffected.
-
-### Added
-
-- **The web demo caches models in the browser.** They are stored by URL in
-  IndexedDB after the first download and reused on later loads, so a reload no
-  longer re-fetches tens of megabytes. A "Clear cached models" button in the
-  configuration panel drops them. IndexedDB rather than the Cache API because
-  Hugging Face redirects model requests to its CDN, and `Cache.put()` refuses a
-  redirected response.
-
-### Fixed
-
 - **Web demo: switching sample images needed a page reload.** The sample chips
   were inside the placeholder element that gets hidden once an image loads, so
   choosing one sample hid the row offering the others.
