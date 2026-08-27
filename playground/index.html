@@ -2,6 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Hugging Face returns 404 for model requests carrying a *.workers.dev
+         referer, and a 404 has no CORS headers, so the browser reports it as a
+         CORS failure. Nothing needs the referer here. The _headers file sets
+         this too; the meta tag covers local dev, which is served without it. -->
+    <meta name="referrer" content="no-referrer" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta
       name="description"
