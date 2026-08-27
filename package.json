@@ -1,6 +1,6 @@
 {
   "name": "ppu-paddle-ocr",
-  "version": "6.4.2",
+  "version": "6.4.3",
   "description": "Lightweight, probably the fastest PaddleOCR SDK in TypeScript. Runs anywhere JavaScript runs: Node.js, Bun, Deno, mobile react-native, web worker, web browsers, and browser extensions. Docker & CLI supported. The official SDK is browser-only. Accurate text detection and recognition for documents, data extraction, and computer vision.",
   "keywords": [
     "accurate-ocr",
