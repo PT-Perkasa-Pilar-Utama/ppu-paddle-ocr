@@ -5,6 +5,9 @@
 # it before the test step; locally run `bun install` in apps/serve once).
 # Enforce the coverage we already hold (~94%) so it can only go up.
 coverageThreshold = { line = 0.9, function = 0.9 }
+# Text table for the console plus lcov for the Codecov upload in ci.yml.
+coverageReporter = ["text", "lcov"]
+coverageDir = "coverage"
 # Warm the default model cache before any test file: a cold-cache download
 # inside a 5s beforeEach hook is a flaky timeout on slow networks.
 preload = ["./tests/preload-warm-cache.ts"]

@@ -64,6 +64,16 @@ jobs:
       - name: Run tests with coverage
         run: bun run test:coverage
 
+      # Feeds the README coverage badge. Needs the CODECOV_TOKEN repository
+      # secret (upload-only scope); until it exists the step logs a warning
+      # and the badge reads "unknown", but CI stays green.
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          files: coverage/lcov.info
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
       - name: Build
         run: bun run build
 

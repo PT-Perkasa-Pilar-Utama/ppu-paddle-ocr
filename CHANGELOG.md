@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   suite across two worker processes (`--parallel=2`), which cuts a local run
   from about 40 s to under 30 s on an 8-core machine. The serve app's
   `minimumConfidence` request field ships in serve 0.4.0.
+- **Coverage badge.** CI uploads the lcov report to Codecov and the README
+  carries the badge.
 
 ## [6.4.3] - 2026-08-27
 
