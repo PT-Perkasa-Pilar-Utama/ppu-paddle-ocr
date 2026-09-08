@@ -6,6 +6,7 @@ import { cors } from "hono/cors";
 import { ipRestriction } from "hono/ip-restriction";
 import { logger } from "hono/logger";
 import { requestId } from "hono/request-id";
+import { HTTPException } from "hono/http-exception";
 import { secureHeaders } from "hono/secure-headers";
 import { openAPIRouteHandler } from "hono-openapi";
 import { multipartDetectSchema, multipartOcrSchema } from "./core/schemas.js";
@@ -115,6 +116,9 @@ app.notFound((c) => sendError(c, 404, "Route not found"));
 
 app.onError((err, c) => {
   if (err instanceof HttpError) return sendError(c, err.status, err.message);
+  // Hono's own middleware (the body validator on malformed JSON, for one)
+  // throws these with the right status; keep it instead of masking as 500.
+  if (err instanceof HTTPException) return sendError(c, err.status, err.message);
   if (err instanceof QueueFullError) {
     return c.json(failure(err.message, c.get("requestId")), 429, { "Retry-After": "1" });
   }

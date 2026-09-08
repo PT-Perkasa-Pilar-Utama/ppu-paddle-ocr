@@ -108,6 +108,16 @@ describe("POST /v1/ocr input validation (pre-inference)", () => {
     expect(body.data.message).toContain("Unsupported image type");
   });
 
+  test("malformed JSON on a validated route is 400, not 500", async () => {
+    const res = await app.request("/v1/ocr/batch", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{bad",
+    });
+    const body = await expectError(res, 400);
+    expect(body.data.message).toContain("JSON");
+  });
+
   test("multipart without a file field is 400", async () => {
     const form = new FormData();
     form.append("strategy", "per-line");
