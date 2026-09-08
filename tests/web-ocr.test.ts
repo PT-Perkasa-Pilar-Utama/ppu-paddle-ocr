@@ -186,6 +186,37 @@ describe("web OCR service (onnxruntime-web under the polyfilled runtime)", () =>
     await expect(service.changeTextDictionary("")).rejects.toBeDefined();
   }, 60000);
 
+  test("swaps the recognition model and loads a dictionary from a URL", async () => {
+    // The web loader treats every string as a URL; serve the cached dictionary
+    // from a local server so the fetch path runs without touching the network.
+    const server = Bun.serve({
+      port: 0,
+      fetch: (req) =>
+        new URL(req.url).pathname === "/dict.txt"
+          ? new Response(v6Dict)
+          : new Response("nope", { status: 404 }),
+    });
+    try {
+      service = new WebPaddleOcrService({
+        model: { detection: v6Det, recognition: v6Rec, charactersDictionary: v6Dict },
+        processing: { engine: "canvas-native" },
+      });
+      await service.initialize();
+      const before = await service.recognize(smallBuffer, { noCache: true });
+
+      await service.changeRecognitionModel(v6Rec);
+      await service.changeTextDictionary(`http://localhost:${server.port}/dict.txt`);
+      const after = await service.recognize(smallBuffer, { noCache: true });
+      expect(after.text).toBe(before.text);
+
+      await expect(
+        service.changeTextDictionary(`http://localhost:${server.port}/missing.txt`)
+      ).rejects.toThrow("missing.txt");
+    } finally {
+      server.stop(true);
+    }
+  }, 60000);
+
   test("recognize before initialize throws", async () => {
     const fresh = new WebPaddleOcrService();
     await expect(fresh.recognize(imageBuffer)).rejects.toBeDefined();
