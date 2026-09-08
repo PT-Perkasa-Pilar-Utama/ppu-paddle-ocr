@@ -109,6 +109,7 @@ export async function readSingle(c: Context): Promise<{ image: ArrayBuffer; opts
       strategy: body["strategy"],
       flatten: body["flatten"],
       engine: body["engine"],
+      minimumConfidence: body["minimumConfidence"],
     });
     return { image, opts };
   }

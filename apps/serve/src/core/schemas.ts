@@ -8,8 +8,15 @@ const booleanish = z.preprocess(
 const strategy = z.enum(["per-box", "per-line", "cross-line"]).optional();
 const engine = z.enum(["opencv", "canvas-native"]).optional();
 
+const minimumConfidence = z.coerce.number().min(0).max(1).optional();
+
 /** Per-request recognition options shared by every input shape. */
-export const ocrOptionsSchema = z.object({ strategy, flatten: booleanish, engine });
+export const ocrOptionsSchema = z.object({
+  strategy,
+  flatten: booleanish,
+  engine,
+  minimumConfidence,
+});
 export type OcrOptions = z.infer<typeof ocrOptionsSchema>;
 
 // A 1×1 PNG as a data: URI - a valid, runnable example so Scalar's "Send"

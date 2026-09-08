@@ -29,7 +29,6 @@ describe("per-call recognition options", () => {
     });
     const strict = await service.recognize(imageBuffer, {
       minimumConfidence: KEEP_ONLY_CERTAIN_CONFIDENCE,
-      noCache: true,
     });
 
     expect(unfiltered.lines.length).toBeGreaterThan(0);

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 PT Perkasa Pilar Utama
 
+import type { RecognizeOptions } from "../interface.js";
+
 /**
  * How many bytes {@link ImageCache.generateKey} reads. Bounded so the cost stays
  * flat on large scans: a full-resolution photo reaches here as tens of megabytes
@@ -88,3 +90,16 @@ export class ImageCache {
 
 // Global image cache instance
 export const globalImageCache: ImageCache = new ImageCache();
+
+/** True when the call carries an override that changes the result for the same image. */
+export function bypassesCache(options?: RecognizeOptions): boolean {
+  return Boolean(
+    options?.noCache ||
+    options?.dictionary ||
+    options?.strategy !== undefined ||
+    options?.minimumConfidence !== undefined ||
+    options?.spaceRecovery !== undefined ||
+    options?.rotateVerticalCrops !== undefined ||
+    options?.recBatchSize !== undefined
+  );
+}
