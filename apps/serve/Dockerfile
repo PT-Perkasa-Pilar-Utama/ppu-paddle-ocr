@@ -11,7 +11,7 @@ WORKDIR /app
 # is a peer/dev dep so we add it explicitly. --production drops the heavy
 # build/test devDeps (typescript, the native tsgo compiler, oxlint, ...).
 COPY package.json bun.lock ./
-# --ignore-scripts skips the root `prepare: husky` (husky is a devDep, absent in
+# --ignore-scripts skips the root `prepare: lefthook install` (lefthook is a devDep, absent in
 # --production); the onnxruntime native binary is then built via `bun pm trust`.
 RUN bun install --production --ignore-scripts \
   && bun add onnxruntime-node --ignore-scripts \

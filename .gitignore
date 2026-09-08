@@ -21,3 +21,6 @@ out-test-debug-per-box/
 # Cloudflare deploy output
 playground/dist
 .bin-build/
+
+# lefthook per-developer overrides
+lefthook-local.yml

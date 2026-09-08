@@ -42,7 +42,7 @@ Bun is the primary runtime and package manager. Every CI workflow pins Bun at **
 curl -fsSL https://bun.sh/install | bash -s "bun-v1.4.2"
 ```
 
-Pre-commit hooks are set up via Husky and run automatically after `bun install`. They enforce formatting and linting before every commit.
+Git hooks are managed by [lefthook](https://lefthook.dev) (`lefthook.yml`) and installed by `bun install`. Before every commit they check formatting of the staged files, lint, type-check, and confirm `package.json` and `jsr.json` carry the same version; the commit message must be `type: description` with one of the listed types. Unformatted files are rejected rather than rewritten, so run `bun run fmt:fix` and re-stage. If you cloned before the move from Husky, the first `bun install` resets `core.hooksPath` for you.
 
 ## Making Changes
 
