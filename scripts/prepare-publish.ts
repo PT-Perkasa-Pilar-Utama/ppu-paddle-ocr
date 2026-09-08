@@ -1,4 +1,3 @@
-/// <reference types='bun-types' />
 import { resolve } from "node:path/posix";
 
 import tsconfig from "../tsconfig.json";

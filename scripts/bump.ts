@@ -1,4 +1,3 @@
-/// <reference types='bun-types' />
 /**
  * One-shot release version bump.
  *
