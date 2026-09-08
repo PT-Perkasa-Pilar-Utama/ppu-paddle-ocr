@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `flatten`, `settle`, and `concurrency`; string forms are still accepted in
   multipart fields, where everything arrives as a string.
 
+### Fixed
+
+- Serve: malformed JSON on `/v1/ocr/batch`, `/stream`, and `/async` returns
+  `400` in the error envelope instead of `500`.
+
 ## [6.5.0] - 2026-09-08
 
 ### Added
