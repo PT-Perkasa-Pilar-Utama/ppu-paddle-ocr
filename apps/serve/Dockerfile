@@ -3,7 +3,7 @@
 #   docker build -f apps/serve/Dockerfile -t ppu-paddle-ocr-serve .
 
 # ---- dependencies ----
-FROM oven/bun:1@sha256:e10577f0db68676a7024391c6e5cb4b879ebd17188ab750cf10024a6d700e5c4 AS deps
+FROM oven/bun:1.4.2@sha256:9114c058aeae42162ee16dd5084b95fe9473970bb6bcb5b232ab1630f0546895 AS deps
 WORKDIR /app
 # Library (root) deps - the serve app imports ppu-paddle-ocr from source, which
 # pulls onnxruntime-node + ppu-ocv from the root node_modules.
@@ -22,7 +22,7 @@ COPY apps/serve/package.json apps/serve/bun.lock apps/serve/
 RUN cd apps/serve && bun install --production
 
 # ---- runtime ----
-FROM oven/bun:1-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 AS runtime
+FROM oven/bun:1.4.2-slim@sha256:cb3bbbb08e13a4a2ff400f24c7a2a1d5efa83f6ef8544d52d95a519631e2fc61 AS runtime
 WORKDIR /app
 
 # OCI metadata - without these the ghcr package inherits the base image's
