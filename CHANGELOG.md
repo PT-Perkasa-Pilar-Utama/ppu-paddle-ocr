@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.5.1] - 2026-09-09
+
 ### Changed
 
 - Serve: request validation and the OpenAPI spec now come from valibot via
