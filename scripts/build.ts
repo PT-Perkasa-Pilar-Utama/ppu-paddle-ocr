@@ -1,4 +1,3 @@
-/// <reference types='bun-types' />
 import { chmodSync, existsSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path/posix";
 
