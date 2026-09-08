@@ -26,6 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on Apple M1). The peer ranges are untouched; npm users pick their own.
 - Lint and format toolchain: oxlint and its plugin API to 1.82.0, oxfmt to
   0.67.0, with no formatting changes in the tree.
+- **Git hooks moved from Husky and lint-staged to lefthook.** Same checks
+  (staged-file formatting, lint, type-check, version lockstep, commit message
+  format), declared in `lefthook.yml` with the two checks as small bun
+  scripts. Formatting is now checked, not rewritten: an unformatted staged
+  file fails the commit with a `bun run fmt:fix` hint, so a partially staged
+  file never has its unstaged hunks swept into the commit. The first
+  `bun install` after pulling resets Husky's `core.hooksPath`.
 
 ### Fixed
 

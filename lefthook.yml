@@ -1,0 +1,31 @@
+# Git hooks via lefthook. Installed by the `prepare` script on `bun install`;
+# bypass a single commit with `git commit --no-verify`. CI is the ultimate
+# guardrail, so every check here also runs there.
+
+pre-commit:
+  # piped: run in order and stop at the first failure, so an unformatted file
+  # is reported before lint and type-check spend their time.
+  piped: true
+  commands:
+    format:
+      glob: "*.{js,jsx,ts,tsx,mjs,cjs}"
+      # Check mode on the staged files only. Formatting in place and
+      # re-staging would sweep a partially staged file's unstaged hunks into
+      # the commit, so the hook asks for `bun run fmt:fix` instead.
+      run: bunx oxfmt --check {staged_files}
+      fail_text: "Unformatted staged files. Run `bun run fmt:fix` and re-stage."
+    lint:
+      glob: "*.{js,jsx,ts,tsx,mjs,cjs}"
+      run: bun run lint
+    type-check:
+      glob: "*.{ts,tsx}"
+      run: bun run type-check
+    version-lockstep:
+      # package.json and jsr.json publish the same version; a mismatch means a
+      # release bump touched one manifest but not the other (npm/jsr drift).
+      run: bun scripts/check-version-lockstep.ts
+
+commit-msg:
+  commands:
+    conventional:
+      run: bun scripts/check-commit-message.ts {1}

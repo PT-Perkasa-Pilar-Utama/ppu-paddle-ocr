@@ -82,7 +82,7 @@
     "fmt": "oxfmt --check",
     "fmt:fix": "oxfmt .",
     "demo": "bun run playground/serve.ts",
-    "prepare": "husky"
+    "prepare": "lefthook install --reset-hooks-path"
   },
   "devDependencies": {
     "@napi-rs/canvas": "^1.0.8",
@@ -91,8 +91,7 @@
     "@types/uglify-js": "^3.17.5",
     "canvas": "^3.2.3",
     "fast-check": "^4.9.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^17.5.0",
+    "lefthook": "^2.1.12",
     "onnxruntime-common": "^1.29.0",
     "onnxruntime-node": "^1.29.0",
     "onnxruntime-web": "^1.29.0",
