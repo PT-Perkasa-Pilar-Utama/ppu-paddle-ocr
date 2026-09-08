@@ -71,7 +71,7 @@ The library is a building block; this wraps it as a service you'd be comfortable
 
 `minimumConfidence` (0 to 1) overrides `MIN_CONFIDENCE` for that request only; `0` disables the filter. The batch, stream, and async endpoints take the same field.
 
-`source` must be a `data:` URI or an `https` URL whose host is in `SOURCE_URL_ALLOWLIST` (empty = https disabled). **Local filesystem paths are rejected**, and URL fetches refuse redirects - so the API never reads arbitrary host files or gets steered off-allowlist. Uploads are sniffed by magic bytes; non-images get a `400`, not a `500`.
+`source` must be a `data:` URI or an `https` URL whose host is in `SOURCE_URL_ALLOWLIST` (empty = https disabled). **Local filesystem paths are rejected**, and URL fetches refuse redirects - so the API never reads arbitrary host files or gets steered off-allowlist. Uploads are sniffed by magic bytes; non-images get a `400`, not a `500`. An allowlisted host that cannot be reached (DNS, TLS, refused, or a redirect) is a `502` naming the host.
 
 `POST /v1/detect` takes the same input (`file` or `{ source, engine? }`; `strategy`/`flatten` don't apply) and returns `{ boxes: [{ x, y, width, height }] }` - detection inference only, no recognition. `metadata` carries `speed`, `count`, and `engine`.
 

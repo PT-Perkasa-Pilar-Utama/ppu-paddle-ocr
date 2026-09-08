@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { app } from "../src/app.js";
+import { config } from "../src/core/config.js";
 
 const json = (body: unknown) =>
   ({
@@ -98,6 +99,43 @@ describe("POST /v1/ocr input validation (pre-inference)", () => {
       400
     );
     expect(body.data.message).toContain("SOURCE_URL_ALLOWLIST");
+  });
+
+  test("https host outside the allowlist is rejected, subdomains of an entry pass the host check", async () => {
+    // The allowlist is read from env at boot; push an entry for this test and
+    // remove it after so the empty-allowlist tests above stay valid.
+    config.sourceUrlAllowlist.push("cdn.example.org");
+    try {
+      const other = await expectError(
+        await app.request("/v1/ocr", json({ source: "https://evil.example.com/a.jpg" })),
+        400
+      );
+      expect(other.data.message).toContain("not in SOURCE_URL_ALLOWLIST");
+
+      // A subdomain clears the host check and reaches fetch(), which fails on
+      // the unresolvable host: an upstream failure, reported as 502 with the
+      // host named, never a 500.
+      const sub = await expectError(
+        await app.request("/v1/ocr", json({ source: "https://img.cdn.example.org/a.jpg" })),
+        502
+      );
+      expect(sub.data.message).toContain("img.cdn.example.org");
+    } finally {
+      config.sourceUrlAllowlist.pop();
+    }
+  });
+
+  test("malformed https source is 400, not a crash", async () => {
+    const body = await expectError(await app.request("/v1/ocr", json({ source: "https://" })), 400);
+    expect(body.data.message).toContain("Invalid source URL");
+  });
+
+  test("malformed data: URI without a comma is 400", async () => {
+    const body = await expectError(
+      await app.request("/v1/ocr", json({ source: "data:image/png;base64" })),
+      400
+    );
+    expect(body.data.message).toContain("Malformed data: URI");
   });
 
   test("a tiny non-image data: URI is rejected as unsupported type", async () => {
