@@ -13,9 +13,11 @@ import type {
 } from "../interface.js";
 import { calculateResizeDimensions } from "./detection/box-geometry.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
-import { supportsDynamicBatch } from "./recognition/batched.js";
+import { recognizeCropsBatched, supportsDynamicBatch } from "./recognition/batched.js";
 import type { RecognitionContext } from "./recognition/strategies.js";
 import {
+  cropRegion,
+  rotateTallCropIfNeeded,
   runCrossLineStrategy,
   runLineStrategy,
   runPerBoxStrategy,
@@ -151,7 +153,7 @@ export class BaseRecognitionService {
             cropBoxes,
             ctx,
             (canvas, box, index, total, debugPath, dict) =>
-              this.processBox(canvas, box, index, total, debugPath, dict),
+              this.processBox(canvas, box, index, total, debugPath, ctx, dict),
             charactersDictionary
           );
       }
@@ -258,7 +260,10 @@ export class BaseRecognitionService {
   }
 
   /**
-   * Process a single text box (used by per-box strategy for debug output)
+   * Debug-mode per-box recognition: the same crop, rotate, and batched
+   * recognize steps as the non-debug path (a batch of one), plus a saved
+   * crop and per-box timing. Sharing the pipeline is what keeps debug output
+   * identical to production output.
    */
   private async processBox(
     sourceCanvas: CoreCanvas,
@@ -266,22 +271,19 @@ export class BaseRecognitionService {
     index: number,
     totalBoxes: number,
     debugPath: string,
+    ctx: RecognitionContext,
     charactersDictionary?: string[]
   ): Promise<RecognitionResult | null> {
     const start = Date.now();
 
     try {
-      const cropCanvas = this.platform.canvas.getToolkit().crop({
-        bbox: { x0: box.x, y0: box.y, x1: box.x + box.width, y1: box.y + box.height },
-        canvas: sourceCanvas,
-      });
-
-      const ctx = this.buildContext();
-      const { text: recognizedText, confidence } = await this.recognizeTextViaContext(
-        cropCanvas,
-        ctx,
-        charactersDictionary
+      const cropCanvas = rotateTallCropIfNeeded(
+        cropRegion(sourceCanvas, box, this.platform.canvas),
+        ctx
       );
+      const [recognized] = await recognizeCropsBatched([cropCanvas], ctx, charactersDictionary);
+      const recognizedText = recognized?.text ?? "";
+      const confidence = recognized?.confidence ?? 0;
 
       if (this.debugging.debug && debugPath) {
         await this.platform.saveDebugImage(
@@ -292,7 +294,7 @@ export class BaseRecognitionService {
         const processingTime = Date.now() - start;
         this.log(
           `Box ${index + 1}/${totalBoxes}: [x:${box.x}, y:${box.y}, w:${box.width}, h:${box.height}]` +
-            `\n\t → "${recognizedText}" (processed in ${processingTime}ms)\n`
+            `\n\t -> "${recognizedText}" (processed in ${processingTime}ms)\n`
         );
       }
 
@@ -301,46 +303,6 @@ export class BaseRecognitionService {
       const err = e instanceof Error ? e : new Error(String(e));
       console.error(`Error processing box ${index + 1}: ${err.message}`, err.stack);
       return null;
-    }
-  }
-
-  private async recognizeTextViaContext(
-    cropCanvas: CoreCanvas,
-    ctx: RecognitionContext,
-    charactersDictionary?: string[]
-  ): Promise<{ text: string; confidence: number }> {
-    const { preprocessImage } = await import("./recognition/image-tensor.js");
-    const { decodeResults } = await import("./recognition/ctc.js");
-
-    const targetHeight = ctx.options.imageHeight ?? 48;
-    const imageProcessor = ctx.engine === "opencv" ? ctx.platform.imageProcessor : undefined;
-
-    const { imageTensor, tensorWidth, tensorHeight } = await preprocessImage(
-      cropCanvas,
-      targetHeight,
-      imageProcessor,
-      ctx.platform.canvas.createProcessor.bind(ctx.platform.canvas)
-    );
-
-    let inputTensor: Tensor | undefined;
-    try {
-      inputTensor = new ctx.platform.ort.Tensor("float32", imageTensor, [
-        1,
-        3,
-        tensorHeight,
-        tensorWidth,
-      ]);
-      const result = await ctx.runInference(inputTensor);
-      const dict = charactersDictionary ?? ctx.options.charactersDictionary ?? [];
-      return decodeResults(
-        result,
-        dict,
-        tensorWidth,
-        this.debugging.verbose,
-        ctx.options.spaceRecovery ?? false
-      );
-    } finally {
-      inputTensor?.dispose();
     }
   }
 

@@ -43,7 +43,8 @@ export function rotateTallCropIfNeeded(crop: CoreCanvas, ctx: RecognitionContext
   return rotated;
 }
 
-function cropRegion(sourceCanvas: CoreCanvas, box: Box, canvasOps: CanvasOps): CoreCanvas {
+/** Crops one detected box out of the source canvas. */
+export function cropRegion(sourceCanvas: CoreCanvas, box: Box, canvasOps: CanvasOps): CoreCanvas {
   return canvasOps.getToolkit().crop({
     bbox: { x0: box.x, y0: box.y, x1: box.x + box.width, y1: box.y + box.height },
     canvas: sourceCanvas,
