@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `recognize()` accepts per-call overrides for `minimumConfidence`,
+  `spaceRecovery`, `rotateVerticalCrops`, and `recBatchSize` on Node, Bun,
+  web, and React Native.
+
+### Changed
+
+- Node, web, and React Native now share the same recognition and lifecycle
+  implementation, including consistent left-to-right result ordering.
+
 ## [6.4.3] - 2026-08-27
 
 ### Changed

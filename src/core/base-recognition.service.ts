@@ -9,6 +9,7 @@ import type {
   ProcessingEngine,
   RecognitionOptions,
   RecognitionStrategy,
+  RecognizeOptions,
 } from "../interface.js";
 import { calculateResizeDimensions } from "./detection/box-geometry.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
@@ -19,6 +20,11 @@ import {
   runLineStrategy,
   runPerBoxStrategy,
 } from "./recognition/strategies.js";
+
+const DISABLED_CONFIDENCE_THRESHOLD = 0;
+const MAXIMUM_CONFIDENCE = 1;
+const SEQUENTIAL_BATCH_SIZE = 1;
+const SYMBOL_CONFIDENCE_OFFSET = 0.3;
 
 /**
  * A single recognized text item with its bounding box and confidence.
@@ -92,7 +98,8 @@ export class BaseRecognitionService {
     image: ArrayBuffer | CoreCanvas,
     detection: Box[],
     charactersDictionary?: string[],
-    strategy: RecognitionStrategy = "per-line"
+    strategy: RecognitionStrategy = "per-line",
+    perCallOptions?: RecognizeOptions
   ): Promise<RecognitionResult[]> {
     this.log("Starting text recognition process");
 
@@ -127,7 +134,7 @@ export class BaseRecognitionService {
           ? validBoxes
           : validBoxes.map((v) => ({ ...v, box: scaleBox(v.box, cropRatio) }));
 
-      const ctx = this.buildContext();
+      const ctx = this.buildContext(perCallOptions);
 
       let results: RecognitionResult[];
       switch (strategy) {
@@ -159,12 +166,16 @@ export class BaseRecognitionService {
       // Symbol-only items (no letter or digit) carry no language evidence -
       // ruled separator lines read as "+-" at ~0.69 - so they must clear a
       // higher bar.
-      const minimumConfidence = this.options.minimumConfidence ?? 0.5;
-      return minimumConfidence > 0
+      const minimumConfidence =
+        perCallOptions?.minimumConfidence ??
+        this.options.minimumConfidence ??
+        DEFAULT_RECOGNITION_OPTIONS.minimumConfidence ??
+        DISABLED_CONFIDENCE_THRESHOLD;
+      return minimumConfidence > DISABLED_CONFIDENCE_THRESHOLD
         ? results.filter((r) => {
             const bar = /[\p{L}\p{N}]/u.test(r.text)
               ? minimumConfidence
-              : Math.min(1, minimumConfidence + 0.3);
+              : Math.min(MAXIMUM_CONFIDENCE, minimumConfidence + SYMBOL_CONFIDENCE_OFFSET);
             return r.confidence >= bar;
           })
         : results;
@@ -180,14 +191,27 @@ export class BaseRecognitionService {
   /**
    * Builds the strategy context from this service's state.
    */
-  private buildContext(): RecognitionContext {
+  private buildContext(perCallOptions?: RecognizeOptions): RecognitionContext {
+    const options: RecognitionOptions = {
+      ...this.options,
+      ...(perCallOptions?.spaceRecovery !== undefined
+        ? { spaceRecovery: perCallOptions.spaceRecovery }
+        : {}),
+      ...(perCallOptions?.rotateVerticalCrops !== undefined
+        ? { rotateVerticalCrops: perCallOptions.rotateVerticalCrops }
+        : {}),
+      ...(perCallOptions?.recBatchSize !== undefined
+        ? { recBatchSize: perCallOptions.recBatchSize }
+        : {}),
+    };
+
     return {
       platform: this.platform,
       // Fixed-batch model exports cannot take stacked tensors; clamp to the
       // sequential path rather than failing at session.run.
       options: supportsDynamicBatch(this.session)
-        ? this.options
-        : { ...this.options, recBatchSize: 1 },
+        ? options
+        : { ...options, recBatchSize: SEQUENTIAL_BATCH_SIZE },
       debugging: this.debugging,
       engine: this.engine,
       runInference: (t) => this.runInference(t),

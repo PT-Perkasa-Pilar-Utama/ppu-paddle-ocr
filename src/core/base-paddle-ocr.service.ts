@@ -112,6 +112,21 @@ export abstract class BasePaddleOcrService {
 
   protected abstract initSessions(): Promise<void>;
 
+  /** Returns whether both inference sessions are ready. */
+  public isInitialized(): boolean {
+    return this.detectionSession !== null && this.recognitionSession !== null;
+  }
+
+  /** Release all inference sessions and services. */
+  public async destroy(): Promise<void> {
+    await this.detectionSession?.release();
+    await this.recognitionSession?.release();
+    this.detectionSession = null;
+    this.recognitionSession = null;
+    this.detector = null;
+    this.recognitor = null;
+  }
+
   /**
    * Run the full OCR pipeline (detection → recognition) on an image.
    *
@@ -238,7 +253,8 @@ export abstract class BasePaddleOcrService {
         canvas,
         boxes,
         dict,
-        strategy
+        strategy,
+        options
       );
       const groupedResult = groupResultsByLine(results);
 

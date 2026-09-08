@@ -952,12 +952,16 @@ export type PaddleOptions = {
 
 Per-call options for `recognize()`.
 
-| Property     |                   Type                    |     Default     | Description                                      |
-| :----------- | :---------------------------------------: | :-------------: | :----------------------------------------------- |
-| `flatten`    |                 `boolean`                 |     `false`     | Return flat results instead of grouped by lines. |
-| `strategy`   | `"per-box" \| "per-line" \| "cross-line"` | service default | Override strategy for this call.                 |
-| `dictionary` |          `string \| ArrayBuffer`          |     `null`      | Custom character dictionary (disables caching).  |
-| `noCache`    |                 `boolean`                 |     `false`     | Bypass the result cache.                         |
+| Property              |                   Type                    |     Default     | Description                                             |
+| :-------------------- | :---------------------------------------: | :-------------: | :------------------------------------------------------ |
+| `flatten`             |                 `boolean`                 |     `false`     | Return flat results instead of grouped by lines.        |
+| `strategy`            | `"per-box" \| "per-line" \| "cross-line"` | service default | Override strategy for this call.                        |
+| `dictionary`          |          `string \| ArrayBuffer`          |     `null`      | Custom character dictionary (disables caching).         |
+| `noCache`             |                 `boolean`                 |     `false`     | Bypass the result cache.                                |
+| `minimumConfidence`   |                 `number`                  | service default | Override the confidence threshold for this call.        |
+| `spaceRecovery`       |                 `boolean`                 | service default | Override inter-word space recovery for this call.       |
+| `rotateVerticalCrops` |                 `boolean`                 | service default | Override vertical crop rotation for this call.          |
+| `recBatchSize`        |                 `number`                  | service default | Override the recognition inference batch size per call. |
 
 ### `DetectOptions`
 
