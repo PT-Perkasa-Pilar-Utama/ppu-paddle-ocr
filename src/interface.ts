@@ -255,7 +255,10 @@ export type RecognitionOptions = {
 /**
  * Options for individual recognize() calls.
  */
-export type RecognizeOptions = {
+export type RecognizeOptions = Pick<
+  RecognitionOptions,
+  "minimumConfidence" | "spaceRecovery" | "rotateVerticalCrops" | "recBatchSize"
+> & {
   /**
    * Return flattened results instead of grouped by lines.
    * @default false

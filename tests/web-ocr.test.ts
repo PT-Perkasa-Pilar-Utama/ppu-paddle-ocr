@@ -32,6 +32,7 @@ const imageBuffer = await imgFile.arrayBuffer();
 // detected-box count, so this cuts those tests' runtime ~10x without losing
 // coverage of the strategy / batch / stream / model-swap code paths.
 const smallBuffer = await Bun.file(`${import.meta.dir}/../assets/tilted.png`).arrayBuffer();
+const KEEP_ONLY_CERTAIN_CONFIDENCE = 1;
 
 describe("web OCR service (onnxruntime-web under the polyfilled runtime)", () => {
   let service: PaddleOcrService;
@@ -104,6 +105,22 @@ describe("web OCR service (onnxruntime-web under the polyfilled runtime)", () =>
     expect(flat.results).toBeArray();
     expect(flat.results.length).toBeGreaterThan(0);
   }, 90000);
+
+  test("honors a per-call confidence override on the web path", async () => {
+    service = new WebPaddleOcrService({
+      model: { detection: v6Det, recognition: v6Rec, charactersDictionary: v6Dict },
+      processing: { engine: "canvas-native" },
+    });
+    await service.initialize();
+
+    const result = await service.recognize(smallBuffer, {
+      minimumConfidence: KEEP_ONLY_CERTAIN_CONFIDENCE,
+      noCache: true,
+    });
+
+    expect(result.lines).toHaveLength(0);
+    expect(result.text).toBeEmpty();
+  }, 60000);
 
   test("batchRecognize and streaming work on the web path", async () => {
     service = new WebPaddleOcrService({
