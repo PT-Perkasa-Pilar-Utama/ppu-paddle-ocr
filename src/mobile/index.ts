@@ -105,7 +105,7 @@ import type {
   FlattenedPaddleOcrResult,
   PaddleOcrResult,
 } from "../core/base-paddle-ocr.service.js";
-import { runOneShot, splitOcrOptions, splitDetectOptions } from "../core/one-shot.js";
+import { runOneShot, splitOptions } from "../core/one-shot.js";
 import type { DetectOptions, PaddleOptions, RecognizeOptions } from "../interface.js";
 import { PaddleOcrService } from "./paddle-ocr.service.mobile.js";
 
@@ -122,7 +122,7 @@ export function ocr(
   image: ArrayBuffer | CanvasLike,
   options?: PaddleOptions & RecognizeOptions
 ): Promise<PaddleOcrResult | FlattenedPaddleOcrResult> {
-  const { paddle, perCall } = splitOcrOptions(options);
+  const { paddle, perCall } = splitOptions<RecognizeOptions>(options);
   return runOneShot<PaddleOcrService, PaddleOcrResult | FlattenedPaddleOcrResult>(
     () => new PaddleOcrService(paddle),
     (service) =>
@@ -137,7 +137,7 @@ export function detect(
   image: ArrayBuffer | CanvasLike,
   options?: PaddleOptions & DetectOptions
 ): Promise<DetectResult> {
-  const { paddle, perCall } = splitDetectOptions(options);
+  const { paddle, perCall } = splitOptions<DetectOptions>(options);
   return runOneShot(
     () => new PaddleOcrService(paddle),
     (service) => service.detect(image, perCall)

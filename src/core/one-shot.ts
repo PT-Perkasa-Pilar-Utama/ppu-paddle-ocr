@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 PT Perkasa Pilar Utama
 
-import type { DetectOptions, PaddleOptions, RecognizeOptions } from "../interface.js";
+import type { PaddleOptions } from "../interface.js";
 
 /** Run one operation with a newly initialized service. */
 export async function runOneShot<
@@ -17,33 +17,19 @@ export async function runOneShot<
   }
 }
 
-/** Constructor vs per-call split for `ocr()`. */
-export type SplitOcrResult = { paddle: PaddleOptions; perCall: RecognizeOptions };
-
-/** Constructor vs per-call split for `detect()`. */
-export type SplitDetectResult = { paddle: PaddleOptions; perCall: DetectOptions };
+/** Constructor options on the left, whatever the call passes through on the right. */
+export type SplitOptions<T> = { paddle: PaddleOptions; perCall: Omit<T, keyof PaddleOptions> };
 
 /**
- * Split a combined `PaddleOptions & RecognizeOptions` bag into the constructor
- * portion and the per-call portion so the one-shot helpers do not leak
- * constructor keys into `service.recognize()`.
+ * Split a combined `PaddleOptions & T` bag into the constructor portion and
+ * the per-call portion so the one-shot helpers do not leak constructor keys
+ * into `service.recognize()` or `service.detect()`.
  */
-export function splitOcrOptions(options?: PaddleOptions & RecognizeOptions): SplitOcrResult {
-  if (!options) return { paddle: {}, perCall: {} };
-  const { model, detection, recognition, debugging, session, processing, ...perCall } = options;
-  return {
-    paddle: { model, detection, recognition, debugging, session, processing },
-    perCall,
-  };
-}
-
-/**
- * Split a combined `PaddleOptions & DetectOptions` bag into the constructor
- * portion and the per-call portion so the one-shot helpers do not leak
- * constructor keys into `service.detect()`.
- */
-export function splitDetectOptions(options?: PaddleOptions & DetectOptions): SplitDetectResult {
-  if (!options) return { paddle: {}, perCall: {} };
+export function splitOptions<T extends object>(options?: PaddleOptions & T): SplitOptions<T> {
+  if (!options) {
+    // SAFETY: an empty bag has no per-call keys; the cast only names the shape.
+    return { paddle: {}, perCall: {} as Omit<T, keyof PaddleOptions> };
+  }
   const { model, detection, recognition, debugging, session, processing, ...perCall } = options;
   return {
     paddle: { model, detection, recognition, debugging, session, processing },
