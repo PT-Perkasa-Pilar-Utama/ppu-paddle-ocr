@@ -94,3 +94,46 @@ export {
   DEFAULT_PROCESSING_OPTIONS,
   DEFAULT_RECOGNITION_OPTIONS,
 } from "./constants.js";
+
+import type { Canvas } from "ppu-ocv";
+import type {
+  DetectResult,
+  FlattenedPaddleOcrResult,
+  PaddleOcrResult,
+} from "./core/base-paddle-ocr.service.js";
+import { runOneShot } from "./core/one-shot.js";
+import type { DetectOptions, PaddleOptions, RecognizeOptions } from "./interface.js";
+import { PaddleOcrService } from "./processor/paddle-ocr.service.js";
+
+/** Recognize one image without managing a service lifecycle. */
+export function ocr(
+  image: ArrayBuffer | Canvas,
+  options: PaddleOptions & RecognizeOptions & { flatten: true }
+): Promise<FlattenedPaddleOcrResult>;
+export function ocr(
+  image: ArrayBuffer | Canvas,
+  options?: PaddleOptions & RecognizeOptions & { flatten?: false }
+): Promise<PaddleOcrResult>;
+export function ocr(
+  image: ArrayBuffer | Canvas,
+  options?: PaddleOptions & RecognizeOptions
+): Promise<PaddleOcrResult | FlattenedPaddleOcrResult> {
+  return runOneShot<PaddleOcrService, PaddleOcrResult | FlattenedPaddleOcrResult>(
+    () => new PaddleOcrService(options),
+    (service) =>
+      options?.flatten
+        ? service.recognize(image, { ...options, flatten: true })
+        : service.recognize(image, { ...options, flatten: false })
+  );
+}
+
+/** Detect text regions in one image without managing a service lifecycle. */
+export function detect(
+  image: ArrayBuffer | Canvas,
+  options?: PaddleOptions & DetectOptions
+): Promise<DetectResult> {
+  return runOneShot(
+    () => new PaddleOcrService(options),
+    (service) => service.detect(image, options)
+  );
+}

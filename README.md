@@ -190,6 +190,17 @@ console.log(result.text);
 await service.destroy();
 ```
 
+For a single image, `ocr()` and `detect()` manage a short-lived service for
+you. Create a `PaddleOcrService` when processing more than one image so the
+models remain initialized between calls.
+
+```ts
+import { detect, ocr } from "ppu-paddle-ocr";
+
+const result = await ocr(imageBuffer);
+const { boxes } = await detect(imageBuffer);
+```
+
 ### Custom Models
 
 **Using preset models**, import constants for quick switching:

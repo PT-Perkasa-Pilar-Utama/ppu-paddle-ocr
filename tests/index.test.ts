@@ -1,4 +1,4 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeAll, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Canvas } from "ppu-ocv";
 import { CanvasProcessor } from "ppu-ocv";
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
@@ -66,6 +66,35 @@ describe("PaddleOcrService Initialization", () => {
     // v5 en-only model on a receipt - keep threshold moderate.
     expect(result.confidence).toBeGreaterThan(0.5);
   });
+});
+
+describe("one-shot OCR functions", () => {
+  test("ocr initializes, recognizes, and destroys its service", async () => {
+    const { ocr } = await import("../src/index.js");
+    const destroySpy = spyOn(PaddleOcrService.prototype, "destroy");
+
+    try {
+      const result = await ocr(imageBuffer, { noCache: true });
+      expect(result.text).not.toBeEmpty();
+      expect(result.lines.length).toBeGreaterThan(0);
+      expect(destroySpy).toHaveBeenCalledTimes(1);
+    } finally {
+      destroySpy.mockRestore();
+    }
+  }, 30000);
+
+  test("detect initializes, detects, and destroys its service", async () => {
+    const { detect } = await import("../src/index.js");
+    const destroySpy = spyOn(PaddleOcrService.prototype, "destroy");
+
+    try {
+      const result = await detect(imageBuffer);
+      expect(result.boxes.length).toBeGreaterThan(0);
+      expect(destroySpy).toHaveBeenCalledTimes(1);
+    } finally {
+      destroySpy.mockRestore();
+    }
+  }, 30000);
 });
 
 describe("PaddleOcrService.recognize()", () => {
