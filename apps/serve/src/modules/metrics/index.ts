@@ -1,20 +1,21 @@
-import { createRoute, z } from "@hono/zod-openapi";
-import type { RouteHandler } from "@hono/zod-openapi";
+import type { Hono } from "hono";
+import { describeRoute } from "hono-openapi";
 import { renderMetrics } from "../../core/metrics.js";
 import type { Env } from "../../core/types.js";
 
-export const route = createRoute({
-  method: "get",
-  path: "/metrics",
-  tags: ["System"],
-  summary: "Prometheus metrics",
-  responses: {
-    200: {
-      description: "Prometheus exposition text.",
-      content: { "text/plain": { schema: z.string() } },
-    },
-  },
-});
-
-export const handler: RouteHandler<typeof route, Env> = (c) =>
-  c.text(renderMetrics(), 200, { "content-type": "text/plain; version=0.0.4" });
+export function mount(app: Hono<Env>): void {
+  app.get(
+    "/metrics",
+    describeRoute({
+      tags: ["System"],
+      summary: "Prometheus metrics",
+      responses: {
+        200: {
+          description: "Prometheus exposition text.",
+          content: { "text/plain": { schema: { type: "string" } } },
+        },
+      },
+    }),
+    (c) => c.text(renderMetrics(), 200, { "content-type": "text/plain; version=0.0.4" })
+  );
+}

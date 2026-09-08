@@ -91,7 +91,7 @@ Every JSON response uses a consistent envelope and carries the request id (also 
 { "status": "error", "version": "0.4.0", "data": { "message": "...", "requestId": "<request-id>" } }
 ```
 
-`/metrics` is the only exception (Prometheus text). The spec at `/openapi.json` (rendered at `/docs`) is generated from the zod schemas via `@hono/zod-openapi`.
+`/metrics` is the only exception (Prometheus text). The spec at `/openapi.json` (rendered at `/docs`) is generated from the valibot schemas via `hono-openapi`.
 
 ## Configuration (env)
 
