@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Node, web, and React Native now share the same recognition and lifecycle
-  implementation, including consistent left-to-right result ordering.
+  implementation.
 
 ## [6.4.3] - 2026-08-27
 

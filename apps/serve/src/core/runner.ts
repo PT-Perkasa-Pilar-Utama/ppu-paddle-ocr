@@ -20,8 +20,17 @@ export async function runOcr(image: ArrayBuffer, opts: OcrOptions): Promise<OcrR
 
   const start = performance.now();
   const result = opts.flatten
-    ? await queue.run(() => svc.recognize(image, { flatten: true, strategy, noCache: true }))
-    : await queue.run(() => svc.recognize(image, { strategy, noCache: true }));
+    ? await queue.run(() =>
+        svc.recognize(image, {
+          flatten: true,
+          strategy,
+          noCache: true,
+          minimumConfidence: opts.minimumConfidence,
+        })
+      )
+    : await queue.run(() =>
+        svc.recognize(image, { strategy, noCache: true, minimumConfidence: opts.minimumConfidence })
+      );
   return { result, meta: { engine, strategy, ms: round1(performance.now() - start) } };
 }
 

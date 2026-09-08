@@ -17,7 +17,7 @@ import type { BatchItemResult } from "./batch.js";
 import { createAsyncQueue, runPool } from "./batch.js";
 import { cropDetectedBoxes } from "./detection/crop-boxes.js";
 import { flattenResults, groupResultsByLine } from "./recognition/line-grouping.js";
-import { globalImageCache, ImageCache } from "./image-cache.js";
+import { bypassesCache, globalImageCache, ImageCache } from "./image-cache.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
 
 /**
@@ -192,7 +192,7 @@ export abstract class BasePaddleOcrService {
 
       const cacheKey = ImageCache.generateKey(imageBuffer);
 
-      if (!options?.noCache && !options?.dictionary) {
+      if (!bypassesCache(options)) {
         // SAFETY: the cache is keyed by this method's own cacheKey, and only
         // this method writes it, so an entry under that key is a result it
         // stored - flattened or not, which the Partial arm covers.
@@ -244,6 +244,9 @@ export abstract class BasePaddleOcrService {
         }
 
         dict = parseDictionary(dictionaryContent);
+        if (dict.length === 0) {
+          throw new Error("Custom character dictionary is empty or could not be loaded.");
+        }
       }
 
       const strategy = options?.strategy ?? this.options.recognition?.strategy ?? "per-line";
@@ -260,14 +263,16 @@ export abstract class BasePaddleOcrService {
 
       const finalResult = options?.flatten ? flattenResults(results) : groupedResult;
 
-      if (!options?.noCache && !options?.dictionary) {
+      if (!bypassesCache(options)) {
         globalImageCache.set(cacheKey, finalResult);
       }
 
       return finalResult;
     } catch (e: unknown) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      console.error("recognize: error", err.message, err.stack);
+      if (this.options.debugging?.verbose) {
+        const err = e instanceof Error ? e : new Error(String(e));
+        console.error("recognize: error", err.message, err.stack);
+      }
       throw e;
     }
   }
