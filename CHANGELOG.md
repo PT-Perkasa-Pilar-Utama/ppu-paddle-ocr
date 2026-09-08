@@ -17,6 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `flatten`, `settle`, and `concurrency`; string forms are still accepted in
   multipart fields, where everything arrives as a string.
 
+- **Test and CLI-binary runtime on ONNX Runtime 1.29.** `onnxruntime-node` and
+  `onnxruntime-web` dev pins move from 1.27 to 1.29, so the standalone binaries
+  embed 1.29. Accuracy on the reference receipt is identical across all six
+  strategy/engine cases and per-image latency is unchanged (median within 2 ms
+  on Apple M1). The peer ranges are untouched; npm users pick their own.
+- Lint and format toolchain: oxlint and its plugin API to 1.82.0, oxfmt to
+  0.67.0, with no formatting changes in the tree.
+
 ### Fixed
 
 - Serve: malformed JSON on `/v1/ocr/batch`, `/stream`, and `/async` returns

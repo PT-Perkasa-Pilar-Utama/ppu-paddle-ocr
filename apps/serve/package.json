@@ -20,8 +20,8 @@
     "valibot": "^1.4.2"
   },
   "devDependencies": {
-    "onnxruntime-common": "^1.27.0",
-    "onnxruntime-node": "^1.27.0",
+    "onnxruntime-common": "^1.29.0",
+    "onnxruntime-node": "^1.29.0",
     "ppu-ocv": "^4.0.0",
     "typescript": "^7.0.2"
   },
