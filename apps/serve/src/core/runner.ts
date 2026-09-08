@@ -65,6 +65,7 @@ function batchOptions(body: BatchOcrBody) {
     strategy: body.strategy ?? config.defaultStrategy,
     concurrency: body.concurrency ?? config.concurrency,
     flatten: body.flatten ?? false,
+    minimumConfidence: body.minimumConfidence,
   };
 }
 
@@ -79,9 +80,9 @@ export async function runBatch(
   body: BatchOcrBody,
   signal?: AbortSignal
 ): Promise<BatchResponse> {
-  const { engine, strategy, concurrency, flatten } = batchOptions(body);
+  const { engine, strategy, concurrency, flatten, minimumConfidence } = batchOptions(body);
   const svc = await getService(engine);
-  const opts = { strategy, concurrency, noCache: true, flatten, signal };
+  const opts = { strategy, concurrency, noCache: true, flatten, minimumConfidence, signal };
   const results = body.settle
     ? await svc.batchRecognize(images, { ...opts, settle: true })
     : await svc.batchRecognize(images, opts);
@@ -93,13 +94,14 @@ export async function* streamBatch(
   images: ArrayBuffer[],
   body: BatchOcrBody
 ): AsyncGenerator<BatchItemResult<unknown>> {
-  const { engine, strategy, concurrency, flatten } = batchOptions(body);
+  const { engine, strategy, concurrency, flatten, minimumConfidence } = batchOptions(body);
   const svc = await getService(engine);
   yield* svc.batchRecognizeStream(images, {
     strategy,
     concurrency,
     noCache: true,
     flatten,
+    minimumConfidence,
     settle: body.settle ?? false,
   });
 }

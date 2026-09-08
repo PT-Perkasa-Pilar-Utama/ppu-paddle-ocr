@@ -65,8 +65,11 @@ The library is a building block; this wraps it as a service you'd be comfortable
   "strategy": "per-line",
   "flatten": false,
   "engine": "opencv",
+  "minimumConfidence": 0.5,
 }
 ```
+
+`minimumConfidence` (0 to 1) overrides `MIN_CONFIDENCE` for that request only; `0` disables the filter. The batch, stream, and async endpoints take the same field.
 
 `source` must be a `data:` URI or an `https` URL whose host is in `SOURCE_URL_ALLOWLIST` (empty = https disabled). **Local filesystem paths are rejected**, and URL fetches refuse redirects - so the API never reads arbitrary host files or gets steered off-allowlist. Uploads are sniffed by magic bytes; non-images get a `400`, not a `500`.
 

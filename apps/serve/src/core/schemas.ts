@@ -41,6 +41,7 @@ export const multipartOcrSchema = z
     strategy,
     flatten: booleanish,
     engine,
+    minimumConfidence,
   })
   .openapi("OcrMultipartRequest");
 
