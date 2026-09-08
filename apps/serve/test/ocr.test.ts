@@ -53,6 +53,35 @@ describe("POST /v1/ocr (success)", () => {
     expect(body.status).toBe("success");
     expect(Array.isArray(body.data.results)).toBe(true);
   }, 30_000);
+
+  test("minimumConfidence is honored per request on JSON, multipart, and batch", async () => {
+    const strictJson = await app.request(
+      "/v1/ocr",
+      json({ source: dataUri, minimumConfidence: 1 })
+    );
+    expect(strictJson.status).toBe(200);
+    expect((await strictJson.json()).data.lines).toHaveLength(0);
+
+    const form = new FormData();
+    form.append("file", new File([receipt], "receipt.jpg", { type: "image/jpeg" }));
+    form.append("minimumConfidence", "1");
+    const strictForm = await app.request("/v1/ocr", { method: "POST", body: form });
+    expect(strictForm.status).toBe(200);
+    expect((await strictForm.json()).data.lines).toHaveLength(0);
+
+    const strictBatch = await app.request(
+      "/v1/ocr/batch",
+      json({ sources: [dataUri], minimumConfidence: 1 })
+    );
+    expect(strictBatch.status).toBe(200);
+    expect((await strictBatch.json()).data.results[0].lines).toHaveLength(0);
+
+    const outOfRange = await app.request(
+      "/v1/ocr",
+      json({ source: dataUri, minimumConfidence: 2 })
+    );
+    expect(outOfRange.status).toBe(400);
+  }, 60_000);
 });
 
 describe("POST /v1/detect", () => {
