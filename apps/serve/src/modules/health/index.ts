@@ -1,20 +1,17 @@
-import { createRoute, z } from "@hono/zod-openapi";
-import type { RouteHandler } from "@hono/zod-openapi";
-import { envelope, success } from "../../core/api-response.js";
+import type { Hono } from "hono";
+import { describeRoute } from "hono-openapi";
+import * as v from "valibot";
+import { jsonResponse, success } from "../../core/api-response.js";
 import type { Env } from "../../core/types.js";
 
-export const route = createRoute({
-  method: "get",
-  path: "/health",
-  tags: ["System"],
-  summary: "Liveness probe",
-  responses: {
-    200: {
-      description: "Service is up.",
-      content: { "application/json": { schema: envelope(z.object({ alive: z.boolean() })) } },
-    },
-  },
-});
-
-export const handler: RouteHandler<typeof route, Env> = (c) =>
-  c.json(success(c, { alive: true }), 200);
+export function mount(app: Hono<Env>): void {
+  app.get(
+    "/health",
+    describeRoute({
+      tags: ["System"],
+      summary: "Liveness probe",
+      responses: { 200: jsonResponse("Service is up.", v.object({ alive: v.boolean() })) },
+    }),
+    (c) => c.json(success(c, { alive: true }), 200)
+  );
+}

@@ -1,4 +1,4 @@
-import { OpenAPIHono } from "@hono/zod-openapi";
+import { Hono } from "hono";
 import { Scalar } from "@scalar/hono-api-reference";
 import { bearerAuth } from "hono/bearer-auth";
 import { getConnInfo } from "hono/bun";
@@ -7,7 +7,8 @@ import { ipRestriction } from "hono/ip-restriction";
 import { logger } from "hono/logger";
 import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
-import { ZodError } from "zod";
+import { openAPIRouteHandler } from "hono-openapi";
+import { multipartDetectSchema, multipartOcrSchema } from "./core/schemas.js";
 import { failure } from "./core/api-response.js";
 import { config } from "./core/config.js";
 import { HttpError, sendError } from "./core/errors.js";
@@ -28,18 +29,7 @@ import * as taskCancel from "./modules/task-cancel/index.js";
 import * as taskResult from "./modules/task-result/index.js";
 import * as taskStatus from "./modules/task-status/index.js";
 
-export const app = new OpenAPIHono<Env>({
-  strict: false,
-  // Consistent envelope for request-validation failures.
-  defaultHook: (result, c) => {
-    if (!result.success) {
-      const detail = result.error.issues
-        .map((i) => `${i.path.join(".") || "body"}: ${i.message}`)
-        .join("; ");
-      return sendError(c, 400, `Validation failed - ${detail}`);
-    }
-  },
-});
+export const app = new Hono<Env>({ strict: false });
 
 app.use("*", requestId());
 app.use("*", logger());
@@ -61,40 +51,60 @@ app.use("*", async (c, next) => {
 if (config.rateLimitEnabled) app.use("/v1/*", rateLimiter());
 if (config.secretKey) app.use("/v1/*", bearerAuth({ token: config.secretKey }));
 
-// One folder = one endpoint; register each slice's route + handler.
-app.openapi(health.route, health.handler);
-app.openapi(ready.route, ready.handler);
-app.openapi(metrics.route, metrics.handler);
-app.openapi(models.route, models.handler);
-// /v1/ocr accepts multipart OR JSON, so it's documented (registerPath) but
-// parses its body manually rather than via auto-validation.
-app.openAPIRegistry.registerPath(recognize.route);
-app.post(recognize.route.path, recognize.handler);
-// /v1/detect is dual-content (multipart or JSON) like /v1/ocr.
-app.openAPIRegistry.registerPath(detect.route);
-app.post(detect.route.path, detect.handler);
-app.openapi(recognizeBatch.route, recognizeBatch.handler);
-app.openapi(recognizeStream.route, recognizeStream.handler);
-app.openapi(recognizeAsync.route, recognizeAsync.handler);
-app.openapi(taskStatus.route, taskStatus.handler);
-app.openapi(taskResult.route, taskResult.handler);
-app.openapi(taskCancel.route, taskCancel.handler);
-
-app.openAPIRegistry.registerComponent("securitySchemes", "Bearer", {
-  type: "http",
-  scheme: "bearer",
-  description: "Send `Authorization: Bearer <SECRET_KEY>`. Required only when SECRET_KEY is set.",
-});
+// One folder = one endpoint; each slice mounts its own route, validator, and
+// handler so `c.req.valid()` stays typed end to end.
+for (const slice of [
+  health,
+  ready,
+  metrics,
+  models,
+  recognize,
+  detect,
+  recognizeBatch,
+  recognizeStream,
+  recognizeAsync,
+  taskStatus,
+  taskResult,
+  taskCancel,
+]) {
+  slice.mount(app);
+}
 
 if (config.docsEnabled) {
-  app.doc("/openapi.json", {
-    openapi: "3.1.0",
-    info: {
-      title: "ppu-paddle-ocr-serve",
-      version: "0.4.0",
-      description: "REST API serving ppu-paddle-ocr. POST an image, get OCR JSON.",
-    },
-  });
+  app.get(
+    "/openapi.json",
+    openAPIRouteHandler(app, {
+      documentation: {
+        openapi: "3.1.0",
+        info: {
+          title: "ppu-paddle-ocr-serve",
+          version: "0.4.0",
+          description: "REST API serving ppu-paddle-ocr. POST an image, get OCR JSON.",
+        },
+        components: {
+          // Documentation-only bodies (parsed manually); named here so the
+          // dual-content routes can $ref them like every other request body.
+          schemas: {
+            OcrMultipartRequest: multipartOcrSchema,
+            DetectMultipartRequest: multipartDetectSchema,
+          },
+          securitySchemes: {
+            Bearer: {
+              type: "http",
+              scheme: "bearer",
+              description:
+                "Send `Authorization: Bearer <SECRET_KEY>`. Required only when SECRET_KEY is set.",
+            },
+          },
+        },
+      },
+      // The spec, the docs page, and the redirect are not API operations.
+      exclude: ["/openapi.json", "/docs", "/"],
+      // Validation failures use the error envelope declared per route, not
+      // hono-openapi's own { success, error, data } shape.
+      defaultValidationErrorResponse: false,
+    })
+  );
   app.get("/docs", Scalar({ url: "/openapi.json", pageTitle: "ppu-paddle-ocr-serve - API" }));
   app.get("/", (c) => c.redirect("/docs"));
 } else {
@@ -105,10 +115,6 @@ app.notFound((c) => sendError(c, 404, "Route not found"));
 
 app.onError((err, c) => {
   if (err instanceof HttpError) return sendError(c, err.status, err.message);
-  if (err instanceof ZodError) {
-    const detail = err.issues.map((i) => `${i.path.join(".") || "body"}: ${i.message}`).join("; ");
-    return sendError(c, 400, `Validation failed - ${detail}`);
-  }
   if (err instanceof QueueFullError) {
     return c.json(failure(err.message, c.get("requestId")), 429, { "Retry-After": "1" });
   }

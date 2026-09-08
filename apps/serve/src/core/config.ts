@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as v from "valibot";
 
 const toArray = (val: string | undefined): string[] =>
   (val ?? "")
@@ -9,64 +9,67 @@ const toArray = (val: string | undefined): string[] =>
 const toBoolean = (val: string | undefined): boolean =>
   val ? ["true", "1", "yes", "on"].includes(val.toLowerCase()) : false;
 
+/** Env values arrive as strings; parse them as numbers and reject NaN. */
+const num = v.pipe(v.union([v.string(), v.number()]), v.transform(Number), v.number());
+const positiveInt = v.pipe(num, v.integer(), v.minValue(1));
+const nonNegativeInt = v.pipe(num, v.integer(), v.minValue(0));
+const str = (fallback: string) => v.optional(v.string(), fallback);
+const int = (fallback: number) => v.optional(positiveInt, fallback);
+
 /** Raw environment schema. Every knob is documented in `.env.example`. */
-const EnvSchema = z.object({
-  API_ENV: z.enum(["development", "production"]).default("development"),
-  PORT: z.coerce.number().int().positive().default(8080),
-  HOST: z.string().default("0.0.0.0"),
+const EnvSchema = v.object({
+  API_ENV: v.optional(v.picklist(["development", "production"]), "development"),
+  PORT: int(8080),
+  HOST: str("0.0.0.0"),
 
   // Security
-  SECRET_KEY: z.string().optional(),
-  IP_WHITE_LIST: z.string().default("*"),
-  IP_DENY_LIST: z.string().default(""),
-  CORS_ORIGINS: z.string().default("*"),
-  DOCS_ENABLED: z.string().default("true"),
+  SECRET_KEY: v.optional(v.string()),
+  IP_WHITE_LIST: str("*"),
+  IP_DENY_LIST: str(""),
+  CORS_ORIGINS: str("*"),
+  DOCS_ENABLED: str("true"),
 
   // Rate limiting (fixed window, per client IP)
-  RATE_LIMIT_ENABLED: z.string().default("true"),
-  RATE_LIMIT_PER_WINDOW: z.coerce.number().int().positive().default(120),
-  RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(60),
+  RATE_LIMIT_ENABLED: str("true"),
+  RATE_LIMIT_PER_WINDOW: int(120),
+  RATE_LIMIT_WINDOW_SECONDS: int(60),
 
   // Request limits
-  REQUEST_TIMEOUT_SECONDS: z.coerce.number().int().positive().default(30),
-  MAX_UPLOAD_BYTES: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(10 * 1024 * 1024),
-  MAX_IMAGE_PIXELS: z.coerce.number().int().positive().default(40_000_000),
-  MAX_BATCH_IMAGES: z.coerce.number().int().positive().default(32),
+  REQUEST_TIMEOUT_SECONDS: int(30),
+  MAX_UPLOAD_BYTES: int(10 * 1024 * 1024),
+  MAX_IMAGE_PIXELS: int(40_000_000),
+  MAX_BATCH_IMAGES: int(32),
 
   // OCR engine / models
-  EXECUTION_PROVIDERS: z.string().default("cpu"),
-  DEFAULT_STRATEGY: z.enum(["per-box", "per-line", "cross-line"]).default("per-line"),
-  DEFAULT_ENGINE: z.enum(["opencv", "canvas-native"]).default("opencv"),
-  MIN_CONFIDENCE: z.coerce.number().min(0).max(1).optional(),
-  MAX_SIDE_LENGTH: z.union([z.literal("auto"), z.coerce.number().int().positive()]).optional(),
-  MAX_CROP_SOURCE_SIDE_LENGTH: z.coerce.number().int().positive().optional(),
-  MODEL_DETECTION: z.string().optional(),
-  MODEL_RECOGNITION: z.string().optional(),
-  MODEL_DICT: z.string().optional(),
+  EXECUTION_PROVIDERS: str("cpu"),
+  DEFAULT_STRATEGY: v.optional(v.picklist(["per-box", "per-line", "cross-line"]), "per-line"),
+  DEFAULT_ENGINE: v.optional(v.picklist(["opencv", "canvas-native"]), "opencv"),
+  MIN_CONFIDENCE: v.optional(v.pipe(num, v.minValue(0), v.maxValue(1))),
+  MAX_SIDE_LENGTH: v.optional(v.union([v.literal("auto"), positiveInt])),
+  MAX_CROP_SOURCE_SIDE_LENGTH: v.optional(positiveInt),
+  MODEL_DETECTION: v.optional(v.string()),
+  MODEL_RECOGNITION: v.optional(v.string()),
+  MODEL_DICT: v.optional(v.string()),
 
   // Inference backpressure / async tasks
-  MAX_CONCURRENCY: z.coerce.number().int().nonnegative().default(0),
-  MAX_QUEUE_DEPTH: z.coerce.number().int().positive().default(100),
-  TASK_TTL_SECONDS: z.coerce.number().int().positive().default(600),
+  MAX_CONCURRENCY: v.optional(nonNegativeInt, 0),
+  MAX_QUEUE_DEPTH: int(100),
+  TASK_TTL_SECONDS: int(600),
 
   // Source fetching (SSRF allowlist of https hosts)
-  SOURCE_URL_ALLOWLIST: z.string().default(""),
+  SOURCE_URL_ALLOWLIST: str(""),
 });
 
 function build(raw: NodeJS.ProcessEnv) {
-  const parsed = EnvSchema.safeParse(raw);
+  const parsed = v.safeParse(EnvSchema, raw);
   if (!parsed.success) {
     console.error(
-      "❌ Invalid environment variables:",
-      JSON.stringify(parsed.error.flatten().fieldErrors, null, 2)
+      "Invalid environment variables:",
+      JSON.stringify(v.flatten(parsed.issues).nested, null, 2)
     );
     process.exit(1);
   }
-  const e = parsed.data;
+  const e = parsed.output;
 
   const executionProviders = toArray(e.EXECUTION_PROVIDERS);
   const usesAccelerator = executionProviders.some((p) => p !== "cpu" && p !== "wasm");

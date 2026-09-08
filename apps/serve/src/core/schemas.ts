@@ -1,126 +1,163 @@
-import { z } from "@hono/zod-openapi";
+import * as v from "valibot";
 
-const booleanish = z.preprocess(
-  (v) => (typeof v === "string" ? v === "true" || v === "1" : v),
-  z.boolean().optional()
-);
-
-const strategy = z.enum(["per-box", "per-line", "cross-line"]).optional();
-const engine = z.enum(["opencv", "canvas-native"]).optional();
-
-const minimumConfidence = z.coerce.number().min(0).max(1).optional();
+const strategy = v.optional(v.picklist(["per-box", "per-line", "cross-line"]));
+const engine = v.optional(v.picklist(["opencv", "canvas-native"]));
+const unitInterval = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
+const positiveInt = v.pipe(v.number(), v.integer(), v.minValue(1));
 
 /** Per-request recognition options shared by every input shape. */
-export const ocrOptionsSchema = z.object({
+export const ocrOptionsSchema = v.object({
   strategy,
-  flatten: booleanish,
+  flatten: v.optional(v.boolean()),
   engine,
-  minimumConfidence,
+  minimumConfidence: v.optional(unitInterval),
 });
-export type OcrOptions = z.infer<typeof ocrOptionsSchema>;
+export type OcrOptions = v.InferOutput<typeof ocrOptionsSchema>;
 
-// A 1×1 PNG as a data: URI - a valid, runnable example so Scalar's "Send"
+// Multipart fields arrive as strings; coerce them to the JSON option types.
+const formBoolean = v.optional(
+  v.pipe(
+    v.string(),
+    v.transform((s) => s === "true" || s === "1")
+  )
+);
+const formNumber = v.pipe(v.string(), v.transform(Number), v.number());
+
+/** The same options read from multipart form fields. */
+export const multipartOcrOptionsSchema = v.object({
+  strategy,
+  flatten: formBoolean,
+  engine,
+  minimumConfidence: v.optional(v.pipe(formNumber, unitInterval)),
+});
+
+// A 1x1 PNG as a data: URI - a valid, runnable example so Scalar's "Send"
 // works out of the box (it decodes, finds no text, returns an empty result).
 const EXAMPLE_IMAGE =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
-/** JSON body for single-image OCR. */
-export const jsonOcrSchema = ocrOptionsSchema
-  .extend({
-    source: z.string().min(1).openapi({
-      description: "A `data:` URI or an allowlisted https URL. Local paths are rejected.",
-      example: EXAMPLE_IMAGE,
-    }),
-  })
-  .openapi("OcrJsonRequest");
+const source = v.pipe(
+  v.string(),
+  v.minLength(1),
+  v.description("A `data:` URI or an allowlisted https URL. Local paths are rejected."),
+  v.metadata({ example: EXAMPLE_IMAGE })
+);
 
-/** Multipart body for single-image OCR (documentation only - parsed manually). */
-export const multipartOcrSchema = z
-  .object({
-    file: z.custom<File>().openapi({ type: "string", format: "binary" }),
-    strategy,
-    flatten: booleanish,
-    engine,
-    minimumConfidence,
-  })
-  .openapi("OcrMultipartRequest");
+/** JSON body for single-image OCR. */
+export const jsonOcrSchema = v.pipe(
+  v.object({ ...ocrOptionsSchema.entries, source }),
+  v.metadata({ ref: "OcrJsonRequest" })
+);
 
 /** JSON body for detection-only inference. */
-export const jsonDetectSchema = z
-  .object({
-    engine,
-    source: z.string().min(1).openapi({
-      description: "A `data:` URI or an allowlisted https URL. Local paths are rejected.",
-      example: EXAMPLE_IMAGE,
-    }),
-  })
-  .openapi("DetectJsonRequest");
-
-/** Multipart body for detection-only inference (documentation only - parsed manually). */
-export const multipartDetectSchema = z
-  .object({
-    file: z.custom<File>().openapi({ type: "string", format: "binary" }),
-    engine,
-  })
-  .openapi("DetectMultipartRequest");
+export const jsonDetectSchema = v.pipe(
+  v.object({ engine, source }),
+  v.metadata({ ref: "DetectJsonRequest" })
+);
 
 /** JSON body for batch / async / stream OCR. */
-export const batchOcrSchema = ocrOptionsSchema
-  .extend({
-    sources: z
-      .array(z.string().min(1))
-      .min(1)
-      .openapi({ description: "data: URIs or https URLs." }),
-    concurrency: z.coerce.number().int().positive().optional(),
-    settle: booleanish,
-  })
-  .openapi("BatchRequest", {
+export const batchOcrSchema = v.pipe(
+  v.object({
+    ...ocrOptionsSchema.entries,
+    sources: v.pipe(
+      v.array(v.pipe(v.string(), v.minLength(1))),
+      v.minLength(1),
+      v.description("data: URIs or https URLs.")
+    ),
+    concurrency: v.optional(positiveInt),
+    settle: v.optional(v.boolean()),
+  }),
+  v.metadata({
+    ref: "BatchRequest",
     example: { sources: [EXAMPLE_IMAGE], strategy: "per-line", settle: true },
-  });
-export type BatchOcrBody = z.infer<typeof batchOcrSchema>;
+  })
+);
+export type BatchOcrBody = v.InferOutput<typeof batchOcrSchema>;
 
-export const taskIdParamsSchema = z.object({
-  id: z.string().openapi({ param: { name: "id", in: "path" }, example: crypto.randomUUID() }),
+export const taskIdParamsSchema = v.object({
+  id: v.pipe(v.string(), v.metadata({ example: crypto.randomUUID() })),
 });
+
+// --- Multipart bodies (documentation only - parsed manually) ---
+// Plain OpenAPI objects: the file field has no schema-library shape, and these
+// bodies never pass through a validator.
+
+const stringEnum = (values: readonly string[]) => ({ type: "string" as const, enum: [...values] });
+const multipartOptions = {
+  strategy: stringEnum(["per-box", "per-line", "cross-line"]),
+  flatten: { type: "boolean" as const },
+  engine: stringEnum(["opencv", "canvas-native"]),
+  minimumConfidence: { type: "number" as const, minimum: 0, maximum: 1 },
+};
+const binaryFile = { type: "string" as const, format: "binary" };
+
+/** Multipart body for single-image OCR. */
+export const multipartOcrSchema = {
+  type: "object" as const,
+  properties: { file: binaryFile, ...multipartOptions },
+  required: ["file"],
+};
+
+/** Multipart body for detection-only inference. */
+export const multipartDetectSchema = {
+  type: "object" as const,
+  properties: { file: binaryFile, engine: multipartOptions.engine },
+  required: ["file"],
+};
 
 // --- Response schemas ---
 
-const boxSchema = z.object({ x: z.number(), y: z.number(), width: z.number(), height: z.number() });
-const recognitionItemSchema = z.object({
-  text: z.string(),
-  confidence: z.number(),
+const boxSchema = v.object({
+  x: v.number(),
+  y: v.number(),
+  width: v.number(),
+  height: v.number(),
+});
+const recognitionItemSchema = v.object({
+  text: v.string(),
+  confidence: v.number(),
   box: boxSchema,
 });
-export const ocrResultSchema = z
-  .object({
-    text: z.string(),
-    confidence: z.number(),
-    lines: z.array(z.array(recognitionItemSchema)).optional(),
-    results: z.array(recognitionItemSchema).optional(),
-  })
-  .openapi("OcrResult");
+export const ocrResultSchema = v.pipe(
+  v.object({
+    text: v.string(),
+    confidence: v.number(),
+    lines: v.optional(v.array(v.array(recognitionItemSchema))),
+    results: v.optional(v.array(recognitionItemSchema)),
+  }),
+  v.metadata({ ref: "OcrResult" })
+);
 
-export const detectResultSchema = z.object({ boxes: z.array(boxSchema) }).openapi("DetectResult");
+export const detectResultSchema = v.pipe(
+  v.object({ boxes: v.array(boxSchema) }),
+  v.metadata({ ref: "DetectResult" })
+);
 
-export const batchResultSchema = z.object({ results: z.array(z.unknown()) }).openapi("BatchResult");
+export const batchResultSchema = v.pipe(
+  v.object({ results: v.array(v.unknown()) }),
+  v.metadata({ ref: "BatchResult" })
+);
 
-export const taskAcceptedSchema = z
-  .object({ taskId: z.string(), status: z.string() })
-  .openapi("TaskAccepted");
+export const taskAcceptedSchema = v.pipe(
+  v.object({ taskId: v.string(), status: v.string() }),
+  v.metadata({ ref: "TaskAccepted" })
+);
 
-export const taskStatusSchema = z
-  .object({
-    id: z.string(),
-    status: z.enum(["queued", "running", "done", "failed", "cancelled"]),
-    updatedAt: z.number(),
-  })
-  .openapi("TaskStatus");
+export const taskStatusSchema = v.pipe(
+  v.object({
+    id: v.string(),
+    status: v.picklist(["queued", "running", "done", "failed", "cancelled"]),
+    updatedAt: v.number(),
+  }),
+  v.metadata({ ref: "TaskStatus" })
+);
 
-export const modelsSchema = z
-  .object({
-    engines: z.array(z.string()),
-    strategies: z.array(z.string()),
-    default: z.object({ engine: z.string(), strategy: z.string() }),
-    executionProviders: z.array(z.string()),
-  })
-  .openapi("Models");
+export const modelsSchema = v.pipe(
+  v.object({
+    engines: v.array(v.string()),
+    strategies: v.array(v.string()),
+    default: v.object({ engine: v.string(), strategy: v.string() }),
+    executionProviders: v.array(v.string()),
+  }),
+  v.metadata({ ref: "Models" })
+);

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Serve: request validation and the OpenAPI spec now come from valibot via
+  `hono-openapi` instead of zod via `@hono/zod-openapi`. Routes, envelopes,
+  `/openapi.json`, and `/docs` are unchanged apart from JSON Schema
+  spelling (`const` for literals, no spurious `nullable`). One tightening:
+  JSON bodies now require real numbers and booleans for `minimumConfidence`,
+  `flatten`, `settle`, and `concurrency`; string forms are still accepted in
+  multipart fields, where everything arrives as a string.
+
 ## [6.5.0] - 2026-09-08
 
 ### Added

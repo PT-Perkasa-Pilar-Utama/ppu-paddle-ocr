@@ -1,8 +1,10 @@
 import type { Context } from "hono";
+import * as v from "valibot";
 import { config } from "./config.js";
 import { badRequest, payloadTooLarge } from "./errors.js";
 import type { OcrOptions } from "./schemas.js";
-import { jsonOcrSchema, ocrOptionsSchema } from "./schemas.js";
+import { jsonOcrSchema, multipartOcrOptionsSchema } from "./schemas.js";
+import { describeIssues } from "./validate.js";
 
 const tooBig = () =>
   payloadTooLarge(`Image exceeds MAX_UPLOAD_BYTES (${config.maxUploadBytes} bytes)`);
@@ -92,6 +94,13 @@ export async function resolveSource(source: string): Promise<ArrayBuffer> {
   return buf;
 }
 
+/** Parse with the same 400 the route validators produce. */
+function parseOrThrow<S extends v.GenericSchema>(schema: S, input: unknown): v.InferOutput<S> {
+  const result = v.safeParse(schema, input);
+  if (!result.success) throw badRequest(`Validation failed - ${describeIssues(result.issues)}`);
+  return result.output;
+}
+
 /** Read a single image: multipart `file` field, or JSON `{ source, ...opts }`. */
 export async function readSingle(c: Context): Promise<{ image: ArrayBuffer; opts: OcrOptions }> {
   const contentType = c.req.header("content-type") ?? "";
@@ -105,7 +114,7 @@ export async function readSingle(c: Context): Promise<{ image: ArrayBuffer; opts
     const image = await file.arrayBuffer();
     if (image.byteLength > config.maxUploadBytes) throw tooBig();
     assertImage(image);
-    const opts = ocrOptionsSchema.parse({
+    const opts = parseOrThrow(multipartOcrOptionsSchema, {
       strategy: body["strategy"],
       flatten: body["flatten"],
       engine: body["engine"],
@@ -117,7 +126,7 @@ export async function readSingle(c: Context): Promise<{ image: ArrayBuffer; opts
   const json = await c.req.json().catch(() => {
     throw badRequest("Invalid JSON body");
   });
-  const { source, ...opts } = jsonOcrSchema.parse(json);
+  const { source, ...opts } = parseOrThrow(jsonOcrSchema, json);
   const image = await resolveSource(source);
   return { image, opts };
 }

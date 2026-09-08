@@ -16,7 +16,7 @@ COPY package.json bun.lock ./
 RUN bun install --production --ignore-scripts \
   && bun add onnxruntime-node --ignore-scripts \
   && bun pm trust onnxruntime-node
-# Serve app: only hono + zod at runtime (its lib deps are devDeps that resolve
+# Serve app: only hono + valibot at runtime (its lib deps are devDeps that resolve
 # from the root node_modules above).
 COPY apps/serve/package.json apps/serve/bun.lock apps/serve/
 RUN cd apps/serve && bun install --production
