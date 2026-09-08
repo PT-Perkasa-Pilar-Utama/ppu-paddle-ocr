@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Node, web, and React Native now share the same recognition and lifecycle
   implementation.
+- `recognize()` skips the result cache when `strategy` or any per-call
+  recognition override is set, since the cache is keyed on the image alone.
 
 ## [6.4.3] - 2026-08-27
 

@@ -974,6 +974,8 @@ Per-call options for `recognize()`.
 | `rotateVerticalCrops` |                 `boolean`                 | service default | Override vertical crop rotation for this call.          |
 | `recBatchSize`        |                 `number`                  | service default | Override the recognition inference batch size per call. |
 
+A call that sets `strategy`, `dictionary`, or any of the four recognition overrides skips the result cache, which is keyed on the image alone.
+
 ### `DetectOptions`
 
 Per-call options for `detect()`. Extends [`DetectionOptions`](#detectionoptions),
