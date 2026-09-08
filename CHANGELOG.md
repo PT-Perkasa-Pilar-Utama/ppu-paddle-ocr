@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   implementation.
 - `recognize()` skips the result cache when `strategy` or any per-call
   recognition override is set, since the cache is keyed on the image alone.
+- **Tooling pinned to Bun 1.4.2.** CI workflows, the serve Docker images, and
+  `@types/bun` move from 1.3.14 to 1.4.2 together. `bun run test` now runs the
+  suite across two worker processes (`--parallel=2`), which cuts a local run
+  from about 40 s to under 30 s on an 8-core machine. The serve app's
+  `minimumConfidence` request field ships in serve 0.4.0.
 
 ## [6.4.3] - 2026-08-27
 

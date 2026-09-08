@@ -36,10 +36,10 @@ Thank you for taking the time to contribute. This document covers how to set up 
 
 The recommended development environment is Linux-based. macOS works fine too; Windows users may encounter path differences in some scripts.
 
-Bun is the primary runtime and package manager. Every CI workflow pins Bun at **1.3.14**; earlier versions carried test-runner bugs that produced false failures on Linux. Use the same version locally:
+Bun is the primary runtime and package manager. Every CI workflow pins Bun at **1.4.2**; versions before 1.3.14 carried test-runner bugs that produced false failures on Linux. Use the same version locally:
 
 ```bash
-curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.14"
+curl -fsSL https://bun.sh/install | bash -s "bun-v1.4.2"
 ```
 
 Pre-commit hooks are set up via Husky and run automatically after `bun install`. They enforce formatting and linting before every commit.
@@ -70,11 +70,14 @@ dependencies, or regress accuracy or performance without justification.
 
 ## How tests run
 
-`bun test` runs the suite locally. CI runs the same suite on every push and
-pull request to `main`, and the `Quality Checks and Tests` job is a **required
+`bun run test` runs the suite locally across two worker processes
+(`bun test --parallel=2`; the suite is inference-bound, so more workers only
+trip the 5 s per-test timeouts). CI runs the same suite on every push and pull
+request to `main`, and the `Quality Checks and Tests` job is a **required
 status check**: a pull request cannot merge until it passes. Coverage is
-collected on each run (`bun run test --coverage`). Run the tests locally before
-pushing so CI only confirms what you already know.
+collected on each run (`bun run test:coverage`) and uploaded to Codecov, which
+feeds the README badge. Run the tests locally before pushing so CI only
+confirms what you already know.
 
 On a cold cache the suite downloads the default PP-OCRv6 models (~30 MB) on
 first run and caches them under `~/.cache/ppu-paddle-ocr`; later runs read from
