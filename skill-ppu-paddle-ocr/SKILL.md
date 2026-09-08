@@ -82,6 +82,10 @@ If detection finds zero boxes, `recognize()` returns an empty result (`text: ""`
 
 ## Detection-only inference: `detect()`
 
+For a single image, the package entry points also export one-shot `ocr()` and
+`detect()` functions that initialize and destroy a service automatically. Use
+`PaddleOcrService` for repeated work so model sessions are reused.
+
 When the user only needs layout - where the text is, not what it says - point them at `detect(image, options?)` instead of `recognize()`. It runs just the detection model and returns `{ boxes: Box[] }` in original image coordinates. Same accepted inputs as `recognize()`, available on all three entry points, and also exposed as the CLI `detect` command and the serve app's `POST /v1/detect`.
 
 ```ts

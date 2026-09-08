@@ -5,6 +5,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test
 import { getPlatform, setPlatform } from "ppu-ocv";
 
 import type { PaddleOcrService } from "../src/web/paddle-ocr.service.web.js";
+import type { ocr as webOcrFunction } from "../src/web/index.js";
 import { PaddleOcrService as NodePaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 import { DEFAULT_MODEL } from "../src/model-catalogue.js";
 import { cachePathFor } from "../src/processor/model-cache.js";
@@ -15,6 +16,7 @@ import { installWebCanvas, uninstallWebCanvas } from "./web-canvas-polyfill.js";
 // the node test suites run in the same `bun test` process. The active platform
 // is saved before and restored after this suite.
 let WebPaddleOcrService: typeof PaddleOcrService;
+let webOcr: typeof webOcrFunction;
 let savedPlatform: ReturnType<typeof getPlatform>;
 
 // Pre-loaded v6 model ArrayBuffers read from the Node disk cache.
@@ -55,8 +57,9 @@ describe("web OCR service (onnxruntime-web under the polyfilled runtime)", () =>
 
     savedPlatform = getPlatform();
     installWebCanvas();
-    ({ PaddleOcrService: WebPaddleOcrService } =
-      await import("../src/web/paddle-ocr.service.web.js"));
+    const webModule = await import("../src/web/index.js");
+    WebPaddleOcrService = webModule.PaddleOcrService;
+    webOcr = webModule.ocr;
   }, 120_000);
 
   afterAll(() => {
@@ -120,6 +123,17 @@ describe("web OCR service (onnxruntime-web under the polyfilled runtime)", () =>
 
     expect(result.lines).toHaveLength(0);
     expect(result.text).toBeEmpty();
+  }, 60000);
+
+  test("one-shot ocr runs through the web runtime", async () => {
+    const result = await webOcr(smallBuffer, {
+      model: { detection: v6Det, recognition: v6Rec, charactersDictionary: v6Dict },
+      processing: { engine: "canvas-native" },
+      noCache: true,
+    });
+
+    expect(result.text.length).toBeGreaterThan(0);
+    expect(result.lines.length).toBeGreaterThan(0);
   }, 60000);
 
   test("batchRecognize and streaming work on the web path", async () => {

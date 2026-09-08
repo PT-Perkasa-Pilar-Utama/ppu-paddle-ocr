@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `recognize()` accepts per-call overrides for `minimumConfidence`,
   `spaceRecovery`, `rotateVerticalCrops`, and `recBatchSize` on Node, Bun,
   web, and React Native.
+- One-shot `ocr()` and `detect()` functions on the Node/Bun, web, and React
+  Native entry points. Each call initializes and destroys its own service;
+  repeated work should continue to use `PaddleOcrService`.
 
 ### Changed
 
