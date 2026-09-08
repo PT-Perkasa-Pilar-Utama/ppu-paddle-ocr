@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import * as v from "valibot";
 import { config } from "./config.js";
-import { badRequest, payloadTooLarge } from "./errors.js";
+import { badGateway, badRequest, payloadTooLarge } from "./errors.js";
 import type { OcrOptions } from "./schemas.js";
 import { jsonOcrSchema, multipartOcrOptionsSchema } from "./schemas.js";
 import { describeIssues } from "./validate.js";
@@ -75,7 +75,15 @@ async function fetchHttps(source: string): Promise<ArrayBuffer> {
     throw badRequest(`Host "${url.host}" is not in SOURCE_URL_ALLOWLIST`);
   }
   // `redirect: "error"` blocks redirect-based SSRF past the allowlist.
-  const res = await fetch(url, { redirect: "error" });
+  let res: Response;
+  try {
+    res = await fetch(url, { redirect: "error" });
+  } catch (err: unknown) {
+    // DNS, TLS, refused connection, or a redirect: the allowlisted host is the
+    // one that failed, so report it as an upstream error rather than a 500.
+    const reason = err instanceof Error ? err.message : String(err);
+    throw badGateway(`Failed to fetch source from ${url.host}: ${reason}`);
+  }
   if (!res.ok) throw badRequest(`Failed to fetch source (HTTP ${res.status})`);
   const declared = Number(res.headers.get("content-length") ?? 0);
   if (declared > config.maxUploadBytes) throw tooBig();
