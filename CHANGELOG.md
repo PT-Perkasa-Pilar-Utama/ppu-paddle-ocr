@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Serve: malformed JSON on `/v1/ocr/batch`, `/stream`, and `/async` returns
   `400` in the error envelope instead of `500`.
+- Per-box recognition in debug mode now runs through the same crop, rotate,
+  and batched recognize helpers as the production path (as a batch of one),
+  so turning `debugging.debug` on no longer changes the text. The debug path
+  had its own copy that skipped vertical crop rotation and dropped per-call
+  overrides.
+- Serve: an allowlisted `https` source whose host cannot be reached (DNS, TLS,
+  refused connection, or a redirect) now returns `502` with the host named,
+  instead of `500 Internal server error`.
 
 ## [6.5.0] - 2026-09-08
 
