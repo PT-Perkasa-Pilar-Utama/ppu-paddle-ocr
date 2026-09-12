@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   before the session options reach ONNX Runtime. Works on Node, web, and
   mobile.
 
+### Fixed
+
+- Model downloads honour a `Retry-After` header on a failed response, capped at
+  60 seconds, and otherwise back off exponentially with jitter (0.5-1 s, then
+  1-2 s) instead of the flat 500 ms / 1 s it used before. A rate-limited host
+  knows how long its window has left; guessing shorter just burned an attempt.
+
 ### Changed
 
 - Dev dependency: `adm-zip` override moves to `^0.6.1`. Version 0.6.0 follows
