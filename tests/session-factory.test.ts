@@ -1,9 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import type { InferenceSession } from "onnxruntime-common";
 import { createSessionWithFallback } from "../src/core/session-factory.js";
+import type { SessionOptions } from "../src/interface.js";
 
 type FakeSession = { id: string };
-type SessionOpts = InferenceSession.SessionOptions;
+type SessionOpts = SessionOptions;
 type OrtLike = Parameters<typeof createSessionWithFallback>[0];
 
 function makeFakeOrt(
@@ -114,6 +115,55 @@ describe("createSessionWithFallback", () => {
       () => {}
     );
     expect(session).toEqual({ id: "dml-fallback" } as unknown as InferenceSession);
+  });
+
+  test("notifies onSessionFallback without leaking it into ORT options", async () => {
+    let attempt = 0;
+    const seen: SessionOpts[] = [];
+    const ort = makeFakeOrt(async (_d, opts) => {
+      attempt++;
+      seen.push(opts);
+      if (attempt === 1) throw new Error("CUDA runtime not found");
+      return { id: "fallback" };
+    });
+    const errors: unknown[] = [];
+    let storedOpts: SessionOpts | undefined;
+    await createSessionWithFallback(
+      ort,
+      new Uint8Array([1]),
+      {
+        executionProviders: ["cuda", "cpu"],
+        onSessionFallback: (error) => errors.push(error),
+      },
+      () => {},
+      (next) => {
+        storedOpts = next;
+      }
+    );
+    expect(errors).toHaveLength(1);
+    expect((errors[0] as Error).message).toBe("CUDA runtime not found");
+    expect(seen).toHaveLength(2);
+    for (const opts of seen) {
+      expect("onSessionFallback" in opts).toBe(false);
+    }
+    // The user callback survives in the options the service stores back.
+    expect(typeof storedOpts?.onSessionFallback).toBe("function");
+  });
+
+  test("skips onSessionFallback when the fallback session also fails", async () => {
+    const ort = makeFakeOrt(async () => {
+      throw new Error("everything is broken");
+    });
+    let called = 0;
+    await expect(
+      createSessionWithFallback(
+        ort,
+        new Uint8Array([1]),
+        { executionProviders: ["cuda", "cpu"], onSessionFallback: () => called++ },
+        () => {}
+      )
+    ).rejects.toThrow("everything is broken");
+    expect(called).toBe(0);
   });
 
   test("picks a CPU/WASM fallback that was actually in the original list", async () => {

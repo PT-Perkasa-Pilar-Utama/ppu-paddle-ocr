@@ -414,6 +414,17 @@ export type SessionOptions = InferenceSession.SessionOptions & {
    * @default ['cpu']
    */
   executionProviders?: InferenceSession.SessionOptions["executionProviders"];
+
+  /**
+   * Called when session creation with the requested execution providers fails
+   * and the service retries with a safe provider (`cpu` or `wasm`).
+   *
+   * Use it to detect that hardware acceleration was silently dropped, for
+   * example to fail over to a different runtime profile. Receives the original
+   * error. May fire once per model session (detection and recognition).
+   * Never forwarded to ONNX Runtime.
+   */
+  onSessionFallback?: (error: unknown) => void;
 };
 
 /**
