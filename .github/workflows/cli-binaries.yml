@@ -21,6 +21,13 @@ on:
 permissions:
   contents: read
 
+# CI downloads the models on every run, and the primary host rate-limits by IP.
+# Runners share egress addresses, so a busy window answers with HTTP 429 and
+# fails the job. This switches on the GitHub mirror of the models repo as a
+# fallback, which is off by default because its LFS bandwidth is a budget.
+env:
+  PPU_PADDLE_OCR_MODEL_MIRROR: "1"
+
 jobs:
   build:
     name: Build all targets

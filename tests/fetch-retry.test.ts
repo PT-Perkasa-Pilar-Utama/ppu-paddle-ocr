@@ -3,6 +3,7 @@
 
 import { afterEach, describe, expect, test } from "bun:test";
 
+import { MODEL_BASE_URL, MODEL_MIRROR_BASE_URL, mirrorUrl } from "../src/model-catalogue.js";
 import { fetchArrayBufferWithRetry, parseRetryAfter } from "../src/utils.js";
 
 const realFetch = globalThis.fetch;
@@ -113,5 +114,69 @@ describe("parseRetryAfter", () => {
     expect(parseRetryAfter("", now)).toBeNull();
     expect(parseRetryAfter("   ", now)).toBeNull();
     expect(parseRetryAfter("soon", now)).toBeNull();
+  });
+});
+
+describe("model mirror fallback", () => {
+  const MODEL_PATH = "/detection/ort/PP-OCRv6_tiny_det.ort";
+  const envKey = "PPU_PADDLE_OCR_MODEL_MIRROR";
+  const realValue = process.env[envKey];
+
+  afterEach(() => {
+    if (realValue === undefined) delete process.env[envKey];
+    else process.env[envKey] = realValue;
+  });
+
+  test("is off unless the environment switches it on", () => {
+    delete process.env[envKey];
+    expect(mirrorUrl(`${MODEL_BASE_URL}${MODEL_PATH}`)).toBeNull();
+
+    process.env[envKey] = "0";
+    expect(mirrorUrl(`${MODEL_BASE_URL}${MODEL_PATH}`)).toBeNull();
+
+    process.env[envKey] = "1";
+    expect(mirrorUrl(`${MODEL_BASE_URL}${MODEL_PATH}`)).toBe(
+      `${MODEL_MIRROR_BASE_URL}${MODEL_PATH}`
+    );
+  });
+
+  test("leaves a caller's own model URL alone", () => {
+    process.env[envKey] = "1";
+    expect(mirrorUrl("https://models.example.test/my_det.ort")).toBeNull();
+  });
+
+  test("falls back to the mirror once the primary is exhausted", async () => {
+    const payload = new Uint8Array([5, 6]);
+    const seen: string[] = [];
+    globalThis.fetch = (async (input: string) => {
+      seen.push(String(input));
+      if (String(input).startsWith(MODEL_BASE_URL)) {
+        return new Response("rate limited", { status: 429 });
+      }
+      return new Response(payload, { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const buf = await fetchArrayBufferWithRetry(`${MODEL_BASE_URL}${MODEL_PATH}`, {
+      retries: 0,
+      fallbackUrl: `${MODEL_MIRROR_BASE_URL}${MODEL_PATH}`,
+    });
+    expect(new Uint8Array(buf)).toEqual(payload);
+    expect(seen).toEqual([
+      `${MODEL_BASE_URL}${MODEL_PATH}`,
+      `${MODEL_MIRROR_BASE_URL}${MODEL_PATH}`,
+    ]);
+  });
+
+  test("names both hosts when the mirror fails too", async () => {
+    globalThis.fetch = (async () =>
+      new Response("nope", { status: 429 })) as unknown as typeof fetch;
+
+    const promise = fetchArrayBufferWithRetry(`${MODEL_BASE_URL}${MODEL_PATH}`, {
+      retries: 0,
+      fallbackUrl: `${MODEL_MIRROR_BASE_URL}${MODEL_PATH}`,
+    });
+    await expect(promise).rejects.toThrow(/huggingface\.co/);
+    await expect(promise).rejects.toThrow(/mirror also failed/);
+    await expect(promise).rejects.toThrow(/github\.com/);
   });
 });
