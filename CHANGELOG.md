@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   before the session options reach ONNX Runtime. Works on Node, web, and
   mobile.
 
+### Changed
+
+- Dev dependency: `adm-zip` override moves to `^0.6.1`. Version 0.6.0 follows
+  symbolic links at the extraction destination (GHSA-vwc7-r8mq-g2x9, CVSS 6.8).
+  It reaches the tree only through `onnxruntime-node`'s install script, so no
+  published artifact was affected.
+
 ## [6.5.1] - 2026-09-09
 
 ### Changed
