@@ -1051,15 +1051,16 @@ Controls recognition preprocessing and strategy.
 
 Any valid ONNX Runtime `InferenceSession.SessionOptions` property is accepted. ppu-paddle-ocr sets these defaults:
 
-| Property                 |                            Type                            |    Default     | Description                                                           |
-| :----------------------- | :--------------------------------------------------------: | :------------: | :-------------------------------------------------------------------- |
-| `executionProviders`     |          `string[] \| ExecutionProviderConfig[]`           |   `['cpu']`    | Execution providers for inference. Accepts strings or config objects. |
-| `graphOptimizationLevel` | `'disabled' \| 'basic' \| 'extended' \| 'layout' \| 'all'` |    `'all'`     | ONNX graph optimization level.                                        |
-| `enableCpuMemArena`      |                         `boolean`                          |     `true`     | Enable CPU memory arena for better memory management.                 |
-| `enableMemPattern`       |                         `boolean`                          |     `true`     | Enable memory pattern optimization.                                   |
-| `executionMode`          |                `'sequential' \| 'parallel'`                | `'sequential'` | Execution mode for the session.                                       |
-| `interOpNumThreads`      |                          `number`                          |      `0`       | Inter-op threads (0 = ONNX decides).                                  |
-| `intraOpNumThreads`      |                          `number`                          |      `0`       | Intra-op threads (0 = ONNX decides).                                  |
+| Property                 |                            Type                            |    Default     | Description                                                                          |
+| :----------------------- | :--------------------------------------------------------: | :------------: | :----------------------------------------------------------------------------------- |
+| `executionProviders`     |          `string[] \| ExecutionProviderConfig[]`           |   `['cpu']`    | Execution providers for inference. Accepts strings or config objects.                |
+| `graphOptimizationLevel` | `'disabled' \| 'basic' \| 'extended' \| 'layout' \| 'all'` |    `'all'`     | ONNX graph optimization level.                                                       |
+| `enableCpuMemArena`      |                         `boolean`                          |     `true`     | Enable CPU memory arena for better memory management.                                |
+| `enableMemPattern`       |                         `boolean`                          |     `true`     | Enable memory pattern optimization.                                                  |
+| `executionMode`          |                `'sequential' \| 'parallel'`                | `'sequential'` | Execution mode for the session.                                                      |
+| `interOpNumThreads`      |                          `number`                          |      `0`       | Inter-op threads (0 = ONNX decides).                                                 |
+| `intraOpNumThreads`      |                          `number`                          |      `0`       | Intra-op threads (0 = ONNX decides).                                                 |
+| `onSessionFallback`      |                 `(error: unknown) => void`                 |       -        | Called when the requested providers fail and the session is rebuilt on `cpu`/`wasm`. |
 
 ```ts
 const service = new PaddleOcrService({
@@ -1072,6 +1073,27 @@ const service = new PaddleOcrService({
   },
 });
 ```
+
+`onSessionFallback` is the only non-ORT property. It is stripped before the
+options reach ONNX Runtime. Use it when you run your own accelerator ladder and
+need to know that a GPU provider was dropped instead of reading a log line:
+
+```ts
+let degraded: unknown = null;
+const service = new PaddleOcrService({
+  session: {
+    executionProviders: [{ name: "cuda", deviceId: 0 }, "cpu"],
+    onSessionFallback: (error) => (degraded ||= error),
+  },
+});
+await service.initialize();
+if (degraded) {
+  // Acceleration was dropped. Fail over to your own runtime profile.
+}
+```
+
+It can fire twice per `initialize()`, once for the detection session and once
+for the recognition session.
 
 ### `ProcessingOptions`
 

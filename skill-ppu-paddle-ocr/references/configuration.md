@@ -97,15 +97,16 @@ Controls the recognition stage's preprocessing and batching strategy.
 
 This is `InferenceSession.SessionOptions` from `onnxruntime-common`, plus a couple of typed convenience defaults. Anything ONNX Runtime accepts works here.
 
-| Property                 | Type                                                       | Default                                   | Notes                                              |
-| ------------------------ | ---------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------- |
-| `executionProviders`     | `string[] \| ExecutionProviderConfig[]`                    | `["cpu"]` (Node), auto WebGPU->WASM (web) | Override only with reason.                         |
-| `graphOptimizationLevel` | `"disabled" \| "basic" \| "extended" \| "layout" \| "all"` | `"all"`                                   | Leave at `"all"` unless debugging an ORT bug.      |
-| `enableCpuMemArena`      | `boolean`                                                  | `true`                                    | Memory arena allocator. Disable only on tight RAM. |
-| `enableMemPattern`       | `boolean`                                                  | `true`                                    | Reuse memory patterns across runs.                 |
-| `executionMode`          | `"sequential" \| "parallel"`                               | `"sequential"`                            | Parallel rarely helps for OCR-shaped graphs.       |
-| `interOpNumThreads`      | `number`                                                   | `0`                                       | `0` = ORT picks. Set explicitly only when pinning. |
-| `intraOpNumThreads`      | `number`                                                   | `0`                                       | Same.                                              |
+| Property                 | Type                                                       | Default                                   | Notes                                                                                             |
+| ------------------------ | ---------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `executionProviders`     | `string[] \| ExecutionProviderConfig[]`                    | `["cpu"]` (Node), auto WebGPU->WASM (web) | Override only with reason.                                                                        |
+| `graphOptimizationLevel` | `"disabled" \| "basic" \| "extended" \| "layout" \| "all"` | `"all"`                                   | Leave at `"all"` unless debugging an ORT bug.                                                     |
+| `enableCpuMemArena`      | `boolean`                                                  | `true`                                    | Memory arena allocator. Disable only on tight RAM.                                                |
+| `enableMemPattern`       | `boolean`                                                  | `true`                                    | Reuse memory patterns across runs.                                                                |
+| `executionMode`          | `"sequential" \| "parallel"`                               | `"sequential"`                            | Parallel rarely helps for OCR-shaped graphs.                                                      |
+| `interOpNumThreads`      | `number`                                                   | `0`                                       | `0` = ORT picks. Set explicitly only when pinning.                                                |
+| `intraOpNumThreads`      | `number`                                                   | `0`                                       | Same.                                                                                             |
+| `onSessionFallback`      | `(error: unknown) => void`                                 | -                                         | Fired when the requested providers fail and the service retries on `cpu`/`wasm`. Not sent to ORT. |
 
 **Common patterns:**
 
@@ -131,6 +132,23 @@ This is `InferenceSession.SessionOptions` from `onnxruntime-common`, plus a coup
   new PaddleOcrService({
     session: { executionProviders: ["coreml", "cpu"] },
   });
+  ```
+
+- **Detect a silent drop to CPU** (the service retries on `cpu`/`wasm` when the
+  requested providers fail to build a session):
+
+  ```ts
+  let degraded: unknown = null;
+  const service = new PaddleOcrService({
+    session: {
+      executionProviders: [{ name: "cuda", deviceId: 0 }, "cpu"],
+      onSessionFallback: (error) => (degraded ||= error),
+    },
+  });
+  await service.initialize();
+  if (degraded) {
+    // Acceleration was dropped. Fail over to your own runtime profile.
+  }
   ```
 
 ---
