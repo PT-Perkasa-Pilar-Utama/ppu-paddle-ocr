@@ -3,6 +3,8 @@
 
 import type { InferenceSession } from "onnxruntime-common";
 
+import type { SessionOptions } from "../interface.js";
+
 /** Minimal shape of an ORT namespace capable of creating sessions. */
 export type OrtLike = {
   InferenceSession: typeof InferenceSession;
@@ -29,15 +31,19 @@ function providerName(
  * default to `cpu` / `wasm` based on the ORT binding shape).
  *
  * Throws the original error if the provider list was already safe-only.
+ *
+ * `sessionOpts.onSessionFallback` is stripped before the options reach ORT and
+ * is called with the original error once the fallback session is ready, so a
+ * host that runs its own accelerator ladder can see the silent degradation.
  */
 export async function createSessionWithFallback(
   ort: OrtLike,
   modelData: Uint8Array,
-  sessionOpts: InferenceSession.SessionOptions | undefined,
+  sessionOpts: SessionOptions | undefined,
   logger: (msg: string) => void,
-  onFallback?: (newOpts: InferenceSession.SessionOptions) => void
+  onFallback?: (newOpts: SessionOptions) => void
 ): Promise<InferenceSession> {
-  const opts = sessionOpts ?? {};
+  const { onSessionFallback, ...opts } = sessionOpts ?? {};
   try {
     return await ort.InferenceSession.create(modelData, opts);
   } catch (err) {
@@ -61,7 +67,9 @@ export async function createSessionWithFallback(
       ...opts,
       executionProviders: [fallbackName],
     };
-    onFallback?.(fallbackOpts);
-    return ort.InferenceSession.create(modelData, fallbackOpts);
+    onFallback?.({ ...fallbackOpts, onSessionFallback });
+    const session = await ort.InferenceSession.create(modelData, fallbackOpts);
+    onSessionFallback?.(err);
+    return session;
   }
 }
