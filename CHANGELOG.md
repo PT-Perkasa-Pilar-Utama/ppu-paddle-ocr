@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `session.onSessionFallback` - a callback fired when session creation with the
+  requested execution providers fails and the service retries on `cpu`/`wasm`.
+  It receives the original error and runs after the fallback session is ready,
+  so a host that manages its own accelerator ladder can see that acceleration
+  was silently dropped instead of reading a log line. The option is stripped
+  before the session options reach ONNX Runtime. Works on Node, web, and
+  mobile.
+
 ## [6.5.1] - 2026-09-09
 
 ### Changed
