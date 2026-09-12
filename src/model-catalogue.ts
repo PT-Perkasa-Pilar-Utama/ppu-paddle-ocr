@@ -27,6 +27,38 @@ export const MODEL_BASE_URL = "https://huggingface.co/snowfluke/ppu-paddle-ocr-m
  */
 export const DICT_BASE_URL = "https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main";
 
+/**
+ * Mirror of {@link MODEL_BASE_URL} on GitHub, used only when
+ * `PPU_PADDLE_OCR_MODEL_MIRROR` is set.
+ *
+ * It must be the `github.com/<owner>/<repo>/raw/<ref>` form: that one redirects
+ * to the LFS media host and serves the real bytes. `raw.githubusercontent.com`
+ * answers with the 130-byte LFS pointer text instead, which parses as a corrupt
+ * model.
+ *
+ * Off by default on purpose. GitHub LFS has a bandwidth budget that, once
+ * exhausted, cuts off downloads for every version at once, so an always-on
+ * fallback would turn one bad hour on the primary host into a dead mirror.
+ * Turn it on where the request volume is bounded and known, such as CI.
+ */
+export const MODEL_MIRROR_BASE_URL =
+  "https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/raw/main";
+
+/**
+ * Rewrite a built-in model URL onto {@link MODEL_MIRROR_BASE_URL}.
+ *
+ * Returns null when the mirror is switched off, or when the URL does not point
+ * at the primary host - a caller's own model URL is never redirected somewhere
+ * they did not ask for. The environment is read on every call so a test can
+ * flip it without reloading the module.
+ */
+export function mirrorUrl(url: string): string | null {
+  const enabled = globalThis.process?.env?.PPU_PADDLE_OCR_MODEL_MIRROR;
+  if (!enabled || enabled === "0" || enabled === "false") return null;
+  if (!url.startsWith(MODEL_BASE_URL)) return null;
+  return MODEL_MIRROR_BASE_URL + url.slice(MODEL_BASE_URL.length);
+}
+
 // ─── PP-OCRv6 Models ──────────────────────────────────────────────────────────
 
 /** PP-OCRv6 small: 50+ languages full dictionary, best accuracy/speed balance. */

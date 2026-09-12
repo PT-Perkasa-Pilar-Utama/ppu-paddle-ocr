@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 PT Perkasa Pilar Utama
 
+import { mirrorUrl } from "./model-catalogue.js";
+
 /**
  * Deep merges multiple objects into the target object.
  * Arrays are overwritten, not concatenated.
@@ -120,17 +122,22 @@ function backoffMs(attempt: number): number {
  * A failed attempt waits for the response's `Retry-After` header when the host
  * sent one, and otherwise backs off exponentially with jitter.
  *
+ * Once every attempt on `url` has failed, the whole sequence runs again against
+ * `fallbackUrl` if there is one. By default that is the mirror of a built-in
+ * model URL, which is off unless `PPU_PADDLE_OCR_MODEL_MIRROR` is set.
+ *
  * @param url - Resource to download.
- * @param options - `timeoutMs` per-attempt deadline (default 300 000 ms / 5 min) and
- *   `retries` additional attempts after the first (default 2).
+ * @param options - `timeoutMs` per-attempt deadline (default 300 000 ms / 5 min),
+ *   `retries` additional attempts after the first (default 2), and `fallbackUrl`
+ *   to try once the primary is exhausted (null disables it).
  * @returns The downloaded bytes.
  * @throws If every attempt fails (network error, timeout, or non-2xx response).
  */
 export async function fetchArrayBufferWithRetry(
   url: string,
-  options: { timeoutMs?: number; retries?: number } = {}
+  options: { timeoutMs?: number; retries?: number; fallbackUrl?: string | null } = {}
 ): Promise<ArrayBuffer> {
-  const { timeoutMs = 300_000, retries = 2 } = options;
+  const { timeoutMs = 300_000, retries = 2, fallbackUrl = mirrorUrl(url) } = options;
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -160,7 +167,21 @@ export async function fetchArrayBufferWithRetry(
     }
   }
 
-  throw new Error(`Failed to fetch ${url} after ${retries + 1} attempt(s): ${String(lastError)}`);
+  const primaryFailure = new Error(
+    `Failed to fetch ${url} after ${retries + 1} attempt(s): ${String(lastError)}`
+  );
+  if (!fallbackUrl) throw primaryFailure;
+
+  console.warn(`[ppu-paddle-ocr] ${primaryFailure.message}\n  retrying on ${fallbackUrl}`);
+  try {
+    // fallbackUrl: null stops a mirror that is itself unreachable from
+    // resolving to a third URL and looping.
+    return await fetchArrayBufferWithRetry(fallbackUrl, { timeoutMs, retries, fallbackUrl: null });
+  } catch (mirrorError) {
+    throw new Error(`${primaryFailure.message}; mirror also failed: ${String(mirrorError)}`, {
+      cause: primaryFailure,
+    });
+  }
 }
 
 /** Parse a PaddleOCR dictionary into an ordered array. Handles LF/CRLF; preserves blank entries. */

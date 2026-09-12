@@ -1095,6 +1095,24 @@ if (degraded) {
 It can fire twice per `initialize()`, once for the detection session and once
 for the recognition session.
 
+### Model host mirror
+
+Built-in models download from a Hugging Face mirror of
+[ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models).
+That host rate-limits by IP, which shows up as `HTTP 429 Too Many Requests` from
+shared addresses such as CI runners.
+
+Set `PPU_PADDLE_OCR_MODEL_MIRROR=1` and a download that exhausts its retries
+falls back to the GitHub copy, which serves byte-identical files:
+
+```sh
+PPU_PADDLE_OCR_MODEL_MIRROR=1 bun run your-script.ts
+```
+
+It is off by default. GitHub LFS bandwidth is a monthly budget, and once it is
+spent downloads stop for every version at once, so turn it on where request
+volume is bounded and known. A model URL you pass yourself is never rewritten.
+
 ### `ProcessingOptions`
 
 | Property |             Type              |  Default   | Description                           |

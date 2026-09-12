@@ -17,6 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   before the session options reach ONNX Runtime. Works on Node, web, and
   mobile.
 
+### Added
+
+- Opt-in mirror for the built-in model URLs. Set
+  `PPU_PADDLE_OCR_MODEL_MIRROR=1` and a download that exhausts its retries on
+  the primary host runs the whole sequence again against the GitHub copy of the
+  models repo, which serves byte-identical files. Off by default: GitHub LFS
+  bandwidth is a budget that, once spent, cuts off every version at once, so it
+  suits places with bounded request volume such as CI. A model URL you supplied
+  yourself is never rewritten.
+
 ### Fixed
 
 - Model downloads honour a `Retry-After` header on a failed response, capped at
