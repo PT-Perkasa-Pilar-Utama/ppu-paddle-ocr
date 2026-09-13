@@ -34,6 +34,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   1-2 s) instead of the flat 500 ms / 1 s it used before. A rate-limited host
   knows how long its window has left; guessing shorter just burned an attempt.
 
+- **A dictionary whose file layout differs from the served copy no longer
+  silently misaligns its classes.** `parseDictionary` splits on newlines, so
+  the file's own leading and trailing newlines became array entries, and the
+  blank-slot check (`dict.length === numClasses - 1`) was therefore deciding
+  whether to prepend off the file's last byte rather than off the glyph count.
+  The same dictionary saved without its trailing newline prepended a second
+  blank and shifted every class by one, and one saved without its leading blank
+  line dropped the blank slot entirely — both without raising anything. Measured
+  on the default v6-tiny pair over `assets/receipt.jpg`, one dictionary file
+  decodes `ALFAMART` as `BMGBNBSU` (92.9% → 11.4% character accuracy) purely
+  because it had no trailing newline. All four layouts now align to identical
+  classes; a dictionary the model already matches is returned unchanged, so
+  presets decode byte-for-byte as before.
+
 ### Changed
 
 - Dev dependency: `adm-zip` override moves to `^0.6.1`. Version 0.6.0 follows
