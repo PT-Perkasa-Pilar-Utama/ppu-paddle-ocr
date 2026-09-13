@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.6.0] - 2026-09-13
+
 ### Added
 
 - `session.onSessionFallback` - a callback fired when session creation with the
@@ -25,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   suits places with bounded request volume such as CI. A model URL you supplied
   yourself is never rewritten.
 
+### Changed
+
+- Dev dependency: `adm-zip` override moves to `^0.6.1`. Version 0.6.0 follows
+  symbolic links at the extraction destination (GHSA-vwc7-r8mq-g2x9, CVSS 6.8).
+  It reaches the tree only through `onnxruntime-node`'s install script, so no
+  published artifact was affected.
+
 ### Fixed
 
 - Model downloads honour a `Retry-After` header on a failed response, capped at
@@ -39,13 +48,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   trailing newline had a blank prepended that did not belong there, moving every
   class one along. Nothing raised. Every layout now aligns to identical classes,
   and a dictionary that already has one entry per class is returned as it is.
-
-### Changed
-
-- Dev dependency: `adm-zip` override moves to `^0.6.1`. Version 0.6.0 follows
-  symbolic links at the extraction destination (GHSA-vwc7-r8mq-g2x9, CVSS 6.8).
-  It reaches the tree only through `onnxruntime-node`'s install script, so no
-  published artifact was affected.
 
 ## [6.5.1] - 2026-09-09
 
