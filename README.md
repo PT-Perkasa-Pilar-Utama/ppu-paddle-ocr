@@ -1013,14 +1013,15 @@ Extends `RecognizeOptions` (applied to every image) for `batchRecognize()` / `ba
 
 Controls preprocessing and filtering during text detection.
 
-| Property               |            Type            |         Default         | Description                                                                                                                                  |
-| :--------------------- | :------------------------: | :---------------------: | :------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mean`                 | `[number, number, number]` | `[0.485, 0.456, 0.406]` | Per-channel mean for input normalization [R, G, B].                                                                                          |
-| `stdDeviation`         | `[number, number, number]` | `[0.229, 0.224, 0.225]` | Per-channel std dev for input normalization.                                                                                                 |
-| `maxSideLength`        |     `number \| "auto"`     |        `"auto"`         | Longest side limit (px). `"auto"` = clamp(0.75 x longest, 960, 1920): fixed-960 behavior up to ~1280px inputs, more pixels for large photos. |
-| `paddingVertical`      |          `number`          |          `0.4`          | Fractional vertical padding per detected box.                                                                                                |
-| `paddingHorizontal`    |          `number`          |          `0.6`          | Fractional horizontal padding per detected box.                                                                                              |
-| `minimumAreaThreshold` |          `number`          |          `20`           | Minimum box area (px^2); smaller boxes are discarded.                                                                                        |
+| Property               |            Type            |         Default         | Description                                                                                                                                                                                   |
+| :--------------------- | :------------------------: | :---------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mean`                 | `[number, number, number]` | `[0.485, 0.456, 0.406]` | Per-channel mean for input normalization [R, G, B].                                                                                                                                           |
+| `stdDeviation`         | `[number, number, number]` | `[0.229, 0.224, 0.225]` | Per-channel std dev for input normalization.                                                                                                                                                  |
+| `maxSideLength`        |     `number \| "auto"`     |        `"auto"`         | Longest side limit (px). `"auto"` = clamp(0.75 x longest, 960, 1920): fixed-960 behavior up to ~1280px inputs, more pixels for large photos.                                                  |
+| `paddingVertical`      |          `number`          |          `0.4`          | Fractional vertical padding per detected box.                                                                                                                                                 |
+| `paddingHorizontal`    |          `number`          |          `0.6`          | Fractional horizontal padding per detected box.                                                                                                                                               |
+| `minimumAreaThreshold` |          `number`          |          `20`           | Minimum box area (px^2); smaller boxes are discarded.                                                                                                                                         |
+| `detectionThreshold`   |          `number`          |           `0`           | Binarization cut on the detector's probability map, in `(0, 1)`. `0` leaves the map unmodified; `0.3` matches PaddleOCR/arboOCR and reads +1.46 points of accuracy for ~11% more engine time. |
 
 ### `RecognitionOptions`
 

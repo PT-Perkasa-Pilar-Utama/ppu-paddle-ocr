@@ -123,6 +123,29 @@ export type DetectionOptions = {
    * @default 20
    */
   minimumAreaThreshold?: number;
+
+  /**
+   * Binarization threshold applied to the detector's probability map before
+   * text regions are extracted, as a probability in `(0, 1)`.
+   *
+   * `0` (the default) leaves the map's pixels as they are, which is also what
+   * an OpenCV threshold of `0` means: `findContours` treats any non-zero pixel
+   * as foreground, so the effective cut is `round(p * 255) > 0` — around
+   * 0.002. That is far below the 0.3 PaddleOCR and arboOCR use, and it lets
+   * weak probability tails bridge neighbouring lines into single, loose boxes.
+   *
+   * Measured on the 40-stem SROIE2019 sample, `0.3` reads +1.46 points of
+   * character accuracy (83.51% -> 84.97%) for roughly 11% more engine time:
+   * fewer boxes come out, but each one is tighter around its text. Values
+   * above 0.5 measured no further gain.
+   *
+   * Set `0.3` for PaddleOCR parity, or higher on clean, high-contrast input
+   * where the extra boxes are noise. Applies to both the OpenCV and the
+   * canvas-native detection path.
+   *
+   * @default 0
+   */
+  detectionThreshold?: number;
 };
 
 /**

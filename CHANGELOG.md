@@ -27,6 +27,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   suits places with bounded request volume such as CI. A model URL you supplied
   yourself is never rewritten.
 
+- `detection.detectionThreshold` - binarizes the detector's probability map
+  before text regions are extracted, which the detection path previously never
+  did. Without it the map goes to `findContours` unmodified, and since that
+  treats any non-zero pixel as foreground the effective cut is around 0.002
+  rather than the 0.3 PaddleOCR and arboOCR use, so weak probability tails can
+  bridge neighbouring lines into single loose boxes. Setting `0.3` measured
+  +1.46 points of character accuracy on the 40-stem SROIE2019 sample (83.51% ->
+  84.97%) for roughly 11% more engine time. Off by default (`0` keeps today's
+  behavior), and applies to both the OpenCV and canvas-native engines.
+
 ### Fixed
 
 - Model downloads honour a `Retry-After` header on a failed response, capped at
