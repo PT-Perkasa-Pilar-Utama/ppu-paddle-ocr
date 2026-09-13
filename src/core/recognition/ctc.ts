@@ -222,7 +222,6 @@ function dropTrailingBlanks(entries: string[]): string[] {
  * `parseDictionary` splits on newlines, so a file's trailing newline leaves an
  * empty entry that stands for no class. The raw length is compared first, which
  * keeps a dictionary that already has one entry per class exactly as it is.
- * Trimming before comparing would rebuild it and move its blank.
  *
  * Failing that, the trailing empties go, the blank is taken from a leading
  * empty entry or prepended when the dictionary opens on a glyph, and one

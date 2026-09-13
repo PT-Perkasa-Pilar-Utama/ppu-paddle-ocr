@@ -51,20 +51,13 @@ describe("alignDictionaryToClasses", () => {
   });
 
   test("a complete dictionary is left alone even when the file ends in a newline", () => {
-    // The raw length is compared before the trailing newline is trimmed.
-    // Comparing after trimming would rebuild this one and move `blank` off
-    // class 0, where the decoded text loses its first character.
     const parsed = parseDictionary("blank\nA\nB\n");
     expect(alignDictionaryToClasses(parsed, 4)).toEqual(["blank", "A", "B", ""]);
   });
 
   test("a dictionary matching the class count is authoritative, whatever entry 0 is", () => {
     // Shaped like the shipped ppocrv5_dict.txt: 18385 entries for 18385
-    // classes, opening on U+3000, with a real `""` at index 1 and the space at
-    // the end. Nothing about it needs a prepended blank, and one would break
-    // all 18385 classes at once.
-    // Written as a code point because the literal character is invisible in a
-    // diff: U+3000 is the IDEOGRAPHIC SPACE the file actually opens on.
+    // classes, opening on U+3000 with a real `""` at index 1.
     const ideographicSpace = String.fromCharCode(0x3000);
     const v5 = [ideographicSpace, "", "A", "B", " "];
     expect(alignDictionaryToClasses(v5, v5.length)).toEqual(v5);
@@ -73,9 +66,7 @@ describe("alignDictionaryToClasses", () => {
   test("only the space class is padded, never a second blank", () => {
     // One short: the unnamed space class. Padded.
     expect(alignDictionaryToClasses(["", "A", "B", "C"], NUM_CLASSES)).toEqual(EXPECTED);
-    // Two short is not that shape. Padding a second blank would land it on a
-    // glyph class, where the decoder emits an empty character and still records
-    // a position and a confidence sample for it.
+    // Two short is not that shape, and a second blank would land on a glyph.
     const short = ["", "A", "B"];
     expect(alignDictionaryToClasses(short, NUM_CLASSES)).toEqual(short);
   });

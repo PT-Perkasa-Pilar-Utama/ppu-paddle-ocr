@@ -34,14 +34,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   1-2 s) instead of the flat 500 ms / 1 s it used before. A rate-limited host
   knows how long its window has left; guessing shorter just burned an attempt.
 
-- **A dictionary whose file layout differs from the served copy no longer
-  silently misaligns its classes.** `parseDictionary` splits on newlines, so a
-  file's leading and trailing newlines became array entries and the blank-slot
-  check read the file's last byte instead of its glyph count: the same
-  dictionary saved without its trailing newline shifted every class by one, and
-  one saved without its leading blank line lost the blank class entirely, both
-  without raising anything. All four layouts now align to identical classes, and
-  a dictionary that already has one entry per class is left as it is.
+- **A dictionary file without a final newline no longer decodes with every class
+  shifted by one.** `parseDictionary` splits on newlines, so a file's leading and
+  trailing newlines became array entries, and the blank-slot check counted those
+  entries instead of the file's glyphs: the same dictionary saved without its
+  trailing newline had a blank prepended that did not belong there, moving every
+  class one along. Nothing raised. Every layout now aligns to identical classes,
+  and a dictionary that already has one entry per class is returned as it is.
 
 ### Changed
 
