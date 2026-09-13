@@ -237,26 +237,39 @@ function dropTrailingBlanks(entries: string[]): string[] {
  *
  * Normalising the newline artifacts first makes the alignment a function of the
  * glyph count alone, so every shape of the same dictionary decodes identically.
- * For a dictionary the model already matches, this returns the input unchanged.
+ *
+ * A dictionary whose length already equals the class count is taken as
+ * authoritative and returned untouched, whatever its first entry is. It is then
+ * stating its own class 0, and prepending a blank would shift every class by
+ * one. The shipped `ppocrv5_dict.txt` is exactly this shape: 18385 entries for
+ * a model with 18385 classes, opening on U+3000 with its own `""` at index 1.
+ * A dictionary dumped from PaddleOCR's `CTCLabelDecode` is the other, carrying
+ * a literal `blank` token at index 0. Prepending to either one maps every class
+ * to a different glyph - the v5 presets fell from 95.6% to 11.2% character
+ * accuracy on `assets/receipt.jpg` - and nothing raises.
  *
  * @param charactersDictionary - Entries as {@link parseDictionary} produced them.
  * @param numClasses - Class count from the model's output shape.
  */
 function computeAlignment(charactersDictionary: string[], numClasses: number): string[] {
   const entries = dropTrailingBlanks(charactersDictionary);
-  // The blank token always occupies class 0. A file that opens with a blank
-  // line states it explicitly; one that opens on a glyph states it implicitly.
+
+  if (entries.length === numClasses) return entries;
+
+  // Otherwise the blank token belongs at class 0. A file that opens with a
+  // blank line states it explicitly; one that opens on a glyph states it
+  // implicitly.
   const glyphs = entries[0] === "" ? entries.slice(1) : entries;
   const aligned = ["", ...glyphs];
 
-  // A CTC dictionary normally stops at its last glyph, leaving the space class
+  // A dictionary can also stop one entry short, leaving the space class
   // unnamed - and, in a file with a trailing newline, letting the `""` that
-  // newline produces land on it by accident. Name the remaining classes
-  // explicitly, but only the one or two a dictionary plausibly omits: a large
-  // shortfall means the wrong dictionary was passed, which the caller reports.
-  if (aligned.length < numClasses && numClasses - aligned.length <= 2) {
-    while (aligned.length < numClasses) aligned.push("");
-  }
+  // newline produces land on it by accident. Add exactly that one class:
+  // padding a second would put another `""` on a glyph class, where the
+  // decoder emits an empty character and still records a position and a
+  // confidence sample for it. A larger shortfall means the wrong dictionary
+  // was passed, which the caller reports.
+  if (aligned.length === numClasses - 1) aligned.push("");
 
   return aligned;
 }

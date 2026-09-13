@@ -46,19 +46,25 @@ describe("alignDictionaryToClasses", () => {
     expect(alignDictionaryToClasses(exact, NUM_CLASSES)).toEqual(exact);
   });
 
-  test("issue #15: a dictionary one entry short still gains its blank", () => {
-    // Four real entries and four classes: the model has no separate space
-    // class, so only the blank is prepended.
-    expect(alignDictionaryToClasses(["blank", "A", "B", "C"], 4)).toEqual([
-      "",
-      "blank",
-      "A",
-      "B",
-      "C",
-    ]);
+  test("issue #15: a dictionary naming its own blank is left alone", () => {
+    // Four entries for four classes. PaddleOCR's CTCLabelDecode builds its
+    // character list as ["blank"] + glyphs, so a dictionary dumped from it
+    // carries a literal `blank` token at index 0 and is already complete -
+    // prepending another blank would shift every class by one.
+    const exact = ["blank", "A", "B", "C"];
+    expect(alignDictionaryToClasses(exact, 4)).toEqual(exact);
   });
 
-  test("the unnamed-space allowance stops at two classes", () => {
+  test("a dictionary matching the class count is authoritative, whatever entry 0 is", () => {
+    // Shaped like the shipped ppocrv5_dict.txt: 18385 entries for 18385
+    // classes, opening on U+3000, with a real `""` at index 1 and the space at
+    // the end. Nothing about it needs a prepended blank, and one would break
+    // all 18385 classes at once.
+    const v5 = ["　", "", "A", "B", " "];
+    expect(alignDictionaryToClasses(v5, v5.length)).toEqual(v5);
+  });
+
+  test("only the space class is padded, never a second blank", () => {
     // One short: the unnamed space class. Padded.
     expect(alignDictionaryToClasses(["", "A", "B", "C"], NUM_CLASSES)).toEqual([
       "",
@@ -67,11 +73,10 @@ describe("alignDictionaryToClasses", () => {
       "C",
       "",
     ]);
-    // Two short: still plausible as blank plus space. Padded.
-    expect(alignDictionaryToClasses(["", "A", "B"], NUM_CLASSES)).toEqual(["", "A", "B", "", ""]);
-    // Three short is not: padding it would hide a wrong-dictionary mistake,
-    // which the caller reports separately.
-    const short = ["", "A"];
+    // Two short is not that shape. Padding a second blank would land it on a
+    // glyph class, where the decoder emits an empty character and still
+    // records a position and a confidence sample for it.
+    const short = ["", "A", "B"];
     expect(alignDictionaryToClasses(short, NUM_CLASSES)).toEqual(short);
   });
 

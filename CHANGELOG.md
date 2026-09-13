@@ -41,12 +41,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   whether to prepend off the file's last byte rather than off the glyph count.
   The same dictionary saved without its trailing newline prepended a second
   blank and shifted every class by one, and one saved without its leading blank
-  line dropped the blank slot entirely — both without raising anything. Measured
+  line dropped the blank slot entirely, both without raising anything. Measured
   on the default v6-tiny pair over `assets/receipt.jpg`, one dictionary file
-  decodes `ALFAMART` as `BMGBNBSU` (92.9% → 11.4% character accuracy) purely
-  because it had no trailing newline. All four layouts now align to identical
-  classes; a dictionary the model already matches is returned unchanged, so
-  presets decode byte-for-byte as before.
+  decodes `ALFAMART` as `BMGBNBSU` (92.9% to 11.4% character accuracy) purely
+  because it had no trailing newline.
+
+  A dictionary whose entry count already equals the model's class count is now
+  taken as authoritative and returned untouched, whatever its first entry is:
+  it is stating its own class 0, and prepending a blank would shift every class
+  by one. That covers the shipped `ppocrv5_dict.txt` (18385 entries for 18385
+  classes, opening on U+3000 with its own `""` at index 1) and a dictionary
+  dumped from PaddleOCR's `CTCLabelDecode`, which carries a literal `blank`
+  token at index 0. Below that, only the single unnamed space class is added;
+  a larger shortfall means the wrong dictionary was passed, which the caller
+  reports. All four layouts of one dictionary now align to identical classes,
+  and the shipped presets decode byte for byte as before.
 
 ### Changed
 
