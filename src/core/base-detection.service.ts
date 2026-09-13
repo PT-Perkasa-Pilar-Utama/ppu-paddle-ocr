@@ -293,6 +293,18 @@ export class BaseDetectionService {
 
     const processor = new ip.ImageProcessor(mat);
     try {
+      // Binarize before the contour pass when asked. Default 0 is the identity:
+      // findContours only tests for non-zero, so a probability map above 0 and
+      // the same map cut at 0 are the same foreground. See `detectionThreshold`.
+      const detectionThreshold = this.options.detectionThreshold ?? 0;
+      if (detectionThreshold > 0) {
+        processor.threshold({
+          lower: detectionThreshold * 255,
+          upper: 255,
+          type: ip.cv.THRESH_BINARY,
+        });
+      }
+
       const contours = new ip.Contours(processor.toMat(), {
         mode: ip.cv.RETR_LIST,
         method: ip.cv.CHAIN_APPROX_SIMPLE,
@@ -332,17 +344,20 @@ export class BaseDetectionService {
     paddingHorizontal: number
   ): Box[] {
     // Match the OpenCV path: cv.findContours treats any nonzero pixel as
-    // foreground, so binarize at >0 instead of >127 - thresholding at 0.5
-    // probability erases weak detections the OpenCV engine keeps.
+    // foreground, so the default cut is >0 rather than >127. Both engines can
+    // go higher through `detectionThreshold`; the two use the same 8-bit
+    // convention (this processor's binary threshold is cv.threshold with
+    // THRESH_BINARY), so one probability maps to the same cut on each.
+    const detectionThreshold = Math.round((this.options.detectionThreshold ?? 0) * 255);
     const processor = this.platform.canvas
       .createProcessor(canvas)
       .grayscale()
-      .threshold({ thresh: 0 });
+      .threshold({ thresh: detectionThreshold });
 
     const regions = processor.findRegions({
       foreground: "light",
       minArea: minBoxAreaOnPadded,
-      thresh: 0,
+      thresh: detectionThreshold,
       padding: {
         vertical: paddingVertical,
         horizontal: paddingHorizontal,

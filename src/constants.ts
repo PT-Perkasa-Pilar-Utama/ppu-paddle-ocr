@@ -26,6 +26,7 @@ export const DEFAULT_DETECTION_OPTIONS: DetectionOptions = {
   minimumAreaThreshold: 20,
   paddingVertical: 0.4,
   paddingHorizontal: 0.6,
+  detectionThreshold: 0,
 };
 
 /** Default text recognition options. */
