@@ -17,8 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   before the session options reach ONNX Runtime. Works on Node, web, and
   mobile.
 
-### Added
-
 - Opt-in mirror for the built-in model URLs. Set
   `PPU_PADDLE_OCR_MODEL_MIRROR=1` and a download that exhausts its retries on
   the primary host runs the whole sequence again against the GitHub copy of the
