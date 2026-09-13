@@ -209,11 +209,49 @@ export function ctcGreedyDecode(
   return { text: emitted.join(""), confidence, positions };
 }
 
+/** Removes the empty entries that a dictionary file's trailing newlines add to the end of the list. */
+function dropTrailingBlanks(entries: string[]): string[] {
+  let end = entries.length;
+  while (end > 0 && entries[end - 1] === "") end--;
+  return entries.slice(0, end);
+}
+
+/**
+ * Maps a parsed dictionary onto the model's class indices.
+ *
+ * `parseDictionary` splits on newlines, so a file's trailing newline leaves an
+ * empty entry that stands for no class. The raw length is compared first, which
+ * keeps a dictionary that already has one entry per class exactly as it is.
+ *
+ * Failing that, the trailing empties go, the blank is taken from a leading
+ * empty entry or prepended when the dictionary opens on a glyph, and one
+ * unnamed space class is added if the result is a single class short. A larger
+ * shortfall means the wrong dictionary was passed, which the caller reports.
+ *
+ * @param charactersDictionary - Entries as {@link parseDictionary} produced them.
+ * @param numClasses - Class count from the model's output shape.
+ */
+export function alignDictionaryToClasses(
+  charactersDictionary: string[],
+  numClasses: number
+): string[] {
+  if (charactersDictionary.length === numClasses) return charactersDictionary;
+
+  const entries = dropTrailingBlanks(charactersDictionary);
+  if (entries.length === numClasses) return entries;
+
+  const aligned = ["", ...(entries[0] === "" ? entries.slice(1) : entries)];
+  if (aligned.length === numClasses - 1) aligned.push("");
+
+  return aligned;
+}
+
 /**
  * Decodes an ONNX output tensor into text using the supplied character dictionary.
  *
- * Prepends a blank slot when the dict is one entry shorter than the model's class count
- * (issue #15 compatibility).
+ * The dictionary is aligned to the model's class count by
+ * {@link alignDictionaryToClasses}, which makes the blank slot a function of the
+ * glyph count rather than of the dictionary file's leading and trailing newlines.
  *
  * When `verbose` is set, a dictionary/model size mismatch is reported once (such a
  * mismatch produces garbage output, so it usually signals the wrong dictionary).
@@ -237,10 +275,9 @@ export function decodeResults(
     return { text: "", confidence: 0, positions: [] };
   }
 
-  let dict = charactersDictionary;
-  if (charactersDictionary.length === numClasses - 1) {
-    dict = ["", ...charactersDictionary];
-  } else if (numClasses !== charactersDictionary.length && verbose) {
+  const dict = alignDictionaryToClasses(charactersDictionary, numClasses);
+
+  if (dict.length !== numClasses && verbose) {
     console.warn(
       `Warning: Model output classes (${numClasses}) does not match dictionary length (${charactersDictionary.length}).\n Consider using our model & dictionary catalogue at https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models.`
     );
@@ -260,9 +297,6 @@ export function decodeLogitsRow(
   charactersDictionary: string[],
   spaceRecovery = false
 ): DecodedText {
-  let dict = charactersDictionary;
-  if (charactersDictionary.length === numClasses - 1) {
-    dict = ["", ...charactersDictionary];
-  }
+  const dict = alignDictionaryToClasses(charactersDictionary, numClasses);
   return ctcGreedyDecode(rowData, sequenceLength, numClasses, dict, spaceRecovery);
 }

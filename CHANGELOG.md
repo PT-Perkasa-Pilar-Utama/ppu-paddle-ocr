@@ -34,6 +34,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   1-2 s) instead of the flat 500 ms / 1 s it used before. A rate-limited host
   knows how long its window has left; guessing shorter just burned an attempt.
 
+- **A dictionary file without a final newline no longer decodes with every class
+  shifted by one.** `parseDictionary` splits on newlines, so a file's leading and
+  trailing newlines became array entries, and the blank-slot check counted those
+  entries instead of the file's glyphs: the same dictionary saved without its
+  trailing newline had a blank prepended that did not belong there, moving every
+  class one along. Nothing raised. Every layout now aligns to identical classes,
+  and a dictionary that already has one entry per class is returned as it is.
+
 ### Changed
 
 - Dev dependency: `adm-zip` override moves to `^0.6.1`. Version 0.6.0 follows
