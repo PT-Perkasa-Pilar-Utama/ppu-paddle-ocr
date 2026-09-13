@@ -209,14 +209,7 @@ export function ctcGreedyDecode(
   return { text: emitted.join(""), confidence, positions };
 }
 
-/**
- * Strips the blank entries a dictionary file's own newlines leave at its edges.
- *
- * Only the end is trimmed: a leading blank line is the CTC blank token in the
- * PaddleOCR dictionary convention, so it is a character slot rather than an
- * artifact. The trailing `""` is the opposite - it exists because the file ends
- * in a newline, and it is not a slot the model has a class for.
- */
+/** Removes the empty entries that a dictionary file's trailing newlines add to the end of the list. */
 function dropTrailingBlanks(entries: string[]): string[] {
   let end = entries.length;
   while (end > 0 && entries[end - 1] === "") end--;
@@ -224,84 +217,33 @@ function dropTrailingBlanks(entries: string[]): string[] {
 }
 
 /**
- * Aligns a parsed dictionary with the model's class count.
+ * Maps a parsed dictionary onto the model's class indices.
  *
- * `parseDictionary` splits on newlines, so the file's shape leaks into the
- * array, and sizing the blank slot off the raw entry count therefore depends on
- * whether the file ends in a newline. The same dictionary with and without one
- * is off by one class in opposite directions, and both decode to garbage:
- * measured on the default v6-tiny pair over `assets/receipt.jpg`, an identical
- * file reads 92.9% character accuracy with its trailing newline and 12.9%
- * without, with no error raised either way. Case 4 of that run shifts every
- * glyph by one class (`ALFAMART` -> `BMGBNBSU`).
+ * `parseDictionary` splits on newlines, so a file's trailing newline leaves an
+ * empty entry that stands for no class. The raw length is compared first, which
+ * keeps a dictionary that already has one entry per class exactly as it is.
+ * Trimming before comparing would rebuild it and move its blank.
  *
- * Normalising the newline artifacts first makes the alignment a function of the
- * glyph count alone, so every shape of the same dictionary decodes identically.
- *
- * A dictionary whose length already equals the class count is taken as
- * authoritative and returned untouched, whatever its first entry is. It is then
- * stating its own class 0, and prepending a blank would shift every class by
- * one. The shipped `ppocrv5_dict.txt` is exactly this shape: 18385 entries for
- * a model with 18385 classes, opening on U+3000 with its own `""` at index 1.
- * A dictionary dumped from PaddleOCR's `CTCLabelDecode` is the other, carrying
- * a literal `blank` token at index 0. Prepending to either one maps every class
- * to a different glyph - the v5 presets fell from 95.6% to 11.2% character
- * accuracy on `assets/receipt.jpg` - and nothing raises.
+ * Failing that, the trailing empties go, the blank is taken from a leading
+ * empty entry or prepended when the dictionary opens on a glyph, and one
+ * unnamed space class is added if the result is a single class short. A larger
+ * shortfall means the wrong dictionary was passed, which the caller reports.
  *
  * @param charactersDictionary - Entries as {@link parseDictionary} produced them.
  * @param numClasses - Class count from the model's output shape.
  */
-function computeAlignment(charactersDictionary: string[], numClasses: number): string[] {
-  const entries = dropTrailingBlanks(charactersDictionary);
-
-  if (entries.length === numClasses) return entries;
-
-  // Otherwise the blank token belongs at class 0. A file that opens with a
-  // blank line states it explicitly; one that opens on a glyph states it
-  // implicitly.
-  const glyphs = entries[0] === "" ? entries.slice(1) : entries;
-  const aligned = ["", ...glyphs];
-
-  // A dictionary can also stop one entry short, leaving the space class
-  // unnamed - and, in a file with a trailing newline, letting the `""` that
-  // newline produces land on it by accident. Add exactly that one class:
-  // padding a second would put another `""` on a glyph class, where the
-  // decoder emits an empty character and still records a position and a
-  // confidence sample for it. A larger shortfall means the wrong dictionary
-  // was passed, which the caller reports.
-  if (aligned.length === numClasses - 1) aligned.push("");
-
-  return aligned;
-}
-
-/**
- * Cached entry point for {@link computeAlignment}.
- *
- * The decode path calls this once per crop, so recomputing the alignment for
- * every crop - and copying an 18k-entry dictionary each time - cost a measured
- * ~23 ms per image on the 40-stem receipt sample, which the benchmark caught as
- * a systematic shift rather than as noise. A service's dictionary array is
- * stable for the life of the service, so a WeakMap keyed on it makes every call
- * after the first a lookup. Keying on the array also keeps the aligned result
- * from outliving the dictionary that produced it.
- */
-const alignmentCache = new WeakMap<string[], Map<number, string[]>>();
-
 export function alignDictionaryToClasses(
   charactersDictionary: string[],
   numClasses: number
 ): string[] {
-  let byClasses = alignmentCache.get(charactersDictionary);
-  if (!byClasses) {
-    byClasses = new Map();
-    alignmentCache.set(charactersDictionary, byClasses);
-  }
+  if (charactersDictionary.length === numClasses) return charactersDictionary;
 
-  const cached = byClasses.get(numClasses);
-  if (cached) return cached;
+  const entries = dropTrailingBlanks(charactersDictionary);
+  if (entries.length === numClasses) return entries;
 
-  const aligned = computeAlignment(charactersDictionary, numClasses);
-  byClasses.set(numClasses, aligned);
+  const aligned = ["", ...(entries[0] === "" ? entries.slice(1) : entries)];
+  if (aligned.length === numClasses - 1) aligned.push("");
+
   return aligned;
 }
 

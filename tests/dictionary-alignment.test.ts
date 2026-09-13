@@ -4,6 +4,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { alignDictionaryToClasses } from "../src/core/recognition/ctc.js";
+import { parseDictionary } from "../src/utils.js";
 
 /**
  * The four ways the same dictionary file can be laid out. Only the first is
@@ -18,41 +19,43 @@ const SHAPES = {
   "no leading blank, no trailing newline": "A\nB\nC",
 } as const;
 
-const parse = (s: string) => s.split(/\r?\n/);
 // A model with a blank class, its glyphs, and the space class the dictionaries
 // leave unnamed: 4 real entries -> 5 classes.
 const NUM_CLASSES = 5;
+const EXPECTED = ["", "A", "B", "C", ""];
 
 describe("alignDictionaryToClasses", () => {
   test("every layout of one dictionary aligns to identical classes", () => {
-    const aligned = Object.values(SHAPES).map((s) =>
-      alignDictionaryToClasses(parse(s), NUM_CLASSES)
-    );
-    for (const a of aligned) {
-      expect(a).toEqual(["", "A", "B", "C", ""]);
-    }
-  });
-
-  test("blank token is at class 0 for every layout", () => {
-    for (const [name, s] of Object.entries(SHAPES)) {
-      expect(alignDictionaryToClasses(parse(s), NUM_CLASSES)[0], name).toBe("");
+    for (const [name, source] of Object.entries(SHAPES)) {
+      // Class 0 is the blank, so this covers the blank position too.
+      expect(alignDictionaryToClasses(parseDictionary(source), NUM_CLASSES), name).toEqual(
+        EXPECTED
+      );
     }
   });
 
   test("a dictionary matching the model is returned unchanged", () => {
-    // No trailing newline and no omitted space class: already 5 entries, so
-    // this is the identity case and must not be padded or shifted.
+    // 5 entries for 5 classes: already complete, so it is neither padded nor
+    // shifted.
     const exact = ["", "A", "B", "C", " "];
     expect(alignDictionaryToClasses(exact, NUM_CLASSES)).toEqual(exact);
   });
 
   test("issue #15: a dictionary naming its own blank is left alone", () => {
     // Four entries for four classes. PaddleOCR's CTCLabelDecode builds its
-    // character list as ["blank"] + glyphs, so a dictionary dumped from it
-    // carries a literal `blank` token at index 0 and is already complete -
-    // prepending another blank would shift every class by one.
+    // character list with a literal `blank` token at index 0, so a dictionary
+    // dumped from it is already complete. Prepending another blank would shift
+    // every class by one.
     const exact = ["blank", "A", "B", "C"];
     expect(alignDictionaryToClasses(exact, 4)).toEqual(exact);
+  });
+
+  test("a complete dictionary is left alone even when the file ends in a newline", () => {
+    // The raw length is compared before the trailing newline is trimmed.
+    // Comparing after trimming would rebuild this one and move `blank` off
+    // class 0, where the decoded text loses its first character.
+    const parsed = parseDictionary("blank\nA\nB\n");
+    expect(alignDictionaryToClasses(parsed, 4)).toEqual(["blank", "A", "B", ""]);
   });
 
   test("a dictionary matching the class count is authoritative, whatever entry 0 is", () => {
@@ -60,22 +63,19 @@ describe("alignDictionaryToClasses", () => {
     // classes, opening on U+3000, with a real `""` at index 1 and the space at
     // the end. Nothing about it needs a prepended blank, and one would break
     // all 18385 classes at once.
-    const v5 = ["　", "", "A", "B", " "];
+    // Written as a code point because the literal character is invisible in a
+    // diff: U+3000 is the IDEOGRAPHIC SPACE the file actually opens on.
+    const ideographicSpace = String.fromCharCode(0x3000);
+    const v5 = [ideographicSpace, "", "A", "B", " "];
     expect(alignDictionaryToClasses(v5, v5.length)).toEqual(v5);
   });
 
   test("only the space class is padded, never a second blank", () => {
     // One short: the unnamed space class. Padded.
-    expect(alignDictionaryToClasses(["", "A", "B", "C"], NUM_CLASSES)).toEqual([
-      "",
-      "A",
-      "B",
-      "C",
-      "",
-    ]);
+    expect(alignDictionaryToClasses(["", "A", "B", "C"], NUM_CLASSES)).toEqual(EXPECTED);
     // Two short is not that shape. Padding a second blank would land it on a
-    // glyph class, where the decoder emits an empty character and still
-    // records a position and a confidence sample for it.
+    // glyph class, where the decoder emits an empty character and still records
+    // a position and a confidence sample for it.
     const short = ["", "A", "B"];
     expect(alignDictionaryToClasses(short, NUM_CLASSES)).toEqual(short);
   });
