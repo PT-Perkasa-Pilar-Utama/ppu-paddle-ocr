@@ -96,7 +96,7 @@
     "onnxruntime-node": "^1.29.0",
     "onnxruntime-web": "^1.29.0",
     "oxfmt": "^0.67.0",
-    "oxlint": "1.82.0",
+    "oxlint": "1.83.0",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
     "uglify-js": "^3.19.3"
