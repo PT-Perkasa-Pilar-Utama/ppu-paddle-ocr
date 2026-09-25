@@ -139,7 +139,7 @@ const result = await service.recognize(buffer, { strategy: "per-box" });
 
 `crossLineWidthFactor` only matters for `cross-line` - it's a width multiplier on the bin-pack target. Larger packs more lines per batch (faster, slight accuracy loss); smaller keeps lines isolated (slower, closer to `per-line` accuracy). Default `1.0` is a sane starting point.
 
-When the user says "make it faster" without naming a strategy, suggest `per-line` first (then `cross-line` for dense pages); `per-box` is already the default. When they say "make it more accurate", they're already on `per-box` - point them at a server/larger model (see below) or detection tuning instead.
+When the user says "make it faster" without naming a strategy, suggest `cross-line` for dense pages; `per-line` is already the default. When they say "make it more accurate", point them at a larger model (`V6_SMALL_MODEL`, `V6_MEDIUM_MODEL`, or a `_server_` variant - see below) or at detection tuning.
 
 ## Processing engines - `opencv` vs `canvas-native`
 
@@ -162,9 +162,9 @@ By default, `initialize()` fetches three files from `huggingface.co/snowfluke/pp
 
 | Component   | File                     | Purpose                         |
 | :---------- | :----------------------- | :------------------------------ |
-| Detection   | `PP-OCRv6_small_det.ort` | Finds text bounding boxes       |
-| Recognition | `PP-OCRv6_small_rec.ort` | Decodes each crop to a string   |
-| Dictionary  | `ppocrv6_dict.txt`       | Character alphabet for decoding |
+| Detection   | `PP-OCRv6_tiny_det.ort`  | Finds text bounding boxes       |
+| Recognition | `PP-OCRv6_tiny_rec.ort`  | Decodes each crop to a string   |
+| Dictionary  | `ppocrv6_tiny_dict.txt`  | Character alphabet for decoding |
 
 The `.ort` format is ONNX Runtime's FlatBuffers serialization - 3-5x faster session creation than `.onnx`. You only need `.onnx` when you're targeting a runtime that lacks `.ort` support, or when you've manually quantized.
 
@@ -187,7 +187,7 @@ In the browser (and on React Native), there is no on-disk cache. Models are fetc
 
 ## Custom and multilingual models
 
-The default PP-OCRv6 small bundle is a single unified model covering 50+ languages (Simplified/Traditional Chinese, English, Japanese, 46+ Latin-script languages, Arabic, Indic, ...) - for most multilingual workloads you don't need to switch models at all.
+The default PP-OCRv6 tiny bundle is a single multilingual model with a ~6.9k-character dictionary that drops rare CJK characters and kana. `V6_SMALL_MODEL` and `V6_MEDIUM_MODEL` carry the full dictionary covering 50+ languages (Simplified/Traditional Chinese, English, Japanese, 46+ Latin-script languages, Arabic, Indic, ...) - switch to one of them when the text needs rare CJK or Japanese kana.
 
 Prefer the exported preset constants over hand-written URLs - they autocomplete and are validated by the type system. Import from `ppu-paddle-ocr` (or `ppu-paddle-ocr/web`):
 
@@ -203,21 +203,15 @@ const fast = new PaddleOcrService({ model: V6_TINY_MODEL }); // fastest, smaller
 const english = new PaddleOcrService({ model: V5_EN_MOBILE_MODEL }); // English-specialized, higher Latin-only accuracy
 ```
 
-The catalogue covers PP-OCRv6 (`V6_SMALL_MODEL` default, `V6_MEDIUM_MODEL`, `V6_TINY_MODEL`), PP-OCRv5 (English/server/INT8 + per-script: `V5_THAI_MOBILE_MODEL`, `V5_ARABIC_MOBILE_MODEL`, `V5_CYRILLIC_MOBILE_MODEL`, ...), PP-OCRv4, and PP-OCRv3. `DEFAULT_MODEL` aliases the current default. The pre-converted ONNX/`.ort` files behind every preset live in [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models). To use a script-specific v5 model (or any custom export), point all three model paths at the files:
+The catalogue covers PP-OCRv6 (`V6_TINY_MODEL` default, `V6_SMALL_MODEL`, `V6_MEDIUM_MODEL`), PP-OCRv5 (English/server/INT8 + per-script: `V5_THAI_MOBILE_MODEL`, `V5_ARABIC_MOBILE_MODEL`, `V5_CYRILLIC_MOBILE_MODEL`, ...), PP-OCRv4, and PP-OCRv3. `DEFAULT_MODEL` aliases the current default. The pre-converted ONNX/`.ort` files behind every preset live in [ppu-paddle-ocr-models](https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models). Script-specific v5 models have presets too:
 
 ```ts
-const MODEL_BASE = "https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main";
-const DICT_BASE = MODEL_BASE;
+import { PaddleOcrService, V5_THAI_MOBILE_MODEL } from "ppu-paddle-ocr";
 
-// Thai
-const service = new PaddleOcrService({
-  model: {
-    detection: `${MODEL_BASE}/detection/PP-OCRv5_mobile_det_infer.onnx`,
-    recognition: `${MODEL_BASE}/recognition/multi/thai/v5/th_PP-OCRv5_mobile_rec_infer.onnx`,
-    charactersDictionary: `${DICT_BASE}/recognition/multi/thai/v5/ppocrv5_th_dict.txt`,
-  },
-});
+const service = new PaddleOcrService({ model: V5_THAI_MOBILE_MODEL });
 ```
+
+For a custom export with no preset, point all three model paths at the files (formats below).
 
 For best accuracy at the cost of latency, swap the mobile recognition/detection models for `_server_` variants from the same repo. For best CPU throughput on x86-64 with VNNI or for WebAssembly, swap the recognition model for an INT8 quantized variant - measured accuracy stays at 99.22% on receipt benchmarks while inference speeds up 20-50%. **Do not use INT8 on Apple Silicon** - FP32 NEON outperforms the INT8 MLAS path there.
 
@@ -458,7 +452,7 @@ input.addEventListener("change", async () => {
 
 ## Browser-extension pipeline (Chrome MV3)
 
-In a Manifest V3 extension, bundle `ppu-paddle-ocr/web` with the extension's bundler. WebGPU is generally available in extension service workers but verify with `isWebGpuAvailable()`. If models need to be served from the extension package itself (rather than fetched from GitHub), pass `chrome.runtime.getURL("models/...")` as the model paths - they're just URLs.
+In a Manifest V3 extension, bundle `ppu-paddle-ocr/web` with the extension's bundler. WebGPU is generally available in extension service workers but verify with `isWebGpuAvailable()`. If models need to be served from the extension package itself (rather than fetched from Hugging Face), pass `chrome.runtime.getURL("models/...")` as the model paths - they're just URLs.
 
 A complete reference extension is at https://github.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-extension.
 
