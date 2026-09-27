@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI actions: github/codeql-action (init, analyze, upload-sarif) to 4.38.0,
   codecov-action to 7.1.0, osv-scanner-action to 2.6.0.
 
+### Fixed
+
+- **Docs:** `skill-ppu-paddle-ocr` named `v6-small` and `per-box` as the
+  defaults; they are `v6-tiny` and `per-line`. Its Thai example pointed at a
+  wrong model path and now uses `V5_THAI_MOBILE_MODEL`.
+
 ## [6.6.0] - 2026-09-13
 
 ### Added

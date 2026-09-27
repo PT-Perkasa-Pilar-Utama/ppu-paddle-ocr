@@ -160,11 +160,11 @@ The `/web` entry point always uses `canvas-native` regardless of this flag - Ope
 
 By default, `initialize()` fetches three files from `huggingface.co/snowfluke/ppu-paddle-ocr-models` and caches them under `~/.cache/ppu-paddle-ocr` (Node/Bun only):
 
-| Component   | File                     | Purpose                         |
-| :---------- | :----------------------- | :------------------------------ |
-| Detection   | `PP-OCRv6_tiny_det.ort`  | Finds text bounding boxes       |
-| Recognition | `PP-OCRv6_tiny_rec.ort`  | Decodes each crop to a string   |
-| Dictionary  | `ppocrv6_tiny_dict.txt`  | Character alphabet for decoding |
+| Component   | File                    | Purpose                         |
+| :---------- | :---------------------- | :------------------------------ |
+| Detection   | `PP-OCRv6_tiny_det.ort` | Finds text bounding boxes       |
+| Recognition | `PP-OCRv6_tiny_rec.ort` | Decodes each crop to a string   |
+| Dictionary  | `ppocrv6_tiny_dict.txt` | Character alphabet for decoding |
 
 The `.ort` format is ONNX Runtime's FlatBuffers serialization - 3-5x faster session creation than `.onnx`. You only need `.onnx` when you're targeting a runtime that lacks `.ort` support, or when you've manually quantized.
 
