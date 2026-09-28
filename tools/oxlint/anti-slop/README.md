@@ -13,3 +13,6 @@ Upstream commit: see git history for the copy date. Re-vendoring means copying
 The Effect rule group is not vendored; this project does not use Effect.
 
 MIT, see LICENSE.
+
+Last updated from upstream `c44ef22` (2026-09-10) on 2026-09-28. The vendored
+copy includes `vendor/`, which the `require-readable-spacing` rule needs.
