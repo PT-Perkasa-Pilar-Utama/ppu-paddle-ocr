@@ -9,6 +9,10 @@ pre-commit:
   commands:
     format:
       glob: "*.{js,jsx,ts,tsx,mjs,cjs}"
+      # oxfmt ignores the vendored plugin and exits non-zero when every file it
+      # is given is ignored, so a commit that stages only plugin files fails.
+      exclude:
+        - "tools/oxlint/anti-slop/**"
       # Check mode on the staged files only. Formatting in place and
       # re-staging would sweep a partially staged file's unstaged hunks into
       # the commit, so the hook asks for `bun run fmt:fix` instead.
