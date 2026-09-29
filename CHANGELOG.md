@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   codecov-action to 7.1.0, osv-scanner-action to 2.6.0.
 - Playground Worker: Cloudflare Workers observability (logs) enabled in
   `wrangler.jsonc`.
+- **Docs:** `ROADMAP.md` drops the goals that 6.0 to 6.6 shipped. It now
+  states maintenance mode, with the next PP-OCR generation as the next large
+  release. The out-of-scope note no longer contradicts `examples/fine-tune/`.
 
 ### Fixed
 

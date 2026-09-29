@@ -1,39 +1,46 @@
 # Roadmap
 
-ppu-paddle-ocr is stable and in active maintenance. This roadmap states the
-direction and the near-term priorities. It is a statement of intent, not a
-contract; dates are deliberately omitted because a small team sets pace by
-capacity.
+ppu-paddle-ocr is stable and in maintenance. This roadmap states the direction.
+It is a statement of intent, not a contract. Dates are left out on purpose,
+because a small team sets its pace by capacity.
+
+For released work, see [CHANGELOG.md](CHANGELOG.md).
 
 ## Now (maintenance)
 
 - Keep dependencies current and the supply chain hardened: Dependabot updates,
   pinned actions, npm provenance, the SCA and SAST gates in CI.
+- Track ONNX Runtime releases and upgrade when a release passes the test suite.
 - Fix reported bugs and answer issues within the timeframes in
   [SECURITY.md](SECURITY.md).
 - Hold test coverage steady (enforced in CI).
 
-## Next
+## Next: the next PP-OCR generation
 
-- Broaden language and script coverage as PP-OCR models and dictionaries allow
-  (Latin, Cyrillic, Arabic, Indic, CJK, Thai), driven by real demand.
-- Sharpen the recognition strategies (`per-box` / `per-line` / `cross-line`)
-  and the engine choice (`opencv` / `canvas-native`) with benchmarks.
-- Improve the WebGPU path and its CPU fallback on the browser entry point.
+The next large release waits on PaddleOCR. When PaddlePaddle publishes a new
+generation of PP-OCR models, we will:
 
-## Later
+- Convert the models to ONNX and host them next to the current set.
+- Add presets for them to the model catalogue.
+- Benchmark them against PP-OCRv6 on speed and accuracy, and change the
+  defaults only when the new models win.
+- Ship a major version if the default model changes, as 6.0.0 did for
+  PP-OCRv6.
 
-- Performance work on detection and recognition hot paths, with before/after
-  benchmarks (`bun task bench`).
-- Evaluate newer ONNX Runtime releases as upstream ships them.
-- Grow the `apps/serve` HTTP service and CLI surface where it helps real users.
+## Between generations
+
+- Add presets when PaddleOCR publishes new languages for the current
+  generation.
+- Grow the `apps/serve` HTTP service and the CLI where users ask for it.
 
 ## Out of scope
 
-- Training or fine-tuning models. This project runs inference on published
-  PP-OCR models; training lives elsewhere.
-- Features outside OCR (general computer vision lives in sibling packages such
-  as ppu-ocv).
+- Training models. This library runs inference on published PP-OCR models. To
+  fine-tune recognition for your documents, train with PaddleOCR and load the
+  result as a custom model. [examples/fine-tune/](examples/fine-tune/) shows
+  how.
+- Features outside OCR. General computer vision lives in sibling packages such
+  as ppu-ocv.
 
 ## Proposing changes
 
