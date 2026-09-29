@@ -9,4 +9,7 @@
   "assets": {
     "directory": "./playground/dist",
   },
+  "observability": {
+    "enabled": true,
+  },
 }
