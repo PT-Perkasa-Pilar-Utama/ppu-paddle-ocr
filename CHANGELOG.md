@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Lint toolchain: oxlint and its plugin API to 1.83.0 together.
 - CI actions: github/codeql-action (init, analyze, upload-sarif) to 4.38.0,
   codecov-action to 7.1.0, osv-scanner-action to 2.6.0.
+- Playground Worker: Cloudflare Workers observability (logs) enabled in
+  `wrangler.jsonc`.
 
 ### Fixed
 
