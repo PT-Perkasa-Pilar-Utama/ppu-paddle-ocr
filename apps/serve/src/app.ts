@@ -79,7 +79,7 @@ if (config.docsEnabled) {
         openapi: "3.1.0",
         info: {
           title: "ppu-paddle-ocr-serve",
-          version: "0.5.1",
+          version: "0.5.2",
           description: "REST API serving ppu-paddle-ocr. POST an image, get OCR JSON.",
         },
         components: {
