@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.6.1] - 2026-10-08
+
 ### Changed
 
 - Lint toolchain: oxlint and its plugin API to 1.83.0 together.
