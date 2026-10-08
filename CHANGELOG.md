@@ -10,8 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Lint toolchain: oxlint and its plugin API to 1.83.0 together.
-- CI actions: github/codeql-action (init, analyze, upload-sarif) to 4.38.0,
-  codecov-action to 7.1.0, osv-scanner-action to 2.6.0.
+- CI actions: github/codeql-action (init, analyze, upload-sarif) to 4.38.2,
+  codecov-action to 7.1.1, osv-scanner-action to 2.6.0, docker
+  build-push-action to 7.4.0.
 - Playground Worker: Cloudflare Workers observability (logs) enabled in
   `wrangler.jsonc`.
 - **Docs:** `ROADMAP.md` drops the goals that 6.0 to 6.6 shipped. It now
