@@ -8,9 +8,16 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    # One PR for all actions: CodeQL's init, analyze and upload-sarif must move together.
+    groups:
+      actions:
+        patterns: ["*"]
