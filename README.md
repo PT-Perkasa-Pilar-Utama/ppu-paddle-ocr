@@ -143,7 +143,7 @@ Intel Macs and Alpine (musl) are not covered, onnxruntime ships no darwin-x64 or
 <details>
 <summary>Size, slim variant, and OS warnings</summary>
 
-- **Size and first run.** ~50 MB download, ~140-200 MB extracted (the executable embeds the Bun runtime, ONNX Runtime, and the canvas engine; `tar` preserves the executable bit). Models (~6 MB) still download to `~/.cache/ppu-paddle-ocr` on first run, exactly like the npm CLI.
+- **Size and first run.** ~50 MB download, ~140-200 MB extracted (the executable embeds the Bun runtime, ONNX Runtime, and the canvas engine; `tar` preserves the executable bit, except in archives from 6.6.1 and earlier: run `chmod +x` on those). Models (~6 MB) still download to `~/.cache/ppu-paddle-ocr` on first run, exactly like the npm CLI.
 - **Slim variant.** Each target also ships a `-slim` archive (e.g. `ppu-paddle-ocr-linux-x64-slim.tar.gz`) that excludes the OpenCV engine: ~28 MB smaller extracted, though only ~5 MB smaller to download (the OpenCV payload compresses well). It always uses the `canvas-native` engine and rejects `--engine opencv`; accuracy on the reference receipt is near-identical (see [Benchmark](#benchmark)). Pick slim for disk and memory footprint; pick full if you want the opencv engine.
 - **macOS Gatekeeper.** The binaries are ad-hoc signed but not Apple-notarized. If macOS blocks a downloaded binary, clear the quarantine flag: `xattr -d com.apple.quarantine ./ppu-paddle-ocr-darwin-arm64` (or right-click, Open, once).
 - **Windows SmartScreen.** Unrecognized-app warning on first run: "More info", then "Run anyway".
