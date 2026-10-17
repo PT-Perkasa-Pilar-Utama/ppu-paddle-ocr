@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The Linux and macOS standalone binary archives extracted a file without
+  the executable bit, so `./ppu-paddle-ocr-<target>` failed with
+  "permission denied". The release job now restores the bit before packing.
+  For 6.6.1 and earlier, run `chmod +x` on the extracted binary.
+
 ## [6.6.1] - 2026-10-08
 
 ### Changed

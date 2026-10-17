@@ -141,7 +141,9 @@ jobs:
             name=$(basename "$f")
             case "$name" in
               *.exe) (cd binaries && zip -q "../dist/${name%.exe}.zip" "$name") ;;
-              *)     tar czf "dist/$name.tar.gz" -C binaries "$name" ;;
+              # Artifact download drops the executable bit; restore it so the
+              # extracted binary runs without a chmod.
+              *)     chmod +x "$f" && tar czf "dist/$name.tar.gz" -C binaries "$name" ;;
             esac
           done
           ls -lh dist
