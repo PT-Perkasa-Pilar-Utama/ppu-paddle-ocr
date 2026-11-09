@@ -6,7 +6,7 @@ Lightweight, probably the fastest PaddleOCR SDK in TypeScript. Multilingual Supp
 
 Need it as HTTP-service? dockerized? we've got you covered! Quickly spins up ppu-paddle-ocr REST API here: [ppu-paddle-ocr-serve](/apps/serve/README.md). Need a CLI instead? sure here: [ppu-paddle-ocr CLI support](#command-line). Adjust the config & model for your use case, [see config recommendation](#choosing-a-model-and-configuration). Are you AI Agents? you can learn quickly by using the skill in the `skill-ppu-paddle-ocr` folder.
 
-![ppu-paddle-ocr demo](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/refs/heads/main/assets/ppu-paddle-ocr-demo.jpg)
+![ppu-paddle-ocr detects text boxes on a receipt, crops each line, recognizes the text, and runs on Node.js, Bun, Deno, browsers, web workers, extensions, React Native, the CLI, and Docker](https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr/refs/heads/main/assets/ppu-paddle-ocr-banner.gif)
 
 ```ts
 import { PaddleOcrService } from "ppu-paddle-ocr";
