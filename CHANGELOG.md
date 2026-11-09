@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- README banner: an animated GIF replaces the static pipeline image. It shows
+  detection, per-line crops, and recognition on the sample receipt, then the
+  supported runtimes.
+
 ### Fixed
 
 - The Linux and macOS standalone binary archives extracted a file without
