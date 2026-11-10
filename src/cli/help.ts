@@ -45,6 +45,13 @@ Model overrides:
   --model-detection <path|url>   override the preset's detection model
   --model-recognition <path|url> override the preset's recognition model
   --model-dict <path|url>        override the preset's dictionary
+  --model-unwarping <path|url>   override the unwarping model (needs --unwarp)
+
+Document unwarping (recognize / detect / batch / stream):
+  --unwarp                       flatten a curled, folded, or tilted page before detection;
+                                 loads one more model (~30 MB). A flat page is left as it is.
+                                 Boxes stay in the coordinates of the input image.
+                                 With download-models: also cache the unwarping model.
 
 Detection tuning (also apply to detect):
   --save-crops <dir>             (detect only) save each region as crop_NNN.png
@@ -74,6 +81,7 @@ Output:
 Examples:
   ppu-paddle-ocr recognize receipt.jpg
   ppu-paddle-ocr detect receipt.jpg --save-crops ./regions --pretty
+  ppu-paddle-ocr recognize curled-receipt.jpg --unwarp
   ppu-paddle-ocr recognize https://example.com/invoice.png --json --pretty
   ppu-paddle-ocr batch "scans/*.png" --strategy cross-line -o results.json --json
   ppu-paddle-ocr download-models --verbose
