@@ -127,6 +127,7 @@ export async function readSingle(c: Context): Promise<{ image: ArrayBuffer; opts
       flatten: body["flatten"],
       engine: body["engine"],
       minimumConfidence: body["minimumConfidence"],
+      unwarp: body["unwarp"],
     });
     return { image, opts };
   }

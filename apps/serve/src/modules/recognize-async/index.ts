@@ -26,7 +26,7 @@ export function mount(app: Hono<Env>): void {
     validate("json", batchOcrSchema),
     async (c) => {
       const body = c.req.valid("json");
-      const images = await resolveBatch(body.sources);
+      const images = await resolveBatch(body);
       const taskId = submitJob(images, body);
       return c.json(success(c, { taskId, status: "queued" }), 202);
     }

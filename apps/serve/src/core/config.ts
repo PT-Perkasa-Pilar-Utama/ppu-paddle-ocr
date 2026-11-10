@@ -50,6 +50,7 @@ const EnvSchema = v.object({
   MODEL_DETECTION: v.optional(v.string()),
   MODEL_RECOGNITION: v.optional(v.string()),
   MODEL_DICT: v.optional(v.string()),
+  UNWARPING_ENABLED: str("false"),
 
   // Inference backpressure / async tasks
   MAX_CONCURRENCY: v.optional(nonNegativeInt, 0),
@@ -114,6 +115,7 @@ function build(raw: NodeJS.ProcessEnv) {
     maxSideLength: e.MAX_SIDE_LENGTH,
     maxCropSourceSideLength: e.MAX_CROP_SOURCE_SIDE_LENGTH,
     model,
+    unwarpingEnabled: toBoolean(e.UNWARPING_ENABLED),
 
     concurrency: e.MAX_CONCURRENCY > 0 ? e.MAX_CONCURRENCY : autoConcurrency,
     maxQueueDepth: e.MAX_QUEUE_DEPTH,

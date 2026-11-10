@@ -10,7 +10,7 @@ export function mount(app: Hono<Env>): void {
     "/v1/models",
     describeRoute({
       tags: ["System"],
-      summary: "Available engines, strategies, and defaults",
+      summary: "Available engines, strategies, defaults, and unwarping state",
       security: [{ Bearer: [] }],
       responses: { 200: jsonResponse("ok", modelsSchema) },
     }),
@@ -20,6 +20,7 @@ export function mount(app: Hono<Env>): void {
           engines: ["opencv", "canvas-native"],
           strategies: ["per-box", "per-line", "cross-line"],
           default: { engine: config.defaultEngine, strategy: config.defaultStrategy },
+          unwarping: { enabled: config.unwarpingEnabled },
           executionProviders: config.executionProviders,
         }),
         200
