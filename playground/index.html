@@ -843,6 +843,21 @@
         margin-right: 0.4rem;
       }
 
+      .unwarp-preview {
+        margin: 0 0 0.75rem;
+      }
+      .unwarp-preview canvas {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        border: 1px solid var(--text-primary);
+      }
+
+      #status-text {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
       .apply-bar {
         flex: 0 0 auto;
         margin: 0;
@@ -1915,6 +1930,15 @@
               </summary>
               <div class="config-body">
                 <div class="input-group">
+                  <label class="checkbox-label" for="cfg-unwarp" style="margin-bottom: 0">
+                    <input type="checkbox" id="cfg-unwarp" class="input-checkbox" />
+                    Page unwarping
+                  </label>
+                  <small class="field-help" id="cfg-unwarp-help">
+                    Applying this downloads a model of about 30 MB.
+                  </small>
+                </div>
+                <div class="input-group">
                   <label class="input-label" for="cfg-det-maxside">Image processing size</label>
                   <input
                     type="number"
@@ -2194,6 +2218,10 @@
           </div>
 
           <div class="tab-content active" id="tab-list">
+            <figure class="unwarp-preview" id="unwarp-preview" hidden>
+              <figcaption class="section-title" style="padding-left: 0">Flattened page</figcaption>
+              <canvas id="unwarp-canvas"></canvas>
+            </figure>
             <div class="section-title" id="results-title" style="display: none; padding-left: 0">
               Recognition Results
             </div>
@@ -2481,6 +2509,10 @@
       const cfgRecMinConf = document.getElementById("cfg-rec-minconf");
       const cfgSessionEp = document.getElementById("cfg-session-ep");
       const cfgDbgVerbose = document.getElementById("cfg-dbg-verbose");
+      const cfgUnwarp = document.getElementById("cfg-unwarp");
+      const cfgUnwarpHelp = document.getElementById("cfg-unwarp-help");
+      const unwarpPreview = document.getElementById("unwarp-preview");
+      const unwarpCanvas = document.getElementById("unwarp-canvas");
       const btnApplyConfig = document.getElementById("btn-apply-config");
       const btnResetConfig = document.getElementById("btn-reset-config");
       const configState = document.getElementById("config-state");
@@ -2519,6 +2551,7 @@
         cfgRecMinConf,
         cfgSessionEp,
         cfgDbgVerbose,
+        cfgUnwarp,
       ];
       let configRevision = 0;
       let configApplying = false;
@@ -2665,6 +2698,12 @@
       }
       if (!libRecognitionDefaults || !("minimumConfidence" in libRecognitionDefaults)) {
         hideGroup(cfgRecMinConf);
+      }
+      // Builds before page unwarping have no unwarp() method, and enabling the
+      // option there would be ignored without any sign that nothing happened.
+      if (typeof PaddleOcrService.prototype.unwarp !== "function") {
+        cfgUnwarp.disabled = true;
+        cfgUnwarpHelp.textContent = "This library version does not support page unwarping.";
       }
       if (!libDetectionDefaults || libDetectionDefaults.maxSideLength !== "auto") {
         cfgDetMaxSide.placeholder = "library default";
@@ -3174,6 +3213,8 @@
 
         if (cfgDbgVerbose.checked) options.debugging.verbose = true;
 
+        if (cfgUnwarp.checked) options.unwarping = { enabled: true };
+
         console.log("⚙️ Applying new configuration...", options);
         btnApplyConfig.disabled = true;
         configState.textContent = "Applying changes…";
@@ -3238,6 +3279,7 @@
         resultsList.innerHTML = "";
         resultsTitle.style.display = "none";
         confFilterRow.style.display = "none";
+        unwarpPreview.hidden = true;
 
         const arrayBuffer = await file.arrayBuffer();
         const blob = new Blob([arrayBuffer], { type: file.type });
@@ -3325,6 +3367,15 @@
         // Automatic CSS object-fit overlap handles this natively.
       });
 
+      // Each reason is the library's UnwarpSkipReason, worded for the person who
+      // sees the status line.
+      const UNWARP_SKIP_NOTES = {
+        flat: "The page is already flat, so it was read as photographed.",
+        "no-gain": "Flattening did not improve the page, so it was read as photographed.",
+        folded: "The page is folded too sharply to flatten, so it was read as photographed.",
+        "out-of-frame": "Most of the page lies outside the photo, so it was read as photographed.",
+      };
+
       // -- Process --
       btnProcess.addEventListener("click", async () => {
         if (!loadedImage || !ocrService || !serviceReady) {
@@ -3339,6 +3390,7 @@
         resultsList.innerHTML = "";
         resultsTitle.style.display = "none";
         confFilterRow.style.display = "none";
+        unwarpPreview.hidden = true;
         loadingText.textContent = "Recognizing…";
         loadingOverlay.classList.add("visible");
         loadingOverlay.setAttribute("aria-hidden", "false");
@@ -3356,8 +3408,22 @@
         try {
           const t0 = performance.now();
 
-          // Use recognize with flatten: true to get all bounding boxes easily
-          const result = await ocrService.recognize(resultCanvas, { flatten: true, noCache: true });
+          // The stage runs once here: its page is shown below, read with the
+          // stage off, and its mapping moves the boxes back onto the photo.
+          const unwarpOutcome = lastServiceOptions.unwarping?.enabled
+            ? await ocrService.unwarp(resultCanvas)
+            : null;
+          const page = unwarpOutcome?.status === "unwarped" ? unwarpOutcome : null;
+
+          // Use recognize with flatten: true to get all bounding boxes easily.
+          const read = await ocrService.recognize(page ? page.canvas : resultCanvas, {
+            flatten: true,
+            noCache: true,
+            ...(unwarpOutcome && { unwarp: false }),
+          });
+          const result = page
+            ? { ...read, results: page.mapping.itemsToSource(read.results) }
+            : read;
 
           const elapsed = (performance.now() - t0).toFixed(1);
 
@@ -3376,7 +3442,18 @@
           timingBadge.textContent = `${elapsed} ms`;
           timingBadge.style.display = "block";
 
-          setStatus("ready", `Done in ${elapsed}ms`);
+          if (unwarpOutcome?.status === "unwarped") {
+            unwarpCanvas.width = unwarpOutcome.canvas.width;
+            unwarpCanvas.height = unwarpOutcome.canvas.height;
+            unwarpCanvas.getContext("2d").drawImage(unwarpOutcome.canvas, 0, 0);
+            unwarpPreview.hidden = false;
+          }
+          setStatus(
+            "ready",
+            unwarpOutcome?.status === "skipped"
+              ? `Done in ${elapsed}ms. ${UNWARP_SKIP_NOTES[unwarpOutcome.reason]}`
+              : `Done in ${elapsed}ms`
+          );
           if (window.matchMedia("(max-width: 800px)").matches) {
             setMobileView("results");
           }
