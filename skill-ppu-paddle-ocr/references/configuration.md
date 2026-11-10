@@ -12,6 +12,7 @@ type PaddleOptions = {
   debugging?: DebuggingOptions;
   session?: SessionOptions;
   processing?: ProcessingOptions;
+  unwarping?: UnwarpingOptions;
 };
 ```
 
@@ -21,11 +22,12 @@ Constructor merges your options into the defaults via deep-merge - partial overr
 
 ## `ModelPathOptions`
 
-| Property               | Type                    | Default                           | Notes                                                                                               |
-| ---------------------- | ----------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `detection`            | `string \| ArrayBuffer` | PP-OCRv6 small `.ort` from GitHub | Path, URL, or buffer. `.ort` is faster to load than `.onnx`. Prefer a preset like `V6_SMALL_MODEL`. |
-| `recognition`          | `string \| ArrayBuffer` | PP-OCRv6 small `.ort` from GitHub | Same. INT8 quantized variants accepted.                                                             |
-| `charactersDictionary` | `string \| ArrayBuffer` | Unified `ppocrv6_dict.txt`        | **Leave a trailing newline** in the file or you drop the last char.                                 |
+| Property               | Type                    | Default                                           | Notes                                                                                                                                        |
+| ---------------------- | ----------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `detection`            | `string \| ArrayBuffer` | PP-OCRv6 small `.ort` from GitHub                 | Path, URL, or buffer. `.ort` is faster to load than `.onnx`. Prefer a preset like `V6_SMALL_MODEL`.                                          |
+| `recognition`          | `string \| ArrayBuffer` | PP-OCRv6 small `.ort` from GitHub                 | Same. INT8 quantized variants accepted.                                                                                                      |
+| `charactersDictionary` | `string \| ArrayBuffer` | Unified `ppocrv6_dict.txt`                        | **Leave a trailing newline** in the file or you drop the last char.                                                                          |
+| `unwarping`            | `string \| ArrayBuffer` | `UNWARPING_MODEL_URL` (`UVDoc_grid.onnx`, ~30 MB) | Document unwarping model. Loaded only when `unwarping.enabled` is set. Must output the deformation grid; the stock `UVDoc.onnx` is rejected. |
 
 If you switch language, you must replace **at minimum** the `recognition` model and the `charactersDictionary`. The detection model is largely language-agnostic and the same checkpoint works across most scripts (Arabic and CJK have language-specific detection variants in the model repo if you need them).
 
@@ -163,16 +165,31 @@ The `/web` build always uses `canvas-native` - this flag is silently ignored the
 
 ---
 
+## `UnwarpingOptions`
+
+Controls the document unwarping stage, which flattens a photo of a curled, folded, or tilted page before text detection. Off by default.
+
+| Property  | Type      | Default | Notes                                                                                                                                          |
+| --------- | --------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled` | `boolean` | `false` | Load the unwarping model during `initialize()` and unwarp every image unless a call passes `unwarp: false`. Adds ~30 MB and ~300 ms per image. |
+
+`DEFAULT_UNWARPING_OPTIONS` holds the default. Enable it for photos of curled, folded, or tilted paper, not for flat scans or screenshots. The model override is `model.unwarping` (see `ModelPathOptions`). Related exports: `UNWARPING_MODEL_URL` and the types `UnwarpingOptions`, `UnwarpResult`, `UnwarpMapping`, `UnwarpSkipReason` (`"flat" | "no-gain" | "folded" | "out-of-frame"`).
+
+`service.unwarp(image)` returns an `UnwarpResult`: `{ status: "unwarped"; canvas; mapping }` or `{ status: "skipped"; reason; canvas }` (the input unchanged). `mapping.boxToSource(box)` and `mapping.pointToSource(x, y)` translate positions on the flattened page to the input photo. `recognize()` and `detect()` always return boxes in the coordinates of the image passed in.
+
+---
+
 ## `RecognizeOptions` (per-call)
 
 These are passed as the second argument to `recognize()`, not on the constructor.
 
-| Property     | Type                                      | Default | Notes                                                       |
-| ------------ | ----------------------------------------- | ------- | ----------------------------------------------------------- |
-| `flatten`    | `boolean`                                 | `false` | Return `FlattenedPaddleOcrResult` instead of grouped lines. |
-| `strategy`   | `"per-box" \| "per-line" \| "cross-line"` | service | Override the recognition strategy for this call only.       |
-| `dictionary` | `string \| ArrayBuffer`                   | service | Custom dictionary for this call. **Disables result cache.** |
-| `noCache`    | `boolean`                                 | `false` | Bypass the in-memory result cache.                          |
+| Property     | Type                                      | Default             | Notes                                                                                                                                                                                  |
+| ------------ | ----------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `flatten`    | `boolean`                                 | `false`             | Return `FlattenedPaddleOcrResult` instead of grouped lines.                                                                                                                            |
+| `strategy`   | `"per-box" \| "per-line" \| "cross-line"` | service             | Override the recognition strategy for this call only.                                                                                                                                  |
+| `dictionary` | `string \| ArrayBuffer`                   | service             | Custom dictionary for this call. **Disables result cache.**                                                                                                                            |
+| `noCache`    | `boolean`                                 | `false`             | Bypass the in-memory result cache.                                                                                                                                                     |
+| `unwarp`     | `boolean`                                 | `unwarping.enabled` | Flatten the page before detection for this call. `true` throws on a service built without `unwarping: { enabled: true }`. Does not bypass the cache; it selects a different cache key. |
 
 `strategy` and `dictionary` overrides do **not** mutate the service's defaults - they only apply to that single call. To swap the service-wide config, use `changeRecognitionModel` / `changeTextDictionary`.
 
@@ -180,9 +197,10 @@ These are passed as the second argument to `recognize()`, not on the constructor
 
 Passed as the second argument to `detect()`. Extends `DetectionOptions`, so every tuning field above (`maxSideLength`, `minimumAreaThreshold`, `paddingVertical`, `paddingHorizontal`, `mean`, `stdDeviation`) may also be set here as a single-call override, plus:
 
-| Property      | Type      | Default | Notes                                                                                      |
-| ------------- | --------- | ------- | ------------------------------------------------------------------------------------------ |
-| `crop`        | `boolean` | `false` | Return each region PNG-encoded as `ArrayBuffer`, index-aligned with `boxes`. Not on RN.    |
-| `saveCropsTo` | `string`  | -       | Folder where each crop is written as `crop_NNN.png`. Node/Bun only; ignored on web/mobile. |
+| Property      | Type      | Default             | Notes                                                                                                                    |
+| ------------- | --------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `crop`        | `boolean` | `false`             | Return each region PNG-encoded as `ArrayBuffer`, index-aligned with `boxes`. Not on RN.                                  |
+| `saveCropsTo` | `string`  | -                   | Folder where each crop is written as `crop_NNN.png`. Node/Bun only; ignored on web/mobile.                               |
+| `unwarp`      | `boolean` | `unwarping.enabled` | Flatten the page before detection for this call. Boxes stay in photo coordinates; crops are cut from the flattened page. |
 
 Like `RecognizeOptions`, per-call tuning does not mutate the service defaults.

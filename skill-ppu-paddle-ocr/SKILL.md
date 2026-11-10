@@ -1,6 +1,6 @@
 ---
 name: skill-ppu-paddle-ocr
-description: Use this skill whenever the user is writing TypeScript/JavaScript code that imports `ppu-paddle-ocr`, `ppu-paddle-ocr/web`, or `ppu-paddle-ocr/mobile`, or asks about PaddleOCR / PP-OCRv6 / PP-OCRv5 in JavaScript runtimes - text detection, text recognition, OCR on receipts/invoices/documents, ONNX Runtime OCR, multilingual OCR (Latin, Cyrillic, Arabic, Indic, CJK, Thai), WebGPU OCR in browsers, browser-extension OCR, React Native / Expo OCR on iOS and Android (Skia + onnxruntime-react-native), INT8-quantized recognition, custom dictionaries, recognition strategies (`per-box` / `per-line` / `cross-line`), or processing engines (`opencv` / `canvas-native`). Trigger even when the user says "PaddleOCR in Node", "OCR library that runs in Bun and the browser", or "OCR in React Native" without naming the package, as long as the codebase imports it. This skill encodes the three entry points (`ppu-paddle-ocr`, `ppu-paddle-ocr/web`, and `ppu-paddle-ocr/mobile`), the lifecycle (`new` -> `initialize` -> `recognize` -> `destroy`), detection-only inference (`detect()` - bounding boxes, optional PNG crops), the strategy/engine trade-offs, the model-cache behaviour on Node/Bun, the WebGPU fallback path on web, and the Skia / native-JSI path on React Native. Also covers running OCR as a dockerized REST API via the `apps/serve` service (Hono + Bun) when the user wants OCR-as-a-service or a deployable container instead of embedding the SDK.
+description: Use this skill whenever the user is writing TypeScript/JavaScript code that imports `ppu-paddle-ocr`, `ppu-paddle-ocr/web`, or `ppu-paddle-ocr/mobile`, or asks about PaddleOCR / PP-OCRv6 / PP-OCRv5 in JavaScript runtimes - text detection, text recognition, OCR on receipts/invoices/documents, ONNX Runtime OCR, multilingual OCR (Latin, Cyrillic, Arabic, Indic, CJK, Thai), WebGPU OCR in browsers, browser-extension OCR, React Native / Expo OCR on iOS and Android (Skia + onnxruntime-react-native), INT8-quantized recognition, custom dictionaries, recognition strategies (`per-box` / `per-line` / `cross-line`), or processing engines (`opencv` / `canvas-native`), or OCR of photos of curled, folded, or tilted paper (document unwarping, the `unwarping` option and the `unwarp` per-call flag). Trigger even when the user says "PaddleOCR in Node", "OCR library that runs in Bun and the browser", or "OCR in React Native" without naming the package, as long as the codebase imports it. This skill encodes the three entry points (`ppu-paddle-ocr`, `ppu-paddle-ocr/web`, and `ppu-paddle-ocr/mobile`), the lifecycle (`new` -> `initialize` -> `recognize` -> `destroy`), detection-only inference (`detect()` - bounding boxes, optional PNG crops), the opt-in document unwarping stage, the strategy/engine trade-offs, the model-cache behaviour on Node/Bun, the WebGPU fallback path on web, and the Skia / native-JSI path on React Native. Also covers running OCR as a dockerized REST API via the `apps/serve` service (Hono + Bun) when the user wants OCR-as-a-service or a deployable container instead of embedding the SDK.
 ---
 
 # Writing code with `ppu-paddle-ocr`
@@ -100,16 +100,76 @@ await service.detect(imageBuffer, { saveCropsTo: "./regions" });
 
 `DetectOptions` extends `DetectionOptions`, so any tuning field (`maxSideLength`, `minimumAreaThreshold`, paddings, `mean`, `stdDeviation`) can be overridden per call without touching the service defaults. Platform limits: `saveCropsTo` is ignored on web/mobile (no filesystem); `crop: true` throws on React Native (the Skia canvas has no PNG encoder). `detect()` results are not cached - the result cache only covers `recognize()`.
 
+## Flattening curled or tilted photos: document unwarping
+
+Document unwarping flattens a photo of a curled, folded, or tilted page before text detection, so text lines are straight when they are detected and read. It is **opt-in and off by default**. The term is "unwarping"; the per-call flag is `unwarp`. (`flatten` is a different, unrelated option: it returns a flat result list.)
+
+**When to enable it:** the input is a camera photo of paper that is not flat - a curled receipt, a folded sheet, a page shot at a tilt. **When not to:** flat scans, screenshots, exported PDFs, and digital renders. There the stage gains nothing and still costs the extra model run. If the user reports garbled or missing text only on curled-paper photos, suggest this before suggesting a larger model.
+
+```ts
+import { PaddleOcrService } from "ppu-paddle-ocr"; // also /web and /mobile
+
+const service = new PaddleOcrService({ unwarping: { enabled: true } });
+await service.initialize(); // loads one more model (~30 MB)
+
+const result = await service.recognize("/abs/path/curled-receipt.jpg");
+await service.detect(photo); // unwarped too
+await service.recognize(photo, { unwarp: false }); // skip the stage for one call
+```
+
+Exact options:
+
+- `unwarping: { enabled: true }` on the constructor. Type `UnwarpingOptions = { enabled?: boolean }`, default `false` (`DEFAULT_UNWARPING_OPTIONS`). It loads the model during `initialize()` and unwarps every image unless a call passes `unwarp: false`.
+- `model.unwarping?: ArrayBuffer | string` overrides the model. The default, `UNWARPING_MODEL_URL`, is `https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main/correction/UVDoc_grid.onnx` (31,587,333 bytes). A custom model must output the deformation grid; the stock PaddleOCR `UVDoc.onnx` returns an image and is rejected (`examples/export-unwarping-grid-onnx.py` converts it).
+- Per call: `unwarp?: boolean` on `recognize()`, `detect()`, and the batch methods (part of `RecognizeOptions` / `DetectOptions`). `unwarp: true` on a service built without `unwarping.enabled` throws "Unwarping is not available on this service. Construct it with `unwarping: { enabled: true }` and call initialize()." - the fix is the constructor option, not the call.
+- `PaddleOcrService.downloadModels({ unwarping: true })` also caches the model (Node/Bun only). One-shot helpers accept it too: `ocr(image, { unwarping: { enabled: true } })`.
+- CLI: `--unwarp` on `recognize` / `detect` / `batch` / `stream`; `--model-unwarping <path|url>` (needs `--unwarp`); `download-models --unwarp`; `models --json` reports `unwarping: { enabled, model }`.
+- REST server (`apps/serve`): start it with `UNWARPING_ENABLED=true` (loads the model at startup; every request is then unwarped by default). A request field `unwarp: false` skips the stage for one request; `unwarp: true` on a server started without `UNWARPING_ENABLED` returns a `400` naming the setting. The field works on `/v1/ocr`, `/v1/detect`, batch, stream, and async, as a JSON or multipart field, and `GET /v1/models` reports `unwarping.enabled`. The playground has a "Page unwarping" checkbox.
+
+**Coordinates.** `recognize()` and `detect()` always return boxes in the coordinates of the image the user passed in. The stage maps each box back, and a box is the smallest upright rectangle around the mapped outline. Do not tell the user to map boxes themselves. `detect({ crop: true })` cuts its crops from the flattened page, while its boxes stay in photo coordinates.
+
+**Getting the flattened page.** `service.unwarp(image)` returns an `UnwarpResult`:
+
+```ts
+const r = await service.unwarp(photo);
+if (r.status === "unwarped") {
+  r.canvas; // the flattened page
+  r.mapping.boxToSource({ x: 10, y: 20, width: 300, height: 40 }); // page -> photo
+  r.mapping.pointToSource(150, 40); // { x, y } on the photo
+} else {
+  r.reason; // "flat" | "no-gain" | "folded" | "out-of-frame"; r.canvas is the input unchanged
+}
+```
+
+A skipped result is normal, not an error: the image is read as if the stage were off. The reasons mean: `flat` (grid under 1 degree of distortion), `no-gain` (a second prediction on the corrected page did not measure at most 95% of the first prediction's distortion), `folded` (the grid crosses itself), `out-of-frame` (most of the page lies outside the photo).
+
+**Cost and size.** About 300 ms more per image on an Apple Silicon CPU (two model runs of about 150 ms; the redraw takes 27 ms for a 3 MP page) and a one-time ~30 MB download. The model input is a fixed 488 x 712 copy, so memory does not grow with photo size. Inside `recognize()` / `detect()` the page is redrawn from a copy no larger than `recognition.maxCropSourceSideLength` (default 2000 px).
+
+**Measured effect** (`assets/receipt.jpg`, default PP-OCRv6 tiny models, character accuracy = 1 - Levenshtein distance / ground-truth length; the curled inputs are computed curls of that photo, not real photos of curled paper):
+
+| Input                          | Stage off | Stage on | Outcome             |
+| :----------------------------- | --------: | -------: | :------------------ |
+| Flat original                  |     99.5% |    99.5% | skipped (`no-gain`) |
+| Slight curl (bow 3% of height) |     90.1% |    90.1% | skipped (`no-gain`) |
+| Curl 4%                        |     72.6% |    98.4% | unwarped            |
+| Curl 5%                        |     27.9% |    97.4% | unwarped            |
+| Curl 6%                        |     30.3% |    81.2% | unwarped            |
+| Curl 8%                        |     29.8% |    98.2% | unwarped            |
+| Curl 10%                       |     18.0% |    87.7% | unwarped            |
+| Curl 14%                       |      1.0% |    96.3% | unwarped            |
+
+**Limits to state to the user:** one page per photo (no multi-page split); the acceptance thresholds were calibrated on the receipt fixture only; curve-length sizing corrects curl but leaves some perspective foreshortening on pages shot at a steep angle; React Native runs the same code path but has not been run on a device; the default model URL goes live when the model file is uploaded to the models repo, which happens at release.
+
 ## The result cache
 
-`recognize()` caches results in-memory keyed by a hash of the input image bytes. This means calling `recognize()` twice with the same `ArrayBuffer` (or the same canvas serialised the same way) returns the cached result instantly - including the same `flatten`/grouped shape.
+`recognize()` caches results in-memory. The key is a hash of the input image bytes plus the detection session, the recognition session, the dictionary, and the unwarping state in use. Calling `recognize()` twice on the same service with the same `ArrayBuffer` (or the same canvas serialised the same way) returns the cached result instantly, and the cache always stores the grouped shape, so `flatten: true` followed by a plain call (or the reverse) returns the right shape for each. Two service instances do not share entries, and `changeDetectionModel()` / `changeRecognitionModel()` / `changeTextDictionary()` retire the old entries.
 
 Cache is bypassed in two cases:
 
 - `options.noCache === true`
 - `options.dictionary` is set (custom dictionary always re-runs)
 
-Custom dictionaries disable the cache because the cache key only hashes the image, not the decoding alphabet - re-using a cached entry decoded with a different dict would return wrong text.
+A per-call `dictionary` bypasses the cache because that dictionary is not part of the key - re-using a cached entry decoded with a different dict would return wrong text. A per-call `unwarp` does not bypass the cache: it selects a different key.
 
 When benchmarking or iterating on detection/recognition options, set `noCache: true` or you'll see suspiciously fast "second runs" that are actually just cache hits.
 
@@ -180,6 +240,8 @@ await service.initialize(); // hits the cache, no network
 ```
 
 `downloadModels` is a **static** method - call it on the class, not an instance. It also takes `{ verbose: true }` to log each download.
+
+With document unwarping enabled, `initialize()` also needs the unwarping model; warm it with `PaddleOcrService.downloadModels({ unwarping: true })` (see the unwarping section above).
 
 To clear the cache (e.g. after a model upgrade): `service.clearModelCache()`.
 
@@ -339,6 +401,7 @@ type PaddleOptions = {
     detection?: string | ArrayBuffer;
     recognition?: string | ArrayBuffer;
     charactersDictionary?: string | ArrayBuffer;
+    unwarping?: string | ArrayBuffer; // default UNWARPING_MODEL_URL; loaded only when unwarping.enabled
   };
   detection?: {
     mean?: [n, n, n];
@@ -361,6 +424,7 @@ type PaddleOptions = {
   debugging?: { verbose?: boolean; debug?: boolean; debugFolder?: string };
   session?: InferenceSession.SessionOptions; // any onnxruntime SessionOptions
   processing?: { engine?: "opencv" | "canvas-native" };
+  unwarping?: { enabled?: boolean }; // default false - flatten curled/tilted photos first (+1 model, ~30 MB)
 };
 ```
 
@@ -380,6 +444,10 @@ When reviewing or writing ppu-paddle-ocr code, watch for these:
 - **Using INT8 quantization on Apple Silicon.** It's _slower_ than FP32 there. INT8 is for x86-64 with VNNI and for WebAssembly.
 - **Forgetting the trailing newline in a custom dictionary.** Drops the last character of the alphabet - silently corrupts recognition for any text containing it.
 - **Benchmarking without `noCache: true`.** The result cache will return cached hits for repeated identical images, making the second run look impossibly fast.
+- **Enabling `unwarping` for flat scans or screenshots.** It adds a ~30 MB model and about 300 ms per image and changes nothing on a flat page. Enable it for photos of curled, folded, or tilted paper.
+- **Passing `unwarp: true` to a service built without `unwarping: { enabled: true }`.** It throws. The constructor option loads the model; the per-call flag only overrides it for one call.
+- **Mapping boxes back from the flattened page by hand.** `recognize()` and `detect()` already return boxes in the coordinates of the image you passed in.
+- **Treating a skipped unwarp as a failure.** `service.unwarp()` returns `{ status: "skipped", reason }` for a flat page, a prediction with no gain, a folded grid, or a page mostly out of frame; the input is used unchanged.
 - **Treating "zero text detected" as an error.** `recognize()` returns an empty result (`text: ""`) - branch on the result shape, don't wrap in try/catch.
 - **Calling `PaddleOcrService.downloadModels()` on the web build.** It's a Node-only static method; it doesn't exist in `ppu-paddle-ocr/web`.
 
@@ -458,7 +526,7 @@ A complete reference extension is at https://github.com/PT-Perkasa-Pilar-Utama/p
 
 ## Pairing with `ppu-ocv` for preprocessing
 
-PaddleOCR works best on grayscale or thresholded inputs. For low-quality scans, dim photos, or skewed receipts, preprocess with `ppu-ocv` first, then pass the cleaned canvas into `recognize()`:
+PaddleOCR works best on grayscale or thresholded inputs. For curled or folded paper, enable the built-in unwarping stage (see the unwarping section above) instead of preprocessing. For low-quality scans, dim photos, or skewed receipts, preprocess with `ppu-ocv` first, then pass the cleaned canvas into `recognize()`:
 
 ```ts
 import { ImageProcessor, CanvasProcessor } from "ppu-ocv";
@@ -521,7 +589,9 @@ Rules to remember:
   `v5-thai-mobile`; `models --json` lists them), `--model-detection/-recognition/-dict`
   (raw paths/URLs that override the preset), detection tuning (`--max-side-length`,
   `--mean`, `--std`, ...), `--execution-providers`, and `--concurrency` for
-  batch/stream. Defaults match the SDK (v6 tiny models, `per-line`, `opencv`).
+  batch/stream. `--unwarp` flattens curled or tilted pages first (one more
+  ~30 MB model; `--model-unwarping <path|url>` overrides it and needs
+  `--unwarp`; `download-models --unwarp` caches it). Defaults match the SDK (v6 tiny models, `per-line`, `opencv`).
 - **Recognized text -> stdout; progress and logs -> stderr.** Pipe stdout safely;
   add `-q` to silence stderr. `--json` emits the full result object (NDJSON for
   `stream`); `-o <file>` writes to disk.
