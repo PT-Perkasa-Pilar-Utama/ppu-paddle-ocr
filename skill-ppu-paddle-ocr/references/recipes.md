@@ -13,7 +13,7 @@ FROM oven/bun:1 AS warm
 WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --production
-RUN bun -e 'import("ppu-paddle-ocr").then(m => m.PaddleOcrService.downloadModels({ verbose: true }))'
+RUN bun -e 'import("ppu-paddle-ocr").then(m => m.PaddleOcrService.downloadModels({ verbose: true }))'  # add unwarping: true to also cache the unwarping model
 
 FROM oven/bun:1
 WORKDIR /app
@@ -31,7 +31,7 @@ await PaddleOcrService.downloadModels({ verbose: true });
 console.log("Models cached. Subsequent initialize() calls hit the cache.");
 ```
 
-`downloadModels` is **static** - call it on the class.
+`downloadModels` is **static** - call it on the class. If the service will run with `unwarping: { enabled: true }`, pass `downloadModels({ unwarping: true })` so the ~30 MB unwarping model is cached too.
 
 ---
 
@@ -330,3 +330,33 @@ process.on("unhandledRejection", (e) => {
 ```
 
 Without this, `kill -TERM` leaves the ONNX runtime holding native memory until the process is force-killed - annoying in container orchestrators that wait for clean exits.
+
+---
+
+## 11. OCR a photo of curled or folded paper
+
+Use document unwarping for camera photos of paper that is not flat. Skip it for flat scans and screenshots.
+
+```ts
+import { PaddleOcrService } from "ppu-paddle-ocr";
+
+const service = new PaddleOcrService({ unwarping: { enabled: true } });
+await service.initialize(); // loads the unwarping model (~30 MB) as well
+
+const photo = await Bun.file("/abs/path/curled-receipt.jpg").arrayBuffer();
+
+// Boxes come back in the coordinates of `photo`, not of the flattened page.
+const result = await service.recognize(photo);
+console.log(result.text);
+
+// A flat page in the same batch: skip the stage for that call.
+await service.recognize(flatScanBuffer, { unwarp: false });
+
+// Inspect what the stage did.
+const r = await service.unwarp(photo);
+console.log(r.status === "unwarped" ? "flattened" : `skipped: ${r.reason}`);
+```
+
+From the shell: `bunx ppu-paddle-ocr recognize curled-receipt.jpg --unwarp`.
+
+Expect about 300 ms more per image on an Apple Silicon CPU. On computed curls of the receipt fixture, accuracy went from 27.9% to 97.4% (curl 5%) and from 1.0% to 96.3% (curl 14%); a slight curl (3%) is skipped (`no-gain`) and reads as before. Limits: one page per photo, thresholds calibrated on the receipt fixture only, and React Native not yet run on a device.
