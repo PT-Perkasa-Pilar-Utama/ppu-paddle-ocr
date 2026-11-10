@@ -5,7 +5,7 @@ import * as v from "valibot";
 import type { Env } from "./types.js";
 
 /** API version surfaced in every response envelope. */
-export const API_VERSION = "0.5.2";
+export const API_VERSION = "0.6.0";
 
 /** Success envelope shape: `{ status, version, metadata: { id, ... }, data }`. */
 export type SuccessEnvelope<T> = {

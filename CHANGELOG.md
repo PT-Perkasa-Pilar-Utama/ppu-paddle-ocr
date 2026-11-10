@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.7.0] - 2026-11-10
+
 ### Added
 
 - **Document unwarping.** An opt-in stage flattens a photo of a curled, folded,
