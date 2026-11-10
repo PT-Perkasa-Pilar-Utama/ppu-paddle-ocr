@@ -42,4 +42,15 @@ describe("playground deployment", () => {
     expect(html).toContain('data-mobile-view="image"');
     expect(html).toContain("configRevision === appliedRevision");
   });
+
+  test("offers page unwarping only on library builds that support it", async () => {
+    const html = await Bun.file(resolve(playground, "index.html")).text();
+
+    expect(html).toContain('id="cfg-unwarp"');
+    expect(html).toContain("Page unwarping");
+    expect(html).toContain('typeof PaddleOcrService.prototype.unwarp !== "function"');
+    expect(html).toContain("options.unwarping = { enabled: true }");
+    expect(html).toContain('id="unwarp-canvas"');
+    expect(html).toContain("UNWARP_SKIP_NOTES[unwarpOutcome.reason]");
+  });
 });
