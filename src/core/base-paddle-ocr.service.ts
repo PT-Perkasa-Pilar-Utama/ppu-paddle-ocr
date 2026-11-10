@@ -10,15 +10,20 @@ import type {
   PaddleOptions,
   RecognizeOptions,
 } from "../interface.js";
-import { deepMerge, parseDictionary } from "../utils.js";
+import { UNWARPING_MODEL_URL } from "../model-catalogue.js";
+import { deepMerge } from "../utils.js";
 import { BaseDetectionService } from "./base-detection.service.js";
 import type { BaseRecognitionService, RecognitionResult } from "./base-recognition.service.js";
 import type { BatchItemResult } from "./batch.js";
-import { createAsyncQueue, runPool } from "./batch.js";
+import { createAsyncQueue, resolveConcurrency, runPool } from "./batch.js";
 import { cropDetectedBoxes } from "./detection/crop-boxes.js";
+import { loadCustomDictionary } from "./recognition/custom-dictionary.js";
 import { flattenResults, groupResultsByLine } from "./recognition/line-grouping.js";
-import { bypassesCache, globalImageCache, ImageCache } from "./image-cache.js";
+import { bypassesCache, cacheIdentity, globalImageCache, ImageCache } from "./image-cache.js";
+import { readImageBytes, toCanvas } from "./image-source.js";
 import type { CoreCanvas, PlatformProvider } from "./platform.js";
+import type { UnwarpResult } from "./unwarping/unwarping.service.js";
+import { UnwarpingService } from "./unwarping/unwarping.service.js";
 
 /**
  * OCR result grouped by detected text lines.
@@ -57,9 +62,19 @@ export type AnyOcrResult = PaddleOcrResult | FlattenedPaddleOcrResult;
 export type DetectResult = {
   /** Detected text boxes in original image coordinates. */
   boxes: Box[];
-  /** PNG-encoded crops, index-aligned with `boxes`. Present when `crop: true`. */
+  /**
+   * PNG-encoded crops, index-aligned with `boxes`. Present when `crop: true`.
+   * With unwarping applied they are cut from the flattened page, so a crop
+   * shows the straightened text of its box.
+   */
   crops?: ArrayBuffer[];
 };
+
+/** Loads a model or dictionary from a buffer, a path or URL, or the default URL. */
+export type ResourceLoader = (
+  source: string | ArrayBuffer | undefined,
+  defaultUrl: string
+) => Promise<ArrayBuffer>;
 
 /** Accepted source for a single image in a batch. */
 export type BatchRecognizeInput = ArrayBuffer | CoreCanvas | string;
@@ -88,6 +103,8 @@ export abstract class BasePaddleOcrService {
   protected recognitionSession: InferenceSession | null = null;
   protected detector: BaseDetectionService | null = null;
   protected recognitor: BaseRecognitionService | null = null;
+  protected unwarpingSession: InferenceSession | null = null;
+  protected unwarper: UnwarpingService | null = null;
 
   protected readonly platform: PlatformProvider;
 
@@ -112,19 +129,116 @@ export abstract class BasePaddleOcrService {
 
   protected abstract initSessions(): Promise<void>;
 
-  /** Returns whether both inference sessions are ready. */
+  /**
+   * Returns whether every inference session the options ask for is ready:
+   * detection and recognition, plus unwarping when it is enabled.
+   */
   public isInitialized(): boolean {
-    return this.detectionSession !== null && this.recognitionSession !== null;
+    return (
+      this.detectionSession !== null &&
+      this.recognitionSession !== null &&
+      (!this.options.unwarping?.enabled || this.unwarpingSession !== null)
+    );
   }
 
   /** Release all inference sessions and services. */
   public async destroy(): Promise<void> {
     await this.detectionSession?.release();
     await this.recognitionSession?.release();
+    await this.unwarpingSession?.release();
     this.detectionSession = null;
     this.recognitionSession = null;
+    this.unwarpingSession = null;
     this.detector = null;
     this.recognitor = null;
+    this.unwarper = null;
+  }
+
+  /**
+   * Load the unwarping model when `unwarping.enabled` is set; a no-op otherwise.
+   *
+   * Each platform's `initialize()` calls this with its own loader and session
+   * factory, so the model source, the default URL, and the service wiring are
+   * decided here once.
+   */
+  protected async initializeUnwarping(
+    loadResource: ResourceLoader,
+    createSession: (modelData: Uint8Array) => Promise<InferenceSession>
+  ): Promise<void> {
+    if (!this.options.unwarping?.enabled) return;
+
+    const modelBuffer = await loadResource(this.options.model?.unwarping, UNWARPING_MODEL_URL);
+    this.unwarpingSession = await createSession(new Uint8Array(modelBuffer));
+    this.unwarper = new UnwarpingService(
+      this.platform,
+      this.unwarpingSession,
+      this.options.debugging
+    );
+    this.log(
+      `Unwarping ONNX model loaded successfully\n\tinput: ${this.unwarpingSession.inputNames}\n\toutput: ${this.unwarpingSession.outputNames}`
+    );
+  }
+
+  /**
+   * Flatten a photo of a curled, folded, or tilted page.
+   *
+   * The same stage `recognize()` and `detect()` run when unwarping is on,
+   * exposed for callers that want the flattened image itself. Requires
+   * `unwarping: { enabled: true }` in the constructor options.
+   *
+   * @param image - The source image as an `ArrayBuffer`, platform canvas, or URL/path string.
+   * @returns The flattened page with a map back to the photo, or the input
+   *   unchanged with the reason the correction was skipped.
+   */
+  public async unwarp(image: ArrayBuffer | CoreCanvas | string): Promise<UnwarpResult> {
+    return this.requireUnwarper().run(await toCanvas(this.platform, image));
+  }
+
+  private requireUnwarper(): UnwarpingService {
+    if (!this.unwarper) {
+      throw new Error(
+        "Unwarping is not available on this service. Construct it with `unwarping: { enabled: true }` and call initialize()."
+      );
+    }
+    return this.unwarper;
+  }
+
+  /**
+   * Run the unwarping stage when the call asks for it, else return null.
+   *
+   * A per-call `unwarp` wins over the constructor's `unwarping.enabled`. The
+   * page is redrawn from a copy no larger than recognition's crop-source cap,
+   * so no pixel is computed that recognition would scale away.
+   */
+  private async runUnwarping(
+    canvas: CoreCanvas,
+    perCall: boolean | undefined
+  ): Promise<UnwarpResult | null> {
+    if (!this.wantsUnwarping(perCall)) return null;
+    return this.requireUnwarper().run(canvas, this.options.recognition?.maxCropSourceSideLength);
+  }
+
+  private wantsUnwarping(perCall: boolean | undefined): boolean {
+    return perCall ?? this.options.unwarping?.enabled ?? false;
+  }
+
+  /**
+   * Cache key for one image on this service.
+   *
+   * The image hash alone is not enough: the cache is shared by every service
+   * in the process, and the same image reads differently under another model,
+   * another dictionary, or with unwarping on. The key therefore also names the
+   * sessions and dictionary in use (by object identity, so swapping a model
+   * retires its entries) and whether the page is flattened first.
+   */
+  private cacheKeyFor(imageBuffer: ArrayBuffer, unwarp: boolean): string {
+    return [
+      ImageCache.generateKey(imageBuffer),
+      cacheIdentity(this.detectionSession),
+      cacheIdentity(this.recognitionSession),
+      cacheIdentity(this.options.recognition?.charactersDictionary),
+      unwarp ? cacheIdentity(this.unwarpingSession) : "plain",
+    ].join("|");
   }
 
   /**
@@ -143,84 +257,35 @@ export abstract class BasePaddleOcrService {
     }
 
     try {
-      let imageBuffer: ArrayBuffer;
+      const imageBuffer = await readImageBytes(this.platform, image);
 
-      if (typeof image === "string") {
-        if (!image.startsWith("http") && !image.startsWith("/")) {
-          throw new Error(
-            "Invalid image string format. Must be an HTTP URL, an absolute path, ArrayBuffer, or Canvas"
-          );
-        }
-        imageBuffer = await this.platform.loadResource(image, image);
-      } else if (image instanceof ArrayBuffer) {
-        imageBuffer = image;
-      } else {
-        // SAFETY: this branch is the fall-through for values that are neither a
-        // path nor an ArrayBuffer, so `image` is a canvas from one of the
-        // supported runtimes. The typeof probe below is what establishes which.
-        if (typeof (image as unknown as Record<string, unknown>).toBuffer === "function") {
-          // SAFETY: guarded by the toBuffer probe above (the node-canvas shape).
-          const canvasWithBuffer = image as { toBuffer: (format: string) => Buffer };
-          const buffer = canvasWithBuffer.toBuffer("image/png");
-          // SAFETY: slice() on a Buffer's ArrayBuffer returns an ArrayBuffer;
-          // the cast only discards the SharedArrayBuffer arm of the union,
-          // which node-canvas never produces.
-          imageBuffer = buffer.buffer.slice(
-            buffer.byteOffset,
-            buffer.byteOffset + buffer.byteLength
-          ) as ArrayBuffer;
-        } else {
-          // SAFETY: the remaining canvas shape, reached only when toBuffer is
-          // absent; getContext("2d") below throws if the value is not a canvas.
-          const canvasWithCtx = image as {
-            getContext: (type: string, opts?: unknown) => CanvasRenderingContext2D;
-            width: number;
-            height: number;
-          };
-          const ctx = canvasWithCtx.getContext("2d", {
-            willReadFrequently: true,
-          });
-          const imageData = ctx.getImageData(0, 0, canvasWithCtx.width, canvasWithCtx.height);
-          const data = imageData.data;
-          // SAFETY: as above, ImageData is always backed by an ArrayBuffer.
-          imageBuffer = data.buffer.slice(
-            data.byteOffset,
-            data.byteOffset + data.byteLength
-          ) as ArrayBuffer;
-        }
-      }
-
-      const cacheKey = ImageCache.generateKey(imageBuffer);
+      const cacheKey = this.cacheKeyFor(imageBuffer, this.wantsUnwarping(options?.unwarp));
 
       if (!bypassesCache(options)) {
         // SAFETY: the cache is keyed by this method's own cacheKey, and only
-        // this method writes it, so an entry under that key is a result it
-        // stored - flattened or not, which the Partial arm covers.
-        const cacheResult = globalImageCache.get(cacheKey) as
-          | (PaddleOcrResult & Partial<FlattenedPaddleOcrResult>)
-          | undefined;
+        // this method writes it, always with the grouped shape.
+        const cacheResult = globalImageCache.get(cacheKey) as PaddleOcrResult | undefined;
         if (cacheResult) {
           this.log("Using cached OCR result");
-          if (options?.flatten) {
-            return {
-              text: cacheResult.text,
-              results: cacheResult.lines ? cacheResult.lines.flat() : (cacheResult.results ?? []),
-              confidence: cacheResult.confidence,
-            };
-          }
-          // SAFETY: narrowed above to the non-flattened arm.
-          return cacheResult as PaddleOcrResult;
+          return options?.flatten
+            ? {
+                text: cacheResult.text,
+                results: cacheResult.lines.flat(),
+                confidence: cacheResult.confidence,
+              }
+            : cacheResult;
         }
       }
 
-      let boxes: Box[] = [];
-      const canvas =
+      const sourceCanvas =
         typeof image === "string" || image instanceof ArrayBuffer
           ? await this.platform.canvas.prepareCanvas(imageBuffer)
           : image;
+      const unwarped = await this.runUnwarping(sourceCanvas, options?.unwarp);
+      const canvas = unwarped ? unwarped.canvas : sourceCanvas;
       // SAFETY: initialize() constructs the detector before any recognize call,
       // and the guard at the top of this method rejects an uninitialized service.
-      boxes = await (this.detector as BaseDetectionService).run(canvas);
+      const boxes = await (this.detector as BaseDetectionService).run(canvas);
 
       if (boxes.length === 0) {
         return options?.flatten
@@ -228,26 +293,9 @@ export abstract class BasePaddleOcrService {
           : { text: "", lines: [], confidence: 0 };
       }
 
-      let dict = this.options.recognition?.charactersDictionary;
-
-      if (options?.dictionary) {
-        let dictionaryContent = "";
-
-        if (typeof options.dictionary === "string") {
-          const dictBuffer = await this.platform.loadResource(
-            options.dictionary,
-            options.dictionary
-          );
-          dictionaryContent = new TextDecoder("utf-8").decode(dictBuffer);
-        } else {
-          dictionaryContent = new TextDecoder("utf-8").decode(options.dictionary);
-        }
-
-        dict = parseDictionary(dictionaryContent);
-        if (dict.length === 0) {
-          throw new Error("Custom character dictionary is empty or could not be loaded.");
-        }
-      }
+      const dict = options?.dictionary
+        ? await loadCustomDictionary(this.platform, options.dictionary)
+        : this.options.recognition?.charactersDictionary;
 
       const strategy = options?.strategy ?? this.options.recognition?.strategy ?? "per-line";
       // SAFETY: as with the detector, initialize() sets this and the guard at
@@ -259,15 +307,26 @@ export abstract class BasePaddleOcrService {
         strategy,
         options
       );
-      const groupedResult = groupResultsByLine(results);
+      // Lines are grouped on the image the text was read from: on a flattened
+      // page they are straight, which the grouping relies on. Only then do the
+      // boxes move back to the caller's photo.
+      const mapping = unwarped?.status === "unwarped" ? unwarped.mapping : null;
+      const grouped = groupResultsByLine(results);
+      // Without a mapping the page was not flattened and the boxes are
+      // already in photo coordinates.
+      const toSource = (items: RecognitionResult[]): RecognitionResult[] =>
+        mapping ? mapping.itemsToSource(items) : items;
+      const groupedResult: PaddleOcrResult = { ...grouped, lines: grouped.lines.map(toSource) };
 
-      const finalResult = options?.flatten ? flattenResults(results) : groupedResult;
-
+      // The cache always holds the grouped shape, whichever shape this call
+      // returns: a later call reads the entry without knowing who wrote it.
       if (!bypassesCache(options)) {
-        globalImageCache.set(cacheKey, finalResult);
+        globalImageCache.set(cacheKey, groupedResult);
       }
 
-      return finalResult;
+      if (!options?.flatten) return groupedResult;
+      const flattened = flattenResults(results);
+      return { ...flattened, results: toSource(flattened.results) };
     } catch (e: unknown) {
       if (this.options.debugging?.verbose) {
         const err = e instanceof Error ? e : new Error(String(e));
@@ -294,7 +353,7 @@ export abstract class BasePaddleOcrService {
       await this.initSessions();
     }
 
-    const { crop, saveCropsTo, ...tuning } = options ?? {};
+    const { crop, saveCropsTo, unwarp, ...tuning } = options ?? {};
     const detector =
       Object.keys(tuning).length > 0
         ? new BaseDetectionService(
@@ -307,29 +366,21 @@ export abstract class BasePaddleOcrService {
           )
         : initializedDetector(this.detector);
 
-    let canvas: CoreCanvas;
-    if (typeof image === "string") {
-      if (!image.startsWith("http") && !image.startsWith("/")) {
-        throw new Error(
-          "Invalid image string format. Must be an HTTP URL, an absolute path, ArrayBuffer, or Canvas"
-        );
-      }
-      canvas = await this.platform.canvas.prepareCanvas(
-        await this.platform.loadResource(image, image)
-      );
-    } else if (image instanceof ArrayBuffer) {
-      canvas = await this.platform.canvas.prepareCanvas(image);
-    } else {
-      canvas = image;
-    }
+    const sourceCanvas = await toCanvas(this.platform, image);
+    const unwarped = await this.runUnwarping(sourceCanvas, unwarp);
+    const canvas = unwarped ? unwarped.canvas : sourceCanvas;
+    const mapping = unwarped?.status === "unwarped" ? unwarped.mapping : null;
 
-    const boxes = (await detector.run(canvas)).filter((box) => box.width > 0 && box.height > 0);
+    const detected = (await detector.run(canvas)).filter((box) => box.width > 0 && box.height > 0);
+    const boxes = mapping ? detected.map((box) => mapping.boxToSource(box)) : detected;
 
     if (!crop && !saveCropsTo) {
       return { boxes };
     }
 
-    const crops = await cropDetectedBoxes(this.platform, canvas, boxes, { crop, saveCropsTo });
+    // Crops are cut from the image the boxes were found on, so `detected`, not
+    // the boxes mapped back to the photo.
+    const crops = await cropDetectedBoxes(this.platform, canvas, detected, { crop, saveCropsTo });
 
     return crop ? { boxes, crops } : { boxes };
   }
@@ -364,7 +415,10 @@ export abstract class BasePaddleOcrService {
     await runPool<BatchRecognizeInput, AnyOcrResult>(
       images,
       {
-        concurrency: this.resolveConcurrency(options?.concurrency),
+        concurrency: resolveConcurrency(
+          options?.concurrency,
+          this.options.session?.executionProviders
+        ),
         settle,
         signal: options?.signal,
         onProgress: options?.onProgress,
@@ -403,7 +457,10 @@ export abstract class BasePaddleOcrService {
         await runPool<BatchRecognizeInput, AnyOcrResult>(
           images,
           {
-            concurrency: this.resolveConcurrency(options?.concurrency),
+            concurrency: resolveConcurrency(
+              options?.concurrency,
+              this.options.session?.executionProviders
+            ),
             settle: options?.settle ?? false,
             signal: options?.signal,
             onProgress: options?.onProgress,
@@ -420,21 +477,5 @@ export abstract class BasePaddleOcrService {
 
     yield* queue.drain();
     await pump;
-  }
-
-  /**
-   * Resolve the effective concurrency. `"auto"` (or unset) yields `1` when an
-   * accelerator execution provider is configured, else a small CPU default.
-   */
-  private resolveConcurrency(value?: number | "auto"): number {
-    if (typeof value === "number" && value > 0) return Math.floor(value);
-
-    const providers = this.options.session?.executionProviders ?? [];
-    const usesAccelerator = providers.some((provider) => {
-      const name = (typeof provider === "string" ? provider : provider.name).toLowerCase();
-      return name !== "cpu" && name !== "wasm";
-    });
-
-    return usesAccelerator ? 1 : 4;
   }
 }

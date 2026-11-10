@@ -9,6 +9,7 @@ import type {
   ProcessingOptions,
   RecognitionOptions,
   SessionOptions,
+  UnwarpingOptions,
 } from "./interface.js";
 
 /** Default debugging options - logging and image dumps disabled. */
@@ -68,6 +69,11 @@ export const DEFAULT_PROCESSING_OPTIONS: ProcessingOptions = {
   engine: DEFAULT_PROCESSING_ENGINE,
 };
 
+/** Default document unwarping options - the stage is off. */
+export const DEFAULT_UNWARPING_OPTIONS: UnwarpingOptions = {
+  enabled: false,
+};
+
 /** Default combined options used when no custom config is provided. */
 export const DEFAULT_PADDLE_OPTIONS: PaddleOptions = {
   model: {},
@@ -76,4 +82,5 @@ export const DEFAULT_PADDLE_OPTIONS: PaddleOptions = {
   debugging: DEFAULT_DEBUGGING_OPTIONS,
   session: DEFAULT_SESSION_OPTIONS,
   processing: DEFAULT_PROCESSING_OPTIONS,
+  unwarping: DEFAULT_UNWARPING_OPTIONS,
 };

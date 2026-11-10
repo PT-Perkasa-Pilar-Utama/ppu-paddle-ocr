@@ -12,7 +12,7 @@ import type { FlattenedPaddleOcrResult, PaddleOcrResult } from "../core/base-pad
 import type { CoreCanvas } from "../core/platform.js";
 import { createSessionWithFallback } from "../core/session-factory.js";
 import type { PaddleOptions, RecognizeOptions } from "../interface.js";
-import { DEFAULT_MODEL_URLS } from "../model-catalogue.js";
+import { DEFAULT_MODEL_URLS, UNWARPING_MODEL_URL } from "../model-catalogue.js";
 import { parseDictionary } from "../utils.js";
 import { DetectionService } from "./detection.service.js";
 import { CACHE_DIR, fetchAndCacheResource } from "./model-cache.js";
@@ -66,6 +66,17 @@ export class PaddleOcrService extends BasePaddleOcrService {
     return this._fetchAndCache(defaultUrl);
   }
 
+  /** Create an ORT session, falling back to CPU if the requested providers fail. */
+  private async _createSession(modelData: Uint8Array): Promise<ort.InferenceSession> {
+    return createSessionWithFallback(
+      ort,
+      modelData,
+      this.options.session,
+      (msg) => this.log(msg),
+      (next) => (this.options.session = next)
+    );
+  }
+
   /**
    * Not used by the Node service - initialization runs in {@link initialize}.
    * @throws Always; call {@link initialize} instead.
@@ -101,21 +112,13 @@ export class PaddleOcrService extends BasePaddleOcrService {
       ]);
 
       const [detectionSession, recognitionSession] = await Promise.all([
-        createSessionWithFallback(
-          ort,
-          new Uint8Array(detModelBuffer),
-          this.options.session,
-          (msg) => this.log(msg),
-          (next) => (this.options.session = next)
-        ),
-        createSessionWithFallback(
-          ort,
-          new Uint8Array(recModelBuffer),
-          this.options.session,
-          (msg) => this.log(msg),
-          (next) => (this.options.session = next)
-        ),
+        this._createSession(new Uint8Array(detModelBuffer)),
+        this._createSession(new Uint8Array(recModelBuffer)),
         engine === "opencv" ? ImageProcessor.initRuntime() : Promise.resolve(),
+        this.initializeUnwarping(
+          (source, defaultUrl) => this._loadResource(source, defaultUrl),
+          (modelData) => this._createSession(modelData)
+        ),
       ]);
 
       this.detectionSession = detectionSession;
@@ -171,13 +174,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
     const modelBuffer = await this._loadResource(model, DEFAULT_MODEL_URLS.detection);
 
     await this.detectionSession?.release();
-    this.detectionSession = await createSessionWithFallback(
-      ort,
-      new Uint8Array(modelBuffer),
-      this.options.session,
-      (msg) => this.log(msg),
-      (next) => (this.options.session = next)
-    );
+    this.detectionSession = await this._createSession(new Uint8Array(modelBuffer));
     this.detector = new DetectionService(
       this.detectionSession,
       this.options.detection,
@@ -197,13 +194,7 @@ export class PaddleOcrService extends BasePaddleOcrService {
     const modelBuffer = await this._loadResource(model, DEFAULT_MODEL_URLS.recognition);
 
     await this.recognitionSession?.release();
-    this.recognitionSession = await createSessionWithFallback(
-      ort,
-      new Uint8Array(modelBuffer),
-      this.options.session,
-      (msg) => this.log(msg),
-      (next) => (this.options.session = next)
-    );
+    this.recognitionSession = await this._createSession(new Uint8Array(modelBuffer));
     this.recognitor = new RecognitionService(
       this.recognitionSession,
       this.options.recognition,
@@ -279,13 +270,21 @@ export class PaddleOcrService extends BasePaddleOcrService {
    * Pre-download all default models to the local cache directory.
    * Call this before `initialize()` to avoid first-run download delays or
    * to warm the cache in CI/CD pipelines and test suites.
+   *
+   * @param options.unwarping - Also download the document unwarping model
+   *   (about 30 MB), which `initialize()` fetches only when
+   *   `unwarping.enabled` is set.
    */
-  public static async downloadModels(options?: { verbose?: boolean }): Promise<void> {
+  public static async downloadModels(options?: {
+    verbose?: boolean;
+    unwarping?: boolean;
+  }): Promise<void> {
     const verbose = options?.verbose ?? false;
     const urls = [
       DEFAULT_MODEL_URLS.detection,
       DEFAULT_MODEL_URLS.recognition,
       DEFAULT_MODEL_URLS.charactersDictionary,
+      ...(options?.unwarping ? [UNWARPING_MODEL_URL] : []),
     ];
 
     for (const url of urls) {

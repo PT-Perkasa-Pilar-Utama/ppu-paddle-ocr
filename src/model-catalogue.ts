@@ -28,6 +28,13 @@ export const MODEL_BASE_URL = "https://huggingface.co/snowfluke/ppu-paddle-ocr-m
 export const DICT_BASE_URL = "https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main";
 
 /**
+ * Default document unwarping model: PaddleOCR's UVDoc cut to stop at the
+ * deformation grid (see `examples/export-unwarping-grid-onnx.py`). Loaded only
+ * when `unwarping.enabled` is set, so it is not part of {@link ModelUrls}.
+ */
+export const UNWARPING_MODEL_URL: string = `${MODEL_BASE_URL}/correction/UVDoc_grid.onnx`;
+
+/**
  * Mirror of {@link MODEL_BASE_URL} on GitHub, used only when
  * `PPU_PADDLE_OCR_MODEL_MIRROR` is set.
  *

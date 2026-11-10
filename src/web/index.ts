@@ -36,6 +36,7 @@ export {
   DICT_BASE_URL,
   MODEL_BASE_URL,
   MODEL_PRESETS,
+  UNWARPING_MODEL_URL,
   type ModelPreset,
   type ModelUrls,
   V3_JAPANESE_MOBILE_MODEL,
@@ -76,6 +77,7 @@ export type {
   ProcessingEngine,
   ProcessingOptions,
   RecognitionOptions,
+  UnwarpingOptions,
 } from "../interface.js";
 
 export type { PreprocessDetectionResult } from "../core/base-detection.service.js";
@@ -83,6 +85,9 @@ export { DetectionService } from "./detection.service.web.js";
 
 export type { RecognitionResult } from "../core/base-recognition.service.js";
 export { RecognitionService } from "./recognition.service.web.js";
+
+export type { UnwarpSkipReason } from "../core/unwarping/grid.js";
+export type { UnwarpMapping, UnwarpResult } from "../core/unwarping/unwarping.service.js";
 
 export { getDefaultWebExecutionProviders, isWebGpuAvailable, isWebWorker } from "./platform.web.js";
 
@@ -93,6 +98,7 @@ export {
   DEFAULT_PROCESSING_ENGINE,
   DEFAULT_PROCESSING_OPTIONS,
   DEFAULT_RECOGNITION_OPTIONS,
+  DEFAULT_UNWARPING_OPTIONS,
 } from "../constants.js";
 
 import type { CanvasLike } from "ppu-ocv/web";
