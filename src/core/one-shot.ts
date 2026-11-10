@@ -30,9 +30,10 @@ export function splitOptions<T extends object>(options?: PaddleOptions & T): Spl
     // SAFETY: an empty bag has no per-call keys; the cast only names the shape.
     return { paddle: {}, perCall: {} as Omit<T, keyof PaddleOptions> };
   }
-  const { model, detection, recognition, debugging, session, processing, ...perCall } = options;
+  const { model, detection, recognition, debugging, session, processing, unwarping, ...perCall } =
+    options;
   return {
-    paddle: { model, detection, recognition, debugging, session, processing },
+    paddle: { model, detection, recognition, debugging, session, processing, unwarping },
     perCall,
   };
 }

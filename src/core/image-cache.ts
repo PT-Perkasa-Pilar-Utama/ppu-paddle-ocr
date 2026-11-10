@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 PT Perkasa Pilar Utama
 
+import type { InferenceSession } from "onnxruntime-common";
 import type { RecognizeOptions } from "../interface.js";
 
 /**
@@ -86,6 +87,31 @@ export class ImageCache {
     }
     return `${hash}_${view.length}`;
   }
+}
+
+/** What a cached result depends on besides the image: a model session or a dictionary. */
+export type CacheOwner = InferenceSession | readonly string[];
+
+const identities = new WeakMap<CacheOwner, number>();
+let nextIdentity = 1;
+
+/**
+ * A short id for an object, the same for as long as that object lives and
+ * never reused for another one.
+ *
+ * Cache keys use it to name the inference sessions and dictionary a result
+ * came from: a result is only valid for the exact objects that produced it,
+ * and a replaced model is a new object, so its old entries stop matching
+ * without anyone having to clear them.
+ */
+export function cacheIdentity(value: CacheOwner | null | undefined): string {
+  if (!value) return "none";
+  let identity = identities.get(value);
+  if (identity === undefined) {
+    identity = nextIdentity++;
+    identities.set(value, identity);
+  }
+  return String(identity);
 }
 
 // Global image cache instance

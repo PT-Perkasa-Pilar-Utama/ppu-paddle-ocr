@@ -9,4 +9,4 @@
  */
 import { PaddleOcrService } from "../src/processor/paddle-ocr.service.js";
 
-await PaddleOcrService.downloadModels();
+await PaddleOcrService.downloadModels({ unwarping: true });

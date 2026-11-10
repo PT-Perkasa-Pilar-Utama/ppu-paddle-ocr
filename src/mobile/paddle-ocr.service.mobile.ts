@@ -127,6 +127,10 @@ export class PaddleOcrService extends BasePaddleOcrService {
       const [detectionSession, recognitionSession] = await Promise.all([
         this._createSession(new Uint8Array(detModelBuffer)),
         this._createSession(new Uint8Array(recModelBuffer)),
+        this.initializeUnwarping(
+          (source, defaultUrl) => this._loadResource(source, defaultUrl),
+          (modelData) => this._createSession(modelData)
+        ),
       ]);
 
       this.detectionSession = detectionSession;

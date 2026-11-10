@@ -210,3 +210,24 @@ export function createAsyncQueue<T>(): AsyncQueue<T> {
     },
   };
 }
+
+/** Images processed at once when no accelerator is configured. */
+const DEFAULT_CPU_CONCURRENCY = 4;
+
+/**
+ * Resolve the effective batch concurrency. `"auto"` (or unset) yields `1` when
+ * an accelerator execution provider is configured, else a small CPU default.
+ */
+export function resolveConcurrency(
+  value: number | "auto" | undefined,
+  providers: readonly (string | { readonly name: string })[] | undefined
+): number {
+  if (typeof value === "number" && value > 0) return Math.floor(value);
+
+  const usesAccelerator = (providers ?? []).some((provider) => {
+    const name = (typeof provider === "string" ? provider : provider.name).toLowerCase();
+    return name !== "cpu" && name !== "wasm";
+  });
+
+  return usesAccelerator ? 1 : DEFAULT_CPU_CONCURRENCY;
+}

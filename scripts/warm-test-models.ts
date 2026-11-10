@@ -15,7 +15,7 @@
 
 import { PaddleOcrService, V5_EN_MOBILE_MODEL } from "../src/index.js";
 
-await PaddleOcrService.downloadModels();
+await PaddleOcrService.downloadModels({ unwarping: true });
 
 const v5 = new PaddleOcrService({ model: V5_EN_MOBILE_MODEL });
 await v5.initialize();

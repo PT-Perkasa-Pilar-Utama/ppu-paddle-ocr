@@ -50,6 +50,18 @@ export type ModelPathOptions = {
    * Required if not using the library's built‑in default dictionary (en_dict.txt).
    */
   charactersDictionary?: ArrayBuffer | string;
+
+  /**
+   * Onnx file buffer or path for the document unwarping model. Loaded only
+   * when `unwarping.enabled` is set. Defaults to the built-in model
+   * (`UNWARPING_MODEL_URL`).
+   *
+   * The model must take a `[1, 3, 712, 488]` image and return the deformation
+   * grid as `[1, 2, rows, columns]`. The stock PaddleOCR `UVDoc.onnx` returns a
+   * corrected image instead and is rejected; `examples/export-unwarping-grid-onnx.py`
+   * converts it.
+   */
+  unwarping?: ArrayBuffer | string;
 };
 
 /**
@@ -282,6 +294,13 @@ export type RecognizeOptions = Pick<
    * @default false
    */
   noCache?: boolean;
+
+  /**
+   * Flatten the page before detection for this call, overriding
+   * `unwarping.enabled`. `true` requires a service constructed with
+   * `unwarping: { enabled: true }`, which is what loads the model.
+   */
+  unwarp?: boolean;
 };
 
 /**
@@ -306,6 +325,13 @@ export type DetectOptions = DetectionOptions & {
    * Node/Bun only; ignored on web and mobile.
    */
   saveCropsTo?: string;
+
+  /**
+   * Flatten the page before detection for this call, overriding
+   * `unwarping.enabled`. `true` requires a service constructed with
+   * `unwarping: { enabled: true }`, which is what loads the model.
+   */
+  unwarp?: boolean;
 };
 
 /**
@@ -365,6 +391,25 @@ export type ProcessingOptions = {
 };
 
 /**
+ * Controls the document unwarping stage, which flattens a photo of a curled,
+ * folded, or tilted page before text detection.
+ *
+ * The stage costs one extra model (about 30 MB) and one extra inference per
+ * image, and it helps only when the page is not flat, so it is opt-in. A grid
+ * check skips the correction when the page is already flat and upright or when
+ * the prediction is unusable; the image is then read as if the stage were off.
+ * Boxes are always returned in the coordinates of the image you passed in.
+ */
+export type UnwarpingOptions = {
+  /**
+   * Load the unwarping model during `initialize()` and flatten every image
+   * unless a call passes `unwarp: false`.
+   * @default false
+   */
+  enabled?: boolean;
+};
+
+/**
  * Full configuration for the PaddleOCR service.
  * Combines model file paths with detection, recognition, and debugging parameters.
  */
@@ -398,6 +443,11 @@ export type PaddleOptions = {
    * Controls the image processing backend.
    */
   processing?: ProcessingOptions;
+
+  /**
+   * Controls the document unwarping stage.
+   */
+  unwarping?: UnwarpingOptions;
 };
 
 /**

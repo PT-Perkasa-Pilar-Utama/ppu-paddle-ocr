@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Document unwarping.** An opt-in stage flattens a photo of a curled, folded,
+  or tilted page before text detection, so the text lines are straight when
+  they are detected and read. Enable it with
+  `new PaddleOcrService({ unwarping: { enabled: true } })`: `initialize()` then
+  loads one more model (about 30 MB) and every image is unwarped unless a call
+  passes `unwarp: false`. It works on the Node/Bun, web, and React Native
+  entries.
+  - `recognize()`, `detect()`, and the batch methods accept a per-call
+    `unwarp` option. `unwarp: true` on a service built without
+    `unwarping.enabled` throws. Boxes are always returned in the coordinates of
+    the image you passed in; `detect({ crop: true })` cuts crops from the
+    flattened page.
+  - `service.unwarp(image)` returns the flattened image as an `UnwarpResult`:
+    `{ status: "unwarped", canvas, mapping }`, or
+    `{ status: "skipped", reason, canvas }` with the input unchanged. The reason
+    is `"flat"`, `"no-gain"`, `"folded"`, or `"out-of-frame"`.
+    `mapping.boxToSource(box)` and `mapping.pointToSource(x, y)` translate
+    positions on the flattened page to the input photo.
+  - `model.unwarping` overrides the model. The default,
+    `UNWARPING_MODEL_URL`, is `UVDoc_grid.onnx` in the models repo (31,587,333
+    bytes). It is PaddleOCR's UVDoc cut so that it outputs the 45 x 31
+    deformation grid; the weights are unchanged, and the library does the
+    resampling and the box mapping itself.
+    `examples/export-unwarping-grid-onnx.py` makes the cut.
+  - `PaddleOcrService.downloadModels({ unwarping: true })` also caches the
+    model (Node/Bun). One-shot helpers accept the option too:
+    `ocr(image, { unwarping: { enabled: true } })`.
+  - CLI: `--unwarp` on `recognize`, `detect`, `batch`, and `stream`;
+    `--model-unwarping <path|url>` (needs `--unwarp`); `download-models --unwarp`
+    also caches the model; `models --json` reports the `unwarping` setting
+    (`enabled` and `model`). The REST server and the playground expose the
+    option as well.
+  - New exports: `UNWARPING_MODEL_URL`, `DEFAULT_UNWARPING_OPTIONS`, and the
+    types `UnwarpingOptions`, `UnwarpResult`, `UnwarpMapping`, and
+    `UnwarpSkipReason`.
+  - Measured on `assets/receipt.jpg` with computed curls (not real photos of
+    curled paper), Apple Silicon CPU: a 4% curl reads at 98.4% character
+    accuracy with the stage on, against 72.6% off, and a 14% curl at 96.3%
+    against 1.0%. A flat page and a slight curl (3% bow) are skipped
+    (`no-gain`) and read as before. The cost is about 300 ms per image.
+    Limits: one page per photo, thresholds calibrated on the receipt fixture
+    only, some perspective foreshortening left on steep-angle shots, and React
+    Native not yet run on a device.
+
 ### Changed
 
 - README banner: an animated GIF replaces the static pipeline image. It shows
@@ -15,6 +61,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The in-memory result cache could return a result produced by another
+  model.** It was keyed by the image alone, so two service instances with
+  different models or dictionaries, or one instance after
+  `changeDetectionModel()`, `changeRecognitionModel()`, or
+  `changeTextDictionary()`, could be handed a cached result from the other
+  model. The key now also names the sessions and the dictionary in use. Service
+  instances therefore no longer share cache entries with each other.
+- **`recognize(image, { flatten: true })` followed by `recognize(image)` on the
+  same image returned the flattened object, without `lines`, from the cache.**
+  The cache now always stores the grouped shape and flattens on the way out.
 - The Linux and macOS standalone binary archives extracted a file without
   the executable bit, so `./ppu-paddle-ocr-<target>` failed with
   "permission denied". The release job now restores the bit before packing.

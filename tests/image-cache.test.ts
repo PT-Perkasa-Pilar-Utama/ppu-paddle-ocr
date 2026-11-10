@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { ImageCache } from "../src/core/image-cache.js";
+import { cacheIdentity, ImageCache } from "../src/core/image-cache.js";
 
 /**
  * The cache key stands in for the whole image. Two different images that map to
@@ -41,5 +41,24 @@ describe("ImageCache.generateKey", () => {
     const b = new Uint8Array(65).fill(7);
 
     expect(ImageCache.generateKey(a.buffer)).not.toBe(ImageCache.generateKey(b.buffer));
+  });
+});
+
+/**
+ * A cached result is only valid for the model sessions and dictionary that
+ * produced it, so the key names them by identity.
+ */
+describe("cacheIdentity", () => {
+  test("is stable for one object and different for another", () => {
+    const first = ["a", "b"];
+    const second = ["a", "b"];
+
+    expect(cacheIdentity(first)).toBe(cacheIdentity(first));
+    expect(cacheIdentity(first)).not.toBe(cacheIdentity(second));
+  });
+
+  test("names a missing owner without colliding with a real one", () => {
+    expect(cacheIdentity(null)).toBe("none");
+    expect(cacheIdentity(["a"])).not.toBe("none");
   });
 });
