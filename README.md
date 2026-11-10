@@ -670,7 +670,6 @@ Cost on the same CPU: about 300 ms more per image (two model runs of about 150 m
 - The acceptance thresholds were calibrated on the receipt fixture only.
 - Sizing the page from curve length corrects curl but leaves some perspective foreshortening on pages shot at a steep angle.
 - React Native runs the same code path but has not been run on a device.
-- The default model URL goes live when the model file is uploaded to the models repo, which happens at release.
 
 ## Processing Engine
 

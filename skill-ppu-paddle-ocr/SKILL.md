@@ -158,7 +158,7 @@ A skipped result is normal, not an error: the image is read as if the stage were
 | Curl 10%                       |     18.0% |    87.7% | unwarped            |
 | Curl 14%                       |      1.0% |    96.3% | unwarped            |
 
-**Limits to state to the user:** one page per photo (no multi-page split); the acceptance thresholds were calibrated on the receipt fixture only; curve-length sizing corrects curl but leaves some perspective foreshortening on pages shot at a steep angle; React Native runs the same code path but has not been run on a device; the default model URL goes live when the model file is uploaded to the models repo, which happens at release.
+**Limits to state to the user:** one page per photo (no multi-page split); the acceptance thresholds were calibrated on the receipt fixture only; curve-length sizing corrects curl but leaves some perspective foreshortening on pages shot at a steep angle; React Native runs the same code path but has not been run on a device.
 
 ## The result cache
 
