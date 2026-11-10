@@ -11,7 +11,7 @@ import {
   buildRecognizeOptions,
   PARSE_OPTIONS,
 } from "../src/cli/options.js";
-import { V6_SMALL_MODEL, V6_TINY_MODEL } from "../src/model-catalogue.js";
+import { UNWARPING_MODEL_URL, V6_SMALL_MODEL, V6_TINY_MODEL } from "../src/model-catalogue.js";
 import { main } from "../src/cli/run.js";
 
 const ASSETS = `${import.meta.dir}/../assets`;
@@ -136,6 +136,17 @@ describe("option builders", () => {
     expect(bare?.rotateVerticalCrops).toBeUndefined();
 
     expect(() => buildPaddleOptions({ "rec-batch-size": "abc" })).toThrow();
+  });
+
+  test("--unwarp enables the unwarping stage and --model-unwarping picks its model", () => {
+    expect(buildPaddleOptions({}).unwarping).toBeUndefined();
+    expect(buildPaddleOptions({ unwarp: true }).unwarping).toEqual({ enabled: true });
+
+    const opts = buildPaddleOptions({ unwarp: true, "model-unwarping": "/custom-grid.onnx" });
+    expect(opts.model?.unwarping).toBe("/custom-grid.onnx");
+
+    // A model with nothing to load it would be a silent no-op.
+    expect(() => buildPaddleOptions({ "model-unwarping": "/custom-grid.onnx" })).toThrow();
   });
 
   test("buildPaddleOptions resolves --model presets, with --model-* overriding parts", () => {
@@ -341,8 +352,13 @@ describe("utility commands", () => {
   test("models reports the active configuration as JSON", async () => {
     const { code, out } = await run(["models", "--json"]);
     expect(code).toBe(0);
-    const info = JSON.parse(out) as { models: { detection: string }; engine: string };
+    const info = JSON.parse(out) as {
+      models: { detection: string };
+      engine: string;
+      unwarping: { enabled: boolean; model: string };
+    };
     expect(info.models.detection).toContain("PP-OCRv6");
+    expect(info.unwarping).toEqual({ enabled: false, model: UNWARPING_MODEL_URL });
     expect(info.engine).toBe("opencv");
   });
 

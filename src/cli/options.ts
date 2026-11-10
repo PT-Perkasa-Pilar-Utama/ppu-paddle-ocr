@@ -38,6 +38,8 @@ export const PARSE_OPTIONS: NonNullable<ParseArgsConfig["options"]> = {
   "model-detection": { type: "string" },
   "model-recognition": { type: "string" },
   "model-dict": { type: "string" },
+  "model-unwarping": { type: "string" },
+  unwarp: { type: "boolean" },
   "max-side-length": { type: "string" },
   "padding-vertical": { type: "string" },
   "padding-horizontal": { type: "string" },
@@ -141,13 +143,24 @@ export function buildPaddleOptions(values: CliValues): PaddleOptions {
   const detection = str(values, "model-detection");
   const recognition = str(values, "model-recognition");
   const dict = str(values, "model-dict");
-  if (preset || detection || recognition || dict) {
+  const unwarping = str(values, "model-unwarping");
+  if (preset || detection || recognition || dict || unwarping) {
     options.model = {
       ...preset,
       ...(detection ? { detection } : {}),
       ...(recognition ? { recognition } : {}),
       ...(dict ? { charactersDictionary: dict } : {}),
+      ...(unwarping ? { unwarping } : {}),
     };
+  }
+
+  // The CLI builds one service per run, so `--unwarp` switches the stage on
+  // for every image of that run. A model override alone does not: it names
+  // which file to load, not whether to load it.
+  if (values.unwarp) {
+    options.unwarping = { enabled: true };
+  } else if (unwarping) {
+    usageError("--model-unwarping needs --unwarp");
   }
 
   const mean = triple(values, "mean");

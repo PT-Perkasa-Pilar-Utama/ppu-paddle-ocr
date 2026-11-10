@@ -12,7 +12,7 @@ import os from "node:os";
 import path from "node:path";
 
 import type { AnyOcrResult } from "../core/base-paddle-ocr.service.js";
-import { DEFAULT_MODEL_URLS, MODEL_PRESETS } from "../index.js";
+import { DEFAULT_MODEL_URLS, MODEL_PRESETS, UNWARPING_MODEL_URL } from "../index.js";
 import { PaddleOcrService } from "../processor/paddle-ocr.service.js";
 import {
   CliError,
@@ -171,7 +171,10 @@ export async function runStream(patterns: string[], values: CliValues): Promise<
 }
 
 export async function runDownloadModels(values: CliValues): Promise<void> {
-  await PaddleOcrService.downloadModels({ verbose: !values.quiet });
+  await PaddleOcrService.downloadModels({
+    verbose: !values.quiet,
+    unwarping: Boolean(values.unwarp),
+  });
   logStderr("Models cached.", Boolean(values.quiet));
 }
 
@@ -189,6 +192,10 @@ export function runModels(values: CliValues): void {
       recognition: built.model?.recognition ?? DEFAULT_MODEL_URLS.recognition,
       charactersDictionary:
         built.model?.charactersDictionary ?? DEFAULT_MODEL_URLS.charactersDictionary,
+    },
+    unwarping: {
+      enabled: built.unwarping?.enabled ?? false,
+      model: built.model?.unwarping ?? UNWARPING_MODEL_URL,
     },
     strategy: built.recognition?.strategy ?? "per-box",
     engine: built.processing?.engine ?? "opencv",
