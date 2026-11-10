@@ -50,7 +50,7 @@ The library is a building block; this wraps it as a service you'd be comfortable
 | GET    | `/v1/tasks/:id`           | Task status                                                      |
 | GET    | `/v1/tasks/:id/result`    | Task result (409 until done)                                     |
 | DELETE | `/v1/tasks/:id`           | Cancel a task                                                    |
-| GET    | `/v1/models`              | Engines, strategies, defaults                                    |
+| GET    | `/v1/models`              | Engines, strategies, defaults, unwarping state                   |
 | GET    | `/health` / `/ready`      | Liveness / readiness (200 once warmed)                           |
 | GET    | `/metrics`                | Prometheus                                                       |
 | GET    | `/docs` / `/openapi.json` | Scalar UI / spec                                                 |
@@ -66,14 +66,17 @@ The library is a building block; this wraps it as a service you'd be comfortable
   "flatten": false,
   "engine": "opencv",
   "minimumConfidence": 0.5,
+  "unwarp": true,
 }
 ```
 
 `minimumConfidence` (0 to 1) overrides `MIN_CONFIDENCE` for that request only; `0` disables the filter. The batch, stream, and async endpoints take the same field.
 
+`unwarp` flattens a curled, folded, or tilted page before detection, and boxes stay in the coordinates of the image you sent. The model (about 30 MB) loads at startup only when the server runs with `UNWARPING_ENABLED=true`, and the stage then runs on every image by default. Send `unwarp: false` to skip it for one request. Send `unwarp: true` to a server started without `UNWARPING_ENABLED` and you get a `400` that names the setting. `/v1/detect`, `/v1/ocr/batch`, `/v1/ocr/stream`, and `/v1/ocr/async` take the field too, and multipart uploads take it as a form field. `GET /v1/models` reports `unwarping.enabled`. The stage adds about 300 ms per image on CPU and skips itself when the page is already flat.
+
 `source` must be a `data:` URI or an `https` URL whose host is in `SOURCE_URL_ALLOWLIST` (empty = https disabled). **Local filesystem paths are rejected**, and URL fetches refuse redirects - so the API never reads arbitrary host files or gets steered off-allowlist. Uploads are sniffed by magic bytes; non-images get a `400`, not a `500`. An allowlisted host that cannot be reached (DNS, TLS, refused, or a redirect) is a `502` naming the host.
 
-`POST /v1/detect` takes the same input (`file` or `{ source, engine? }`; `strategy`/`flatten` don't apply) and returns `{ boxes: [{ x, y, width, height }] }` - detection inference only, no recognition. `metadata` carries `speed`, `count`, and `engine`.
+`POST /v1/detect` takes the same input (`file` or `{ source, engine?, unwarp? }`; `strategy`/`flatten` don't apply) and returns `{ boxes: [{ x, y, width, height }] }` - detection inference only, no recognition. `metadata` carries `speed`, `count`, and `engine`.
 
 ### Response format
 
@@ -117,6 +120,7 @@ See [`.env.example`](.env.example) for the full annotated list.
 | `MAX_SIDE_LENGTH`                                      | `auto` (library)   | Detection size cap in px, or `auto` (scales with the input)         |
 | `MAX_CROP_SOURCE_SIDE_LENGTH`                          | `2000` (library)   | Recognition crop-source cap in px; lower is faster on large uploads |
 | `MODEL_DETECTION` / `MODEL_RECOGNITION` / `MODEL_DICT` | default v6 tiny    | Override model sources                                              |
+| `UNWARPING_ENABLED`                                    | `false`            | Flatten curled pages, +300 ms per image (see Input)                 |
 | `MAX_CONCURRENCY`                                      | `0` (auto)         | Auto = 1 on an accelerator, 4 on CPU                                |
 | `MAX_QUEUE_DEPTH`                                      | `100`              | Excess inferences get `429` + `Retry-After`                         |
 | `TASK_TTL_SECONDS`                                     | `600`              | Async task retention                                                |

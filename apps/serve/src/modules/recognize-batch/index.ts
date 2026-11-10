@@ -26,7 +26,7 @@ export function mount(app: Hono<Env>): void {
     validate("json", batchOcrSchema),
     async (c) => {
       const body = c.req.valid("json");
-      const images = await resolveBatch(body.sources);
+      const images = await resolveBatch(body);
       const { results, meta } = await runBatch(images, body);
       return c.json(
         // SAFETY: the envelope carries results verbatim; the array element type

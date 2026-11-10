@@ -28,6 +28,8 @@ function build(engine: ProcessingEngine): PaddleOcrService {
       ? { detection: { maxSideLength: config.maxSideLength } }
       : {}),
     ...(config.model ? { model: config.model } : {}),
+    // Loading the model here means initialize() warms it with the others.
+    ...(config.unwarpingEnabled ? { unwarping: { enabled: true } } : {}),
   });
 }
 

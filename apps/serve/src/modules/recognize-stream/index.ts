@@ -30,7 +30,7 @@ export function mount(app: Hono<Env>): void {
     validate("json", batchOcrSchema),
     async (c) => {
       const body = c.req.valid("json");
-      const images = await resolveBatch(body.sources);
+      const images = await resolveBatch(body);
       return streamSSE(c, async (stream) => {
         for await (const item of streamBatch(images, body)) {
           await stream.writeSSE({ event: item.status, data: JSON.stringify(item) });

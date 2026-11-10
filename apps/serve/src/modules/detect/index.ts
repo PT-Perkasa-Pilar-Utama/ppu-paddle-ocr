@@ -16,7 +16,7 @@ export function mount(app: Hono<Env>): void {
       summary: "Detect text boxes in a single image (no recognition)",
       description:
         "Runs only the detection model and returns bounding boxes in original image " +
-        "coordinates. multipart/form-data with a `file` field, or JSON `{ source, engine? }`.",
+        "coordinates. multipart/form-data with a `file` field, or JSON `{ source, engine?, unwarp? }`.",
       security: [{ Bearer: [] }],
       requestBody: {
         required: true,

@@ -4,6 +4,15 @@ const strategy = v.optional(v.picklist(["per-box", "per-line", "cross-line"]));
 const engine = v.optional(v.picklist(["opencv", "canvas-native"]));
 const unitInterval = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
 const positiveInt = v.pipe(v.number(), v.integer(), v.minValue(1));
+const unwarp = v.optional(
+  v.pipe(
+    v.boolean(),
+    v.description(
+      "Flatten a curled, folded, or tilted page before detection (about +300 ms per image). " +
+        "Omit to use the server default. `true` needs the server started with UNWARPING_ENABLED=true."
+    )
+  )
+);
 
 /** Per-request recognition options shared by every input shape. */
 export const ocrOptionsSchema = v.object({
@@ -11,6 +20,7 @@ export const ocrOptionsSchema = v.object({
   flatten: v.optional(v.boolean()),
   engine,
   minimumConfidence: v.optional(unitInterval),
+  unwarp,
 });
 export type OcrOptions = v.InferOutput<typeof ocrOptionsSchema>;
 
@@ -29,6 +39,7 @@ export const multipartOcrOptionsSchema = v.object({
   flatten: formBoolean,
   engine,
   minimumConfidence: v.optional(v.pipe(formNumber, unitInterval)),
+  unwarp: formBoolean,
 });
 
 // A 1x1 PNG as a data: URI - a valid, runnable example so Scalar's "Send"
@@ -51,7 +62,7 @@ export const jsonOcrSchema = v.pipe(
 
 /** JSON body for detection-only inference. */
 export const jsonDetectSchema = v.pipe(
-  v.object({ engine, source }),
+  v.object({ engine, unwarp, source }),
   v.metadata({ ref: "DetectJsonRequest" })
 );
 
@@ -88,6 +99,7 @@ const multipartOptions = {
   flatten: { type: "boolean" as const },
   engine: stringEnum(["opencv", "canvas-native"]),
   minimumConfidence: { type: "number" as const, minimum: 0, maximum: 1 },
+  unwarp: { type: "boolean" as const },
 };
 const binaryFile = { type: "string" as const, format: "binary" };
 
@@ -101,7 +113,11 @@ export const multipartOcrSchema = {
 /** Multipart body for detection-only inference. */
 export const multipartDetectSchema = {
   type: "object" as const,
-  properties: { file: binaryFile, engine: multipartOptions.engine },
+  properties: {
+    file: binaryFile,
+    engine: multipartOptions.engine,
+    unwarp: multipartOptions.unwarp,
+  },
   required: ["file"],
 };
 
@@ -157,6 +173,7 @@ export const modelsSchema = v.pipe(
     engines: v.array(v.string()),
     strategies: v.array(v.string()),
     default: v.object({ engine: v.string(), strategy: v.string() }),
+    unwarping: v.object({ enabled: v.boolean() }),
     executionProviders: v.array(v.string()),
   }),
   v.metadata({ ref: "Models" })

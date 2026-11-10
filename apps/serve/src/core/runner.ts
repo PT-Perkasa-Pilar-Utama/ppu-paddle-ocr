@@ -10,8 +10,21 @@ export type OcrResponse = { result: unknown; meta: OcrMeta };
 
 const round1 = (n: number): number => Math.round(n * 10) / 10;
 
+/**
+ * Reject `unwarp: true` on a server started without the stage. The library
+ * would throw a plain Error (a 500) because the model is loaded only at startup.
+ */
+export function assertUnwarpAvailable(unwarp: boolean | undefined): void {
+  if (unwarp === true && !config.unwarpingEnabled) {
+    throw badRequest(
+      "Unwarping is not enabled on this server. Set UNWARPING_ENABLED=true and restart to use unwarp: true"
+    );
+  }
+}
+
 /** Recognize one image through the bounded inference queue. */
 export async function runOcr(image: ArrayBuffer, opts: OcrOptions): Promise<OcrResponse> {
+  assertUnwarpAvailable(opts.unwarp);
   // SAFETY: the request schema restricts `engine` to the same union, and the
   // config default is validated at startup.
   const engine = (opts.engine ?? config.defaultEngine) as ProcessingEngine;
@@ -26,10 +39,16 @@ export async function runOcr(image: ArrayBuffer, opts: OcrOptions): Promise<OcrR
           strategy,
           noCache: true,
           minimumConfidence: opts.minimumConfidence,
+          unwarp: opts.unwarp,
         })
       )
     : await queue.run(() =>
-        svc.recognize(image, { strategy, noCache: true, minimumConfidence: opts.minimumConfidence })
+        svc.recognize(image, {
+          strategy,
+          noCache: true,
+          minimumConfidence: opts.minimumConfidence,
+          unwarp: opts.unwarp,
+        })
       );
   return { result, meta: { engine, strategy, ms: round1(performance.now() - start) } };
 }
@@ -41,21 +60,27 @@ export type DetectResponse = {
 
 /** Detect text boxes only (no recognition) through the bounded inference queue. */
 export async function runDetect(image: ArrayBuffer, opts: OcrOptions): Promise<DetectResponse> {
+  assertUnwarpAvailable(opts.unwarp);
   // SAFETY: as in runOcr above.
   const engine = (opts.engine ?? config.defaultEngine) as ProcessingEngine;
   const svc = await getService(engine);
 
   const start = performance.now();
-  const result = await queue.run(() => svc.detect(image));
+  const result = await queue.run(() => svc.detect(image, { unwarp: opts.unwarp }));
   return { result, meta: { engine, ms: round1(performance.now() - start) } };
 }
 
-/** Resolve a batch of `sources` to image buffers, bounded by MAX_BATCH_IMAGES. */
-export async function resolveBatch(sources: string[]): Promise<ArrayBuffer[]> {
-  if (sources.length > config.maxBatchImages) {
+/**
+ * Check a batch request and resolve its `sources` to image buffers, bounded by
+ * MAX_BATCH_IMAGES. Routes call this before they stream or enqueue, so a
+ * rejected request is still a plain 4xx.
+ */
+export async function resolveBatch(body: BatchOcrBody): Promise<ArrayBuffer[]> {
+  assertUnwarpAvailable(body.unwarp);
+  if (body.sources.length > config.maxBatchImages) {
     throw badRequest(`Too many sources (max ${config.maxBatchImages})`);
   }
-  return Promise.all(sources.map(resolveSource));
+  return Promise.all(body.sources.map(resolveSource));
 }
 
 function batchOptions(body: BatchOcrBody) {
@@ -66,6 +91,7 @@ function batchOptions(body: BatchOcrBody) {
     concurrency: body.concurrency ?? config.concurrency,
     flatten: body.flatten ?? false,
     minimumConfidence: body.minimumConfidence,
+    unwarp: body.unwarp,
   };
 }
 
@@ -80,9 +106,9 @@ export async function runBatch(
   body: BatchOcrBody,
   signal?: AbortSignal
 ): Promise<BatchResponse> {
-  const { engine, strategy, concurrency, flatten, minimumConfidence } = batchOptions(body);
+  const { engine, strategy, concurrency, flatten, minimumConfidence, unwarp } = batchOptions(body);
   const svc = await getService(engine);
-  const opts = { strategy, concurrency, noCache: true, flatten, minimumConfidence, signal };
+  const opts = { strategy, concurrency, noCache: true, flatten, minimumConfidence, unwarp, signal };
   const results = body.settle
     ? await svc.batchRecognize(images, { ...opts, settle: true })
     : await svc.batchRecognize(images, opts);
@@ -94,7 +120,7 @@ export async function* streamBatch(
   images: ArrayBuffer[],
   body: BatchOcrBody
 ): AsyncGenerator<BatchItemResult<unknown>> {
-  const { engine, strategy, concurrency, flatten, minimumConfidence } = batchOptions(body);
+  const { engine, strategy, concurrency, flatten, minimumConfidence, unwarp } = batchOptions(body);
   const svc = await getService(engine);
   yield* svc.batchRecognizeStream(images, {
     strategy,
@@ -102,6 +128,7 @@ export async function* streamBatch(
     noCache: true,
     flatten,
     minimumConfidence,
+    unwarp,
     settle: body.settle ?? false,
   });
 }

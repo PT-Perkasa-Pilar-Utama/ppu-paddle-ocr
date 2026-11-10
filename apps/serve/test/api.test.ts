@@ -162,3 +162,53 @@ describe("POST /v1/ocr input validation (pre-inference)", () => {
     await expectError(await app.request("/v1/ocr", { method: "POST", body: form }), 400);
   });
 });
+
+describe("unwarping (server started without UNWARPING_ENABLED)", () => {
+  // A 1x1 PNG: it passes the image sniff, and the request is rejected before
+  // any model loads.
+  const pixel =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
+  test("is off by default and GET /v1/models reports it", async () => {
+    expect(config.unwarpingEnabled).toBe(false);
+    const body = await (await app.request("/v1/models")).json();
+    expect(body.data.unwarping).toEqual({ enabled: false });
+  });
+
+  const jsonRoutes = [
+    ["/v1/ocr", { source: pixel }],
+    ["/v1/detect", { source: pixel }],
+    ["/v1/ocr/batch", { sources: [pixel] }],
+    ["/v1/ocr/stream", { sources: [pixel] }],
+    ["/v1/ocr/async", { sources: [pixel] }],
+  ] as const;
+
+  test.each(jsonRoutes)(
+    "unwarp: true on %s is a 400 that names the setting",
+    async (path, body) => {
+      const res = await app.request(path, json({ ...body, unwarp: true }));
+      expect(res.status).toBe(400);
+      const error = await res.json();
+      expect(error.status).toBe("error");
+      expect(error.data.message).toContain("UNWARPING_ENABLED=true");
+      expect(error.data.requestId).toBeString();
+    }
+  );
+
+  test("unwarp: true as a multipart field is a 400 on /v1/ocr and /v1/detect", async () => {
+    for (const path of ["/v1/ocr", "/v1/detect"]) {
+      const form = new FormData();
+      form.append("file", new File([Buffer.from(pixel.split(",")[1] ?? "", "base64")], "p.png"));
+      form.append("unwarp", "true");
+      const res = await app.request(path, { method: "POST", body: form });
+      expect(res.status).toBe(400);
+      expect((await res.json()).data.message).toContain("UNWARPING_ENABLED=true");
+    }
+  });
+
+  test("a non-boolean unwarp is a validation error", async () => {
+    const res = await app.request("/v1/ocr", json({ source: pixel, unwarp: "yes" }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).data.message).toContain("unwarp");
+  });
+});
