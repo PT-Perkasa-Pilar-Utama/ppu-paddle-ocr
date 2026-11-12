@@ -298,22 +298,24 @@ export class BaseDetectionService {
         method: ip.cv.CHAIN_APPROX_SIMPLE,
       });
 
-      const boxes = extractBoxesFromContours(
-        contours,
-        width,
-        height,
-        resizeRatio,
-        originalWidth,
-        originalHeight,
-        minBoxAreaOnPadded,
-        paddingVertical,
-        paddingHorizontal
-      );
+      try {
+        const boxes = extractBoxesFromContours(
+          contours,
+          width,
+          height,
+          resizeRatio,
+          originalWidth,
+          originalHeight,
+          minBoxAreaOnPadded,
+          paddingVertical,
+          paddingHorizontal
+        );
 
-      contours.destroy();
-
-      this.log(`Found ${boxes.length} potential text boxes (opencv)`);
-      return boxes;
+        this.log(`Found ${boxes.length} potential text boxes (opencv)`);
+        return boxes;
+      } finally {
+        contours.destroy();
+      }
     } finally {
       processor.destroy();
     }
