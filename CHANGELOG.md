@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Detection on the `opencv` engine leaked one OpenCV Mat per contour.** Each
+  detection call left every contour's points on the OpenCV WASM heap, so a
+  long-running process filled the 1 GiB heap after a few thousand pages, and
+  from then on every detection and recognition call failed until a restart.
+  Contours are now freed after their box is read, and the contour list is
+  freed even when box extraction throws. Reported by @davidjortizrivera in
+  #163.
+
 ## [6.7.0] - 2026-11-10
 
 ### Added

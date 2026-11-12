@@ -109,23 +109,36 @@ export function extractBoxesFromContours(
 ): Box[] {
   const boxes: Box[] = [];
 
+  // iterate() hands out a new cv.Mat per contour that neither the GC nor
+  // contours.destroy() frees, so each one is deleted here. Without this the
+  // OpenCV WASM heap fills after a few thousand pages (issue #163).
   contours.iterate((contour: cv.Mat) => {
-    const rect = contours.getRect(contour);
+    try {
+      const rect = contours.getRect(contour);
 
-    if (rect.width * rect.height <= minBoxArea) {
-      return;
-    }
+      if (rect.width * rect.height <= minBoxArea) {
+        return;
+      }
 
-    const paddedRect = applyPaddingToRect(rect, width, height, paddingVertical, paddingHorizontal);
-    const finalBox = convertToOriginalCoordinates(
-      paddedRect,
-      resizeRatio,
-      originalWidth,
-      originalHeight
-    );
+      const paddedRect = applyPaddingToRect(
+        rect,
+        width,
+        height,
+        paddingVertical,
+        paddingHorizontal
+      );
+      const finalBox = convertToOriginalCoordinates(
+        paddedRect,
+        resizeRatio,
+        originalWidth,
+        originalHeight
+      );
 
-    if (finalBox.width > 5 && finalBox.height > 5) {
-      boxes.push(finalBox);
+      if (finalBox.width > 5 && finalBox.height > 5) {
+        boxes.push(finalBox);
+      }
+    } finally {
+      contour.delete();
     }
   });
 
