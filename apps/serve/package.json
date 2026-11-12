@@ -22,7 +22,7 @@
   "devDependencies": {
     "onnxruntime-common": "^1.29.0",
     "onnxruntime-node": "^1.29.0",
-    "ppu-ocv": "^4.0.0",
+    "ppu-ocv": "^4.0.1",
     "typescript": "^7.0.2"
   },
   "overrides": {
