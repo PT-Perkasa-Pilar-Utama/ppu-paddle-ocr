@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.7.1] - 2026-11-12
+
+### Changed
+
+- Requires ppu-ocv 4.0.1, which fixes OpenCV memory leaks in its own contour,
+  deskew, and image operation code. The library and `apps/serve` both move
+  from `^4.0.0` to `^4.0.1`.
+
 ### Fixed
 
 - **Detection on the `opencv` engine leaked one OpenCV Mat per contour.** Each
@@ -16,12 +24,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Contours are now freed after their box is read, and the contour list is
   freed even when box extraction throws. Reported by @davidjortizrivera in
   #163.
-
-### Changed
-
-- Requires ppu-ocv 4.0.1, which fixes OpenCV memory leaks in its own contour,
-  deskew, and image operation code. The library and `apps/serve` both move
-  from `^4.0.0` to `^4.0.1`.
 
 ## [6.7.0] - 2026-11-10
 
