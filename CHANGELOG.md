@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Docs:** the README "Document Unwarping" section is cut from nine
+  sub-sections to a short intro, two code blocks, and one paragraph of
+  pointers. The internals and the server details now live only in
+  `docs/DESIGN.md` and `apps/serve/README.md`, and the measured accuracy
+  table is removed.
+
 ## [6.7.1] - 2026-11-12
 
 ### Changed

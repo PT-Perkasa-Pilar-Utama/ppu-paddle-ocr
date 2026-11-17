@@ -369,17 +369,17 @@ Every `PaddleOptions` / `RecognizeOptions` field maps to a flag:
 
 **Behavior and output**:
 
-| Flags                                                                 | Applies to                                                  | Purpose                                                                                                                           |
-| :-------------------------------------------------------------------- | :---------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------- |
-| `--strategy`, `--cross-line-width-factor`, `--flatten`, `--no-cache`  | recognition                                                 | Grouping strategy, flat output, result cache                                                                                      |
-| `--image-height`, `--min-confidence`, `--max-crop-source-side-length` | recognition                                                 | Input height, confidence filter, crop-source cap                                                                                  |
-| `--rec-batch-size`, `--no-rotate-vertical-crops`, `--space-recovery`  | recognition                                                 | Batch size, vertical-crop rotation, space recovery                                                                                |
-| `--main-thread-yield-ms`                                              | recognition                                                 | Pause before each inference (browser only, no-op in the CLI)                                                                      |
-| `--unwarp`                                                            | `recognize`, `detect`, `batch`, `stream`; `download-models` | Flatten curled or tilted pages first, see [Document Unwarping](#document-unwarping); with `download-models`, also cache the model |
-| `--save-crops <dir>`                                                  | `detect` only                                               | Write one PNG per detected box                                                                                                    |
-| `--concurrency`, `--settle`                                           | `batch`, `stream`                                           | Images in flight, keep going past a failed image                                                                                  |
-| `--json`, `--pretty`, `-o`/`--output`, `-q`/`--quiet`, `--verbose`    | all commands                                                | Output format and destination                                                                                                     |
-| `--debug`, `--debug-folder <dir>`                                     | all commands                                                | Dump intermediate frames to disk                                                                                                  |
+| Flags                                                                 | Applies to                                                  | Purpose                                                         |
+| :-------------------------------------------------------------------- | :---------------------------------------------------------- | :-------------------------------------------------------------- |
+| `--strategy`, `--cross-line-width-factor`, `--flatten`, `--no-cache`  | recognition                                                 | Grouping strategy, flat output, result cache                    |
+| `--image-height`, `--min-confidence`, `--max-crop-source-side-length` | recognition                                                 | Input height, confidence filter, crop-source cap                |
+| `--rec-batch-size`, `--no-rotate-vertical-crops`, `--space-recovery`  | recognition                                                 | Batch size, vertical-crop rotation, space recovery              |
+| `--main-thread-yield-ms`                                              | recognition                                                 | Pause before each inference (browser only, no-op in the CLI)    |
+| `--unwarp`                                                            | `recognize`, `detect`, `batch`, `stream`; `download-models` | Flatten the page first; with `download-models`, cache the model |
+| `--save-crops <dir>`                                                  | `detect` only                                               | Write one PNG per detected box                                  |
+| `--concurrency`, `--settle`                                           | `batch`, `stream`                                           | Images in flight, keep going past a failed image                |
+| `--json`, `--pretty`, `-o`/`--output`, `-q`/`--quiet`, `--verbose`    | all commands                                                | Output format and destination                                   |
+| `--debug`, `--debug-folder <dir>`                                     | all commands                                                | Dump intermediate frames to disk                                |
 
 Recognized text goes to **stdout**; progress and logs go to **stderr**, so output pipes cleanly. Exit codes: `0` success, `1` runtime error, `2` usage error.
 
@@ -538,138 +538,25 @@ To flatten curled, folded, or tilted pages, use the built-in [Document Unwarping
 
 ## Document Unwarping
 
-Document unwarping flattens a photo of a curled, folded, or tilted page before text detection, so the text lines are straight when they are detected and read. The stage is opt-in: it loads one more model (about 30 MB, downloaded once) and adds about 300 ms per image on an Apple Silicon CPU.
-
-Turn it on for camera photos of paper that is not flat. Leave it off for flat scans and screenshots, where it gains nothing and still costs the extra model run.
+Unwarping flattens a photo of a curled, folded, or tilted page before detection. It is off by default because it loads one more model (about 30 MB, downloaded once) and adds about 300 ms per image on an Apple Silicon CPU. Turn it on for camera photos of paper that is not flat.
 
 ```ts
-import { PaddleOcrService } from "ppu-paddle-ocr";
-
 const service = new PaddleOcrService({ unwarping: { enabled: true } });
 await service.initialize(); // also loads the unwarping model
 
 const result = await service.recognize("/abs/path/curled-receipt.jpg");
-console.log(result.text);
+await service.recognize(flatScan, { unwarp: false }); // skip for one call
 ```
 
-With `unwarping.enabled`, every `recognize()`, `detect()`, and batch call flattens its image first. The option works on all three entry points (`ppu-paddle-ocr`, `ppu-paddle-ocr/web`, and `ppu-paddle-ocr/mobile`) and on the one-shot helpers, for example `ocr(image, { unwarping: { enabled: true } })`.
-
-### Per-Call Control
-
-A call can override the service setting with `unwarp`. On a service built with `unwarping: { enabled: true }`, pass `unwarp: false` to skip the stage for one call:
+Boxes stay in the coordinates of the image you passed in, and the stage skips itself when the page is already flat. `unwarp: true` on a service built without `unwarping.enabled` throws. To get the flattened page itself, call `service.unwarp(image)`; it returns `{ status: "unwarped", canvas, mapping }` or `{ status: "skipped", reason, canvas }`.
 
 ```ts
-await service.recognize(photo, { unwarp: false });
-await service.detect(photo, { unwarp: false });
-await service.batchRecognize(photos, { unwarp: false });
-```
-
-The model loads only during `initialize()`, so the constructor option is what makes the stage available. `unwarp: true` matches the default on an enabled service, and on a service built without `unwarping.enabled` it throws:
-
-```text
-Unwarping is not available on this service. Construct it with `unwarping: { enabled: true }` and call initialize().
-```
-
-`recognize()` and `detect()` always return boxes in the coordinates of the image you passed in. The stage maps each box back to the photo, and a box is the smallest upright rectangle around the mapped outline. `detect({ crop: true })` and `detect({ saveCropsTo })` cut their crops from the flattened page, so each crop shows straight text, while the boxes stay in photo coordinates.
-
-### Reading the Flattened Page
-
-`service.unwarp(image)` runs only the stage and returns the flattened image, for callers that want the page itself:
-
-```ts
-const unwarped = await service.unwarp(photoBuffer);
-
-if (unwarped.status === "unwarped") {
-  const { canvas, mapping } = unwarped; // canvas: the flattened page
-  const inPhoto = mapping.boxToSource({ x: 10, y: 20, width: 300, height: 40 });
-  const point = mapping.pointToSource(150, 40); // { x, y } on the input photo
-} else {
-  console.log(unwarped.reason); // "flat" | "no-gain" | "folded" | "out-of-frame"
-  // unwarped.canvas is the input, unchanged
-}
-```
-
-`mapping.boxToSource(box)` and `mapping.pointToSource(x, y)` translate positions on the flattened page to the input photo. A skipped result carries one of four reasons (`UnwarpSkipReason`):
-
-| Skip reason    | Meaning                                                                                 |
-| :------------- | :-------------------------------------------------------------------------------------- |
-| `flat`         | The predicted grid shows under 1 degree of distortion.                                  |
-| `no-gain`      | The second prediction did not measure at most 95% of the first prediction's distortion. |
-| `folded`       | The predicted grid crosses itself.                                                      |
-| `out-of-frame` | Most of the page lies outside the photo.                                                |
-
-### Model
-
-| Item    | Value                                                                                                                    |
-| :------ | :----------------------------------------------------------------------------------------------------------------------- |
-| Option  | `model.unwarping?: ArrayBuffer \| string`                                                                                |
-| Default | `UNWARPING_MODEL_URL` = `https://huggingface.co/snowfluke/ppu-paddle-ocr-models/resolve/main/correction/UVDoc_grid.onnx` |
-| Size    | 31,587,333 bytes (about 30 MB)                                                                                           |
-
-```ts
-const service = new PaddleOcrService({
-  unwarping: { enabled: true },
-  model: { unwarping: "./models/UVDoc_grid.onnx" },
-});
-
-// Node/Bun: cache the unwarping model ahead of time (CI, Docker builds)
+// custom model path, and Node/Bun pre-download for CI or Docker builds
+new PaddleOcrService({ unwarping: { enabled: true }, model: { unwarping: "./UVDoc_grid.onnx" } });
 await PaddleOcrService.downloadModels({ unwarping: true });
 ```
 
-The model must output the deformation grid. The stock PaddleOCR `UVDoc.onnx` returns a corrected image and is rejected; [`examples/export-unwarping-grid-onnx.py`](./examples/export-unwarping-grid-onnx.py) converts it.
-
-### Command Line
-
-```bash
-bunx ppu-paddle-ocr recognize curled-receipt.jpg --unwarp
-bunx ppu-paddle-ocr detect curled-receipt.jpg --unwarp --save-crops ./regions
-bunx ppu-paddle-ocr recognize curled-receipt.jpg --unwarp --model-unwarping ./UVDoc_grid.onnx
-bunx ppu-paddle-ocr download-models --unwarp
-```
-
-`--unwarp` works on `recognize`, `detect`, `batch`, and `stream`. `--model-unwarping <path|url>` overrides the model and needs `--unwarp`. `models --json` reports `unwarping: { enabled, model }`.
-
-### REST Server and Playground
-
-The REST server ([`apps/serve`](/apps/serve/README.md)) loads the model at startup only when it runs with `UNWARPING_ENABLED=true`. Every request is then unwarped by default, and a request can send `unwarp: false` to skip the stage. A request that sends `unwarp: true` to a server started without `UNWARPING_ENABLED` gets a `400` that names the setting. The `unwarp` field works on `/v1/ocr`, `/v1/detect`, and the batch, stream, and async endpoints (as a JSON field or a multipart form field), and `GET /v1/models` reports `unwarping.enabled`. The playground has a "Page unwarping" checkbox in its detection settings.
-
-```bash
-docker run -p 8080:8080 -e UNWARPING_ENABLED=true ghcr.io/pt-perkasa-pilar-utama/ppu-paddle-ocr/serve:latest
-curl -F file=@curled-receipt.jpg http://localhost:8080/v1/ocr
-```
-
-### How It Works
-
-The model is PaddleOCR's UVDoc (PaddlePaddle, Apache-2.0), cut so that it outputs the 45 x 31 deformation grid instead of a corrected image. The weights are unchanged. The input is always a fixed 488 x 712 copy of the photo (a 4.2 MB tensor), so memory does not grow with photo size, and the graph has no GridSample or Resize operator.
-
-The library does the rest itself. It checks the grid, redraws the page from the photo in one bilinear pass, sizes the page from the length of the grid curves, paints the paper colour where the page runs past the photo, and maps boxes back.
-
-The model is asked twice. The second prediction runs on the page corrected by the first. The library keeps the correction only when the second prediction measures at most 95% of the first prediction's distortion, and then it chains both grids into one. Otherwise it uses the input untouched (`no-gain`). Inside `recognize()` and `detect()`, the page is redrawn from a copy no larger than `recognition.maxCropSourceSideLength` (default 2000 px).
-
-### Measured Effect
-
-Character accuracy is 1 - Levenshtein distance / ground-truth length. The run used an Apple Silicon CPU, `onnxruntime-node`, the default PP-OCRv6 tiny models, and `assets/receipt.jpg` (720 x 1280). The curled inputs are computed curls of that photo, not real photos of curled paper.
-
-| Input                          | Stage off | Stage on | Stage outcome       |
-| :----------------------------- | --------: | -------: | :------------------ |
-| Flat original                  |     99.5% |    99.5% | skipped (`no-gain`) |
-| Slight curl (bow 3% of height) |     90.1% |    90.1% | skipped (`no-gain`) |
-| Curl 4%                        |     72.6% |    98.4% | unwarped            |
-| Curl 5%                        |     27.9% |    97.4% | unwarped            |
-| Curl 6%                        |     30.3% |    81.2% | unwarped            |
-| Curl 8%                        |     29.8% |    98.2% | unwarped            |
-| Curl 10%                       |     18.0% |    87.7% | unwarped            |
-| Curl 14%                       |      1.0% |    96.3% | unwarped            |
-
-Cost on the same CPU: about 300 ms more per image (two model runs of about 150 ms each; the redraw takes 27 ms for a 3 MP page) and a one-time download of about 30 MB.
-
-### Limits
-
-- One page per photo. The stage does not split a photo of several pages.
-- The model decides where the page ends. On one real receipt photo it cut the first glyphs at the left page edge.
-- The acceptance thresholds were calibrated on the receipt fixture only.
-- Sizing the page from curve length corrects curl but leaves some perspective foreshortening on pages shot at a steep angle.
-- React Native runs the same code path but has not been run on a device.
+The model is PaddleOCR's UVDoc, exported to output its deformation grid; the stock `UVDoc.onnx` is rejected, and [`examples/export-unwarping-grid-onnx.py`](./examples/export-unwarping-grid-onnx.py) converts it. On the CLI, add `--unwarp`. On the [REST server](/apps/serve/README.md), set `UNWARPING_ENABLED=true`. The stage handles one page per photo. [docs/DESIGN.md](./docs/DESIGN.md#unwarping-stage) describes how it works.
 
 ## Processing Engine
 
